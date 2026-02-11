@@ -1,68 +1,112 @@
 [
   {
+    "id": "hl-01",
     "timestamp_start": "00:39.8",
     "timestamp_end": "02:52.2",
     "title": "Imdol VR AI Glasses & VR Headsets",
-    "summary": "Imdol VR introduces their AI glasses featuring Qualcomm chipset, camera, LED light, 5 mics, 2 speakers for photos, videos, translation, and AI communication. They also showcase audio glasses (optical, sunglasses, sporting) with AI functions and VR headsets for 3D video and 6DOF gaming/training."
+    "summary": "Imdol VR introduces their AI glasses featuring Qualcomm chipset, camera, LED light, 5 mics, 2 speakers for photos, videos, translation, and AI communication.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_01_imdol_vr.jpg",
+    "color": "#8B5CF6"
   },
   {
+    "id": "hl-02",
     "timestamp_start": "02:52.2",
     "timestamp_end": "03:36.9",
     "title": "M-Dong Slim 14mm Laptop",
-    "summary": "M-Dong presents their 14mm slim laptop weighing 990g, featuring an OLED panel, 70W battery, and processor options including Intel Atrox, AMD 6-point, Qualcomm PURE, and HAMOA. It includes fingerprint support, a silent trackpad, HDMI, USB Thunderbolt, and Type-C ports."
+    "summary": "M-Dong presents their 14mm slim laptop weighing 990g, featuring an OLED panel, 70W battery, and processor options including Intel Atrox, AMD 6-point, Qualcomm PURE.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_02_mdong_laptop.jpg",
+    "color": "#3B82F6"
   },
   {
+    "id": "hl-03",
     "timestamp_start": "03:36.9",
     "timestamp_end": "04:58.2",
     "title": "Levoco's Innovative Power Banks",
-    "summary": "Levoco, a power bank manufacturer, highlights their Series 8, an ultra-thin power bank (thinner than iPhone Air) using stainless steel, ATO battery, and integrated chipset. They also introduce a power bank with micro pump cooling technology, ideal for gaming phones."
+    "summary": "Levoco highlights their Series 8, an ultra-thin power bank using stainless steel, ATO battery, and integrated chipset. Also a power bank with micro pump cooling technology.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_03_levoco_powerbank.jpg",
+    "color": "#10B981"
   },
   {
-    "timestamp_start": "00:00.0",
-    "timestamp_end": "04:00.0",
+    "id": "hl-04",
+    "timestamp_start": "05:00.0",
+    "timestamp_end": "09:00.0",
     "title": "Engine AI Robotics: Open-Source Humanoid Robots",
-    "summary": "Engine AI Robotics presents their PM01 humanoid robot (1.38m, 40kg), emphasizing its full-stack open-source development for research and commercial services. They detail their proprietary joint design, 24 degrees of freedom, natural walking gait, and unique front-flip capability, pricing the PM01 from $25,000 to $39,000."
+    "summary": "Engine AI Robotics presents their PM01 humanoid robot (1.38m, 40kg), full-stack open-source development, 24 degrees of freedom, pricing from $25,000 to $39,000.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_04_engine_ai.jpg",
+    "color": "#F59E0B"
   },
   {
-    "timestamp_start": "04:10.2",
-    "timestamp_end": "04:59.8",
+    "id": "hl-05",
+    "timestamp_start": "09:10.2",
+    "timestamp_end": "09:59.8",
     "title": "DE Massage Robot for Business and Personal Use",
-    "summary": "The DE massage robot is introduced, featuring a bed, robot arm with interchangeable heads, and a control panel. It uses a camera for body part confirmation and offers various massage modes, presenting a potential business opportunity with reduced labor needs."
+    "summary": "The DE massage robot features a bed, robot arm with interchangeable heads, and a control panel. Uses camera for body part confirmation with various massage modes.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_05_massage_robot.jpg",
+    "color": "#EC4899"
   },
   {
-    "timestamp_start": "00:24.2",
-    "timestamp_end": "03:03.3",
+    "id": "hl-06",
+    "timestamp_start": "10:24.2",
+    "timestamp_end": "13:03.3",
     "title": "GAOK AI Sleeping Pad & Pillow for Health Monitoring",
-    "summary": "GAOK showcases their AI Sleeping Pad and AI Sleeping Belt, which use piezoelectronic and pressure sensors to accurately track sleep conditions, including heart rate, breathing, and snoring. They also preview an AI sleeping pillow with speakers and an airbag to improve sleep and relieve snoring."
+    "summary": "GAOK showcases AI Sleeping Pad and Belt using piezoelectronic and pressure sensors to track sleep conditions including heart rate, breathing, and snoring.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_06_gaok_sleep.jpg",
+    "color": "#6366F1"
   },
   {
-    "timestamp_start": "03:03.3",
-    "timestamp_end": "04:58.3",
+    "id": "hl-07",
+    "timestamp_start": "13:03.3",
+    "timestamp_end": "14:58.3",
     "title": "BYE International: K-Pop Inspired Phone Accessories",
-    "summary": "BYE International from South Korea presents their 'Erp Erp' brand of phone accessories, including phone cases and magnetic batteries, featuring character IP licenses. They highlight collaborations with K-pop groups like BTS and emphasize their proprietary technology for vivid colors, clear appearance, and strong materials."
+    "summary": "BYE International from South Korea presents 'Erp Erp' brand phone accessories with character IP licenses and K-pop collaborations including BTS.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_07_bye_kpop.jpg",
+    "color": "#F43F5E"
   },
   {
-    "timestamp_start": "00:59.3",
-    "timestamp_end": "02:10.2",
-    "title": "Innovative Children's Tech: Watches, AI Gadgets, and 3D Printers",
-    "summary": "The presentation highlights new children's products including smartwatches with Apple Find My, AI-powered gadgets with ChatGPT for interactive learning, and user-friendly 3D printers with shared model communities, emphasizing safety with PLA material."
+    "id": "hl-08",
+    "timestamp_start": "15:59.3",
+    "timestamp_end": "17:10.2",
+    "title": "Innovative Children's Tech: Watches, AI Gadgets, 3D Printers",
+    "summary": "New children's products including smartwatches with Apple Find My, AI-powered gadgets with ChatGPT for interactive learning, and user-friendly 3D printers.",
+    "category": "product",
+    "thumbnail": "/highlights/hl_08_children_tech.jpg",
+    "color": "#14B8A6"
   },
   {
-    "timestamp_start": "02:12.1",
-    "timestamp_end": "04:58.6",
-    "title": "EU Market Trends: Shift to Outdoor and Emergency Products",
-    "summary": "Bartos, a buyer from the EU, discusses a shift in the European market towards outdoor and emergency products like power banks, blankets, and manual radios due to geopolitical situations. He emphasizes sourcing products that meet customer needs for preparedness rather than luxury items."
+    "id": "hl-09",
+    "timestamp_start": "22:12.1",
+    "timestamp_end": "24:58.6",
+    "title": "EU Market Trends: Shift to Outdoor & Emergency Products",
+    "summary": "Bartos from the EU discusses European market shift towards outdoor and emergency products like power banks, blankets, and manual radios due to geopolitical situations.",
+    "category": "insight",
+    "thumbnail": "/highlights/hl_09_eu_market.jpg",
+    "color": "#F97316"
   },
   {
-    "timestamp_start": "00:58.6",
-    "timestamp_end": "01:59.6",
-    "title": "Findy's Ecosystem for Tracking Solutions and Chinese Factory Collaboration",
-    "summary": "Tomas, CEO of Findy (Czech Republic), introduces their full ecosystem for tracking solutions including GPS kids watches, pet trackers, and senior tracking, featuring a global SIM card and comprehensive backend system. He discusses their experience collaborating with Chinese manufacturers, highlighting the importance of trust, local market knowledge, and a win-win partnership for product development."
+    "id": "hl-10",
+    "timestamp_start": "25:58.6",
+    "timestamp_end": "27:59.6",
+    "title": "Findy's Tracking Solutions & Chinese Factory Collaboration",
+    "summary": "Tomas, CEO of Findy (Czech Republic), introduces tracking solutions ecosystem including GPS kids watches, pet trackers, and discusses Chinese manufacturer collaboration.",
+    "category": "insight",
+    "thumbnail": "/highlights/hl_10_findy_tracking.jpg",
+    "color": "#06B6D4"
   },
   {
-    "timestamp_start": "02:25.6",
-    "timestamp_end": "04:59.8",
-    "title": "UK Market Preference for Real Leather and Exhibition Sourcing Advice",
-    "summary": "Haristo, a mobile accessory business owner from the UK, shares insights on the UK market's preference for real leather over vegan/PU leather for phone cases. He advises attendees of Global Sources fairs to plan visits thoroughly, explore all booths, and prioritize working with smaller factories for easier communication and customization."
+    "id": "hl-11",
+    "timestamp_start": "28:25.6",
+    "timestamp_end": "32:59.8",
+    "title": "UK Market: Real Leather Preference & Exhibition Sourcing",
+    "summary": "Haristo from the UK shares insights on UK market's preference for real leather and advises on Global Sources fair strategies for working with smaller factories.",
+    "category": "insight",
+    "thumbnail": "/highlights/hl_11_uk_leather.jpg",
+    "color": "#84CC16"
   }
 ]
