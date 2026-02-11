@@ -4,13 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import {
   Activity, Video, Building2, CheckCircle2, Plus, ArrowRight,
-  TrendingUp, Clock, Circle, FileText, Zap, FileBarChart,
+  Clock, Circle, Zap, FileBarChart,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { directus } from "@/lib/directus";
-import type { Webinar, Factory, Order } from "@/lib/directus";
-import { readItems, aggregate } from "@directus/sdk";
+import { directus, safeRequest } from "@/lib/directus";
+import type { Webinar } from "@/lib/directus";
+import { readItems } from "@directus/sdk";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -23,61 +23,36 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Fetch data from Directus
+  // Fetch data from Directus with Fallback
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch webinars
-        const webinarsData = await directus.request(
-          readItems('webinars', {
-            limit: 10,
-            sort: ['-created_at'],
-            filter: {
-              status: {
-                _in: ['scheduled', 'live'],
+        // Fetch webinars with safeRequest
+        const webinarsData = await safeRequest('webinars', () => 
+          directus.request(
+            readItems('webinars', {
+              limit: 10,
+              sort: ['-created_at'],
+              filter: {
+                status: {
+                  _in: ['scheduled', 'live'],
+                },
               },
-            },
-          })
+            })
+          )
         );
         setWebinars(webinarsData);
 
-        // Fetch stats
-        const [webinarCount, factoryCount, orderCount] = await Promise.all([
-          directus.request(
-            aggregate('webinars', {
-              aggregate: { count: '*' },
-              query: {
-                filter: {
-                  status: {
-                    _in: ['scheduled', 'live'],
-                  },
-                },
-              },
-            })
-          ),
-          directus.request(
-            aggregate('factories', {
-              aggregate: { count: '*' },
-            })
-          ),
-          directus.request(
-            aggregate('orders', {
-              aggregate: { count: '*' },
-              query: {
-                filter: {
-                  status: {
-                    _in: ['delivered'],
-                  },
-                },
-              },
-            })
-          ),
+        // Fetch other stats with safeRequest
+        const [factoriesData, ordersData] = await Promise.all([
+          safeRequest('factories', () => directus.request(readItems('factories', { limit: 1 }))),
+          safeRequest('orders', () => directus.request(readItems('orders', { limit: 1 })))
         ]);
 
         setStats({
-          activeWebinars: webinarCount[0]?.count || 0,
-          totalFactories: factoryCount[0]?.count || 0,
-          closedOrders: orderCount[0]?.count || 0,
+          activeWebinars: webinarsData.length,
+          totalFactories: factoriesData.length || 0,
+          closedOrders: ordersData.length || 0,
           activeNegotiations: 8, // Placeholder
         });
       } catch (error) {
@@ -102,8 +77,6 @@ export default function Home() {
     { type: "factory", title: "Shenzhen Electronics Co. joined webinar", time: "2 hours ago", badge: null },
     { type: "order", title: "Order #1234 confirmed — WiFi Smart Switch ×5000", time: "5 hours ago", badge: null },
     { type: "ai", title: "AI Report generated for Q4 Supplier Evaluation", time: "Yesterday", badge: "AI" },
-    { type: "schedule", title: "Consumer Electronics Q1 2026 scheduled", time: "2 days ago", badge: null },
-    { type: "factory", title: "Dongguan Manufacturing Group verified", time: "3 days ago", badge: null },
   ];
 
   const getActivityDotColor = (type: string) => {

@@ -17,15 +17,14 @@ import CommandPalette from "./components/CommandPalette";
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/webinars"} component={Webinars} />
-      <Route path={"/webinars/create"} component={WebinarCreate} />
-      <Route path={"/webinars/:id"} component={NegotiationRoom} />
-      <Route path={"/factories"} component={Factories} />
-      <Route path={"/factories/:id"} component={FactoryDetail} />
-      <Route path={"/reports"} component={Reports} />
-      <Route path={"/settings"} component={Settings} />
-      <Route path={"/404"} component={NotFound} />
+      <Route path="/" component={Home} />
+      <Route path="/webinars" component={Webinars} />
+      <Route path="/webinars/create" component={WebinarCreate} />
+      <Route path="/webinars/:id" component={NegotiationRoom} />
+      <Route path="/factories" component={Factories} />
+      <Route path="/factories/:id" component={FactoryDetail} />
+      <Route path="/reports" component={Reports} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -36,7 +35,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster />
+          <Toaster position="top-right" />
           <CommandPalette />
           <Router />
         </TooltipProvider>

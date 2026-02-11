@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
+import { generateRtcToken } from "./lib/agora-token";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -22,6 +23,19 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+
+  // Agora Token Generation
+  agora: router({
+    getToken: publicProcedure
+      .input(z.object({
+        channelName: z.string(),
+        uid: z.union([z.number(), z.string()])
+      }))
+      .query(async ({ input }) => {
+        const token = generateRtcToken(input.channelName, input.uid);
+        return { token };
+      }),
   }),
 
   // Dashboard
