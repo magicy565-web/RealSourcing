@@ -8,15 +8,31 @@ type UseAuthOptions = {
   redirectPath?: string;
 };
 
-export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
-    options ?? {};
-  const utils = trpc.useUtils();
+// Mock user for development
+const MOCK_USER = {
+  id: 1,
+  name: "Demo User",
+  email: "demo@realsourcing.local",
+  role: "admin" as const,
+};
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
+export function useAuth(options?: UseAuthOptions) {
+  const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
+  const utils = trpc.useUtils();
+  const mockAuthEnabled = import.meta.env.VITE_MOCK_AUTH === "true";
+
+  // Use mock user if mock auth is enabled
+  const meQuery = mockAuthEnabled
+    ? { 
+        data: MOCK_USER, 
+        isLoading: false, 
+        error: null, 
+        refetch: async () => ({ data: MOCK_USER }) 
+      }
+    : trpc.auth.me.useQuery(undefined, {
+        retry: false,
+        refetchOnWindowFocus: false,
+      });
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
@@ -26,6 +42,9 @@ export function useAuth(options?: UseAuthOptions) {
 
   const logout = useCallback(async () => {
     try {
+      if (mockAuthEnabled) {
+        return;
+      }
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
       if (
@@ -39,7 +58,7 @@ export function useAuth(options?: UseAuthOptions) {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
-  }, [logoutMutation, utils]);
+  }, [logoutMutation, utils, mockAuthEnabled]);
 
   const state = useMemo(() => {
     localStorage.setItem(
@@ -65,15 +84,21 @@ export function useAuth(options?: UseAuthOptions) {
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
-    if (window.location.pathname === redirectPath) return;
+    
+    // Skip redirect in mock auth mode
+    if (mockAuthEnabled) return;
+    
+    const finalRedirectPath = redirectPath || getLoginUrl();
+    if (window.location.pathname === finalRedirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = finalRedirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,
     logoutMutation.isPending,
     meQuery.isLoading,
     state.user,
+    mockAuthEnabled,
   ]);
 
   return {

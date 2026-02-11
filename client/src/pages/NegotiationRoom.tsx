@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NegotiationStream from "@/components/tactical/NegotiationStream";
 import DecisionMatrix from "@/components/tactical/DecisionMatrix";
@@ -27,15 +30,30 @@ const mockFactories = [
   },
 ];
 
-export default function NegotiationRoom() {
+interface NegotiationRoomProps {
+  params: {
+    id?: string;
+  };
+}
+
+export default function NegotiationRoom({ params }: NegotiationRoomProps) {
+  const [, setLocation] = useLocation();
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | null>(null);
-  const webinarId = 1; // Mock webinar ID
+  const webinarId = parseInt(params?.id || "1", 10); // Get webinar ID from route params
 
   return (
     <div className="h-screen flex flex-col bg-slate-950">
       {/* Top Header */}
       <header className="h-16 border-b border-slate-800/50 flex items-center justify-between px-6 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation("/webinars")}
+            className="text-slate-400 hover:text-white"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
           <h1 className="text-xl font-mono font-bold text-white">
             RealSourcing <span className="text-cyan-500">LIVE</span>
           </h1>
