@@ -8,8 +8,10 @@ import {
   BarChart3, Users, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 export default function Reports() {
+  const [, setLocation] = useLocation();
   const reports = [
     {
       id: 1,
@@ -65,14 +67,14 @@ export default function Reports() {
   const getStatusBadge = (status: string) => {
     if (status === "generating") {
       return (
-        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 font-normal">
+          <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
           Generating
         </Badge>
       );
     }
     return (
-      <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
+      <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30 font-normal">
         Completed
       </Badge>
     );
@@ -117,7 +119,12 @@ export default function Reports() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">{report.typeLabel}</Badge>
+                  {report.id === 1 && (
+                    <Badge className="bg-green-500 text-white border-none text-[10px] h-5">
+                      Recommended
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-[10px] h-5">{report.typeLabel}</Badge>
                   {getStatusBadge(report.status)}
                 </div>
               </div>
@@ -126,9 +133,9 @@ export default function Reports() {
               <div className="flex items-center gap-3">
                 {report.status === "completed" ? (
                   <>
-                    <Button size="sm" variant="default" onClick={() => toast("Feature coming soon")}>
+                    <Button size="sm" variant="default" onClick={() => setLocation(`/webinars/${report.id}/replay`)}>
                       <Eye className="mr-2 h-4 w-4" />
-                      View Report
+                      View Replay Details
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => toast("Feature coming soon")}>
                       <Download className="mr-2 h-4 w-4" />
