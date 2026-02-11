@@ -6,11 +6,11 @@ import AgoraRTC, {
   IRemoteAudioTrack,
 } from 'agora-rtc-sdk-ng';
 
-// Agora App ID (should be stored in environment variables)
-const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID || 'your-agora-app-id';
+// Agora App ID (Priority: User provided key -> Environment variable -> Fallback)
+const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID || 'f48e44adf06a425a869ebebd62e90ad2';
 
 export interface AgoraConfig {
-  appId: string;
+  appId?: string;
   channel: string;
   token?: string;
   uid?: string | number;
@@ -48,9 +48,16 @@ export class AgoraService {
       // Register event handlers
       this.registerEventHandlers();
 
+      const appId = config.appId || AGORA_APP_ID;
+      
+      if (!appId || appId === 'your-agora-app-id') {
+        throw new Error('Invalid Agora App ID. Please check your configuration.');
+      }
+
       // Join channel
+      // In Demo v0.5, if token is not provided, we pass null (assuming App ID mode or token server not yet ready)
       await this.client.join(
-        config.appId || AGORA_APP_ID,
+        appId,
         config.channel,
         config.token || null,
         config.uid || null
