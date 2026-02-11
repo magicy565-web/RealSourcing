@@ -187,10 +187,3 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
     </DashboardLayout>
   );
 }
-          factoryId={selectedFactoryId}
-          trigger={<></>}
-        />
-      )}
-    </div>
-  );
-}
