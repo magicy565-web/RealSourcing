@@ -6,7 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Webinars from "./pages/Webinars";
-import WebinarCreate from "./pages/WebinarCreate";
+import WebinarCreate from "./pages/CreateWebinar";
 import NegotiationRoom from "./pages/NegotiationRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
@@ -20,7 +20,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/webinars"} component={Webinars} />
       <Route path={"/webinars/create"} component={WebinarCreate} />
-      <Route path={"/webinars/:id/room"} component={NegotiationRoom} />
+      <Route path={"/webinars/:id"} component={NegotiationRoom} />
       <Route path={"/factories"} component={Factories} />
       <Route path={"/factories/:id"} component={FactoryDetail} />
       <Route path={"/reports"} component={Reports} />

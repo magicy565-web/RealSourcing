@@ -1,39 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Circle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ArrowLeft, Circle, Video, Mic, MicOff, VideoOff, 
+  Users, TrendingUp, AlertTriangle, Zap, Clock, MessageSquare 
+} from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import NegotiationStream from "@/components/tactical/NegotiationStream";
-import DecisionMatrix from "@/components/tactical/DecisionMatrix";
-import FactoryTacticalPanel from "@/components/tactical/FactoryTacticalPanel";
-
-// Active factories in this webinar session
-const activeFactories = [
-  {
-    id: 1,
-    name: "Ningbo AutoParts Co.",
-    shortName: "NA",
-    avatar: "https://api.dicebear.com/7.x/initials/svg?seed=NingboAuto",
-    status: "active" as const,
-  },
-  {
-    id: 2,
-    name: "Shaoxing Gear Manufacturing",
-    shortName: "SG",
-    avatar: "https://api.dicebear.com/7.x/initials/svg?seed=ShaoxingGear",
-    status: "active" as const,
-  },
-  {
-    id: 3,
-    name: "Hangzhou Motors Ltd.",
-    shortName: "HM",
-    avatar: "https://api.dicebear.com/7.x/initials/svg?seed=HangzhouMotors",
-    status: "waiting" as const,
-  },
-];
+import { directus } from "@/lib/directus";
+import { readItem } from "@directus/sdk";
+import type { Webinar } from "@/lib/directus";
+import { AgoraService } from "@/lib/agora";
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
 interface NegotiationRoomProps {
   params: {
@@ -43,147 +23,354 @@ interface NegotiationRoomProps {
 
 export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   const [, setLocation] = useLocation();
-  const [selectedFactoryId, setSelectedFactoryId] = useState<number | null>(null);
-  const webinarId = parseInt(params?.id || "1", 10);
+  const [webinar, setWebinar] = useState<Webinar | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [joined, setJoined] = useState(false);
+  
+  const localVideoRef = useRef<HTMLDivElement>(null);
+  const remoteVideoRef = useRef<HTMLDivElement>(null);
+  const agoraServiceRef = useRef<AgoraService | null>(null);
+
+  const webinarId = params?.id || "1";
+
+  // Fetch webinar data from Directus
+  useEffect(() => {
+    const fetchWebinar = async () => {
+      try {
+        const data = await directus.request(
+          readItem('webinars', webinarId)
+        );
+        setWebinar(data);
+      } catch (error) {
+        console.error('Failed to fetch webinar:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWebinar();
+  }, [webinarId]);
+
+  // Initialize Agora on mount
+  useEffect(() => {
+    const initAgora = async () => {
+      const appId = import.meta.env.VITE_AGORA_APP_ID || 'demo-app-id';
+      agoraServiceRef.current = new AgoraService(appId);
+      await agoraServiceRef.current.init();
+    };
+
+    initAgora();
+
+    return () => {
+      if (agoraServiceRef.current) {
+        agoraServiceRef.current.leave();
+      }
+    };
+  }, []);
+
+  const handleJoinChannel = async () => {
+    if (!agoraServiceRef.current || !webinar?.agora_channel_name) return;
+
+    try {
+      await agoraServiceRef.current.join(
+        webinar.agora_channel_name,
+        webinar.agora_token || null,
+        `user-${Math.random().toString(36).substring(7)}`
+      );
+
+      if (localVideoRef.current) {
+        await agoraServiceRef.current.publishVideo(localVideoRef.current);
+      }
+      await agoraServiceRef.current.publishAudio();
+
+      setJoined(true);
+    } catch (error) {
+      console.error('Failed to join channel:', error);
+    }
+  };
+
+  const handleLeaveChannel = async () => {
+    if (!agoraServiceRef.current) return;
+    await agoraServiceRef.current.leave();
+    setJoined(false);
+  };
+
+  const toggleMic = async () => {
+    if (!agoraServiceRef.current) return;
+    if (micEnabled) {
+      await agoraServiceRef.current.muteAudio();
+    } else {
+      await agoraServiceRef.current.unmuteAudio();
+    }
+    setMicEnabled(!micEnabled);
+  };
+
+  const toggleVideo = async () => {
+    if (!agoraServiceRef.current) return;
+    if (videoEnabled) {
+      await agoraServiceRef.current.muteVideo();
+    } else {
+      await agoraServiceRef.current.unmuteVideo();
+    }
+    setVideoEnabled(!videoEnabled);
+  };
+
+  // Mock data for AI insights
+  const radarData = [
+    { dimension: 'Quality', value: 85 },
+    { dimension: 'Price', value: 78 },
+    { dimension: 'Lead Time', value: 92 },
+    { dimension: 'Compliance', value: 88 },
+    { dimension: 'Capacity', value: 75 },
+  ];
+
+  const activities = [
+    { time: "2 min ago", event: "Factory shared product catalog", type: "document" },
+    { time: "5 min ago", event: "Price negotiation started", type: "negotiation" },
+    { time: "12 min ago", event: "Quality certification verified", type: "verification" },
+    { time: "18 min ago", event: "Factory joined the session", type: "join" },
+  ];
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-muted-foreground font-light">Loading webinar...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!webinar) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-muted-foreground font-light">Webinar not found</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      {/* Full-height container minus header */}
-      <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-950">
-        {/* Webinar Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 bg-slate-900/30">
+      <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0A0A0A]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#262626] bg-[#0F0F0F]">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setLocation("/webinars")}
-              className="text-slate-400 hover:text-white"
+              className="text-muted-foreground hover:text-white hover:bg-white/5"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold text-white">
-                  Smart Home Products Showcase
+                <h1 className="text-xl font-light text-white tracking-tight">
+                  {webinar.title}
                 </h1>
-                <Badge
-                  variant="default"
-                  className="bg-red-500/20 text-red-400 border-red-500/30 animate-pulse"
-                >
-                  <Circle className="h-2 w-2 fill-red-400 mr-1" />
-                  LIVE
-                </Badge>
+                {webinar.status === 'live' && (
+                  <Badge className="bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
+                    <Circle className="h-2 w-2 fill-red-400 mr-1" />
+                    LIVE
+                  </Badge>
+                )}
               </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Started 52 minutes ago · {activeFactories.length} factories online
+              <p className="text-sm text-muted-foreground mt-1 font-light">
+                {webinar.description || 'No description'}
               </p>
             </div>
           </div>
 
-          {/* Decision Matrix Button */}
           <div className="flex items-center gap-3">
-            <DecisionMatrix />
+            {!joined ? (
+              <Button 
+                className="bg-violet-600 hover:bg-violet-700 text-white font-light"
+                onClick={handleJoinChannel}
+              >
+                <Video className="mr-2 h-4 w-4" />
+                Join Session
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleMic}
+                  className={`border-[#262626] ${micEnabled ? 'hover:bg-white/5' : 'bg-red-500/10 border-red-500/20'}`}
+                >
+                  {micEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4 text-red-400" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleVideo}
+                  className={`border-[#262626] ${videoEnabled ? 'hover:bg-white/5' : 'bg-red-500/10 border-red-500/20'}`}
+                >
+                  {videoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4 text-red-400" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleLeaveChannel}
+                  className="border-[#262626] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 font-light"
+                >
+                  Leave
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Main Content: Three-Column Layout */}
+        {/* Main Content */}
         <div className="flex-1 flex min-h-0">
-          {/* Left Column: Negotiation Timeline Stream */}
-          <aside className="w-80 border-r border-slate-800 flex-shrink-0 bg-slate-950/50">
-            <NegotiationStream webinarId={webinarId} />
-          </aside>
-
-          {/* Center Column: Video Feed + Factory Avatars */}
-          <main className="flex-1 flex flex-col relative bg-slate-950">
-            {/* Live Video Feed Placeholder */}
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center space-y-6">
-                <div className="inline-block px-6 py-3 bg-slate-900/80 border border-slate-800 rounded-lg">
-                  <div className="text-3xl font-mono font-bold text-slate-500 tracking-wider animate-pulse">
-                    LIVE FEED
+          {/* Left: Video Feed */}
+          <div className="flex-1 flex flex-col bg-[#0A0A0A] p-6">
+            <div className="flex-1 bg-[#141414] rounded-lg border border-[#262626] overflow-hidden relative">
+              {/* Remote Video */}
+              <div ref={remoteVideoRef} className="w-full h-full flex items-center justify-center">
+                {!joined && (
+                  <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto">
+                      <Video className="h-8 w-8 text-violet-400" />
+                    </div>
+                    <p className="text-muted-foreground font-light">Click "Join Session" to start</p>
                   </div>
-                  <div className="text-sm text-slate-600 font-mono mt-2">
-                    WAITING FOR SIGNAL...
-                  </div>
-                </div>
-                
-                {/* Loading Indicator */}
-                <div className="flex gap-2 justify-center">
-                  <div className="w-2 h-2 bg-cyan-500 rounded-full animate-ping" />
-                  <div
-                    className="w-2 h-2 bg-cyan-500 rounded-full animate-ping"
-                    style={{ animationDelay: "0.2s" }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-cyan-500 rounded-full animate-ping"
-                    style={{ animationDelay: "0.4s" }}
-                  />
-                </div>
+                )}
               </div>
+
+              {/* Local Video (Picture-in-Picture) */}
+              {joined && (
+                <div 
+                  ref={localVideoRef}
+                  className="absolute bottom-4 right-4 w-48 h-36 bg-[#0A0A0A] rounded-lg border border-[#262626] overflow-hidden"
+                />
+              )}
             </div>
 
-            {/* Factory Avatars Bar (Floating Bottom) */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-              <div className="flex gap-5 p-5 bg-slate-950/90 backdrop-blur-md border border-slate-800/60 rounded-full shadow-[0_0_25px_rgba(6,182,212,0.2)]">
-                {activeFactories.map((factory) => (
-                  <button
-                    key={factory.id}
-                    onClick={() => setSelectedFactoryId(factory.id)}
-                    className={cn(
-                      "group relative transition-all duration-300",
-                      "hover:scale-110 focus:outline-none focus:scale-110",
-                      "active:scale-95"
-                    )}
-                  >
-                    {/* Avatar */}
-                    <Avatar
-                      className={cn(
-                        "w-16 h-16 border-2 transition-all cursor-pointer",
-                        selectedFactoryId === factory.id
-                          ? "border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.6)] ring-2 ring-cyan-500/50"
-                          : "border-slate-700 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]"
-                      )}
-                    >
-                      <AvatarImage src={factory.avatar} alt={factory.name} />
-                      <AvatarFallback className="bg-slate-800 text-cyan-400 font-mono text-sm font-bold">
-                        {factory.shortName}
-                      </AvatarFallback>
-                    </Avatar>
+            {/* AI Insights Bar */}
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <Card className="bg-[#141414] border-[#262626]">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded bg-green-500/10 flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground font-light">Confidence</div>
+                    <div className="text-lg font-light text-white">87%</div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                    {/* Status Indicator */}
-                    <div
-                      className={cn(
-                        "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-slate-950",
-                        factory.status === "active"
-                          ? "bg-emerald-500 animate-pulse"
-                          : "bg-amber-500"
-                      )}
+              <Card className="bg-[#141414] border-[#262626]">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded bg-orange-500/10 flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground font-light">Risk Level</div>
+                    <div className="text-lg font-light text-white">Low</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#141414] border-[#262626]">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded bg-blue-500/10 flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground font-light">Market Fit</div>
+                    <div className="text-lg font-light text-white">High</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Right: Analysis Panel */}
+          <aside className="w-96 border-l border-[#262626] bg-[#0F0F0F] flex flex-col">
+            <Tabs defaultValue="dimensions" className="flex-1 flex flex-col">
+              <TabsList className="w-full bg-[#141414] border-b border-[#262626] rounded-none">
+                <TabsTrigger value="dimensions" className="flex-1 font-light">Dimensions</TabsTrigger>
+                <TabsTrigger value="timeline" className="flex-1 font-light">Timeline</TabsTrigger>
+                <TabsTrigger value="assets" className="flex-1 font-light">Assets</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dimensions" className="flex-1 p-6 overflow-auto">
+                <h3 className="text-sm font-light text-muted-foreground mb-4">Supplier Evaluation</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="#262626" />
+                    <PolarAngleAxis 
+                      dataKey="dimension" 
+                      tick={{ fill: '#888', fontSize: 11 }}
                     />
+                    <Radar 
+                      dataKey="value" 
+                      stroke="#8b5cf6" 
+                      fill="#8b5cf6" 
+                      fillOpacity={0.3} 
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
 
-                    {/* Hover Tooltip */}
-                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/95 border border-slate-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
-                      <span className="text-xs text-slate-200 font-medium">
-                        {factory.name}
-                      </span>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                        <div className="border-[6px] border-transparent border-t-slate-700" />
+                <div className="mt-6 space-y-3">
+                  {radarData.map((item) => (
+                    <div key={item.dimension} className="flex items-center justify-between">
+                      <span className="text-sm font-light text-muted-foreground">{item.dimension}</span>
+                      <span className="text-sm font-light text-white">{item.value}/100</span>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="timeline" className="flex-1 p-6 overflow-auto">
+                <h3 className="text-sm font-light text-muted-foreground mb-4">Activity Timeline</h3>
+                <div className="space-y-4">
+                  {activities.map((activity, index) => (
+                    <div key={index} className="flex gap-3">
+                      <div className="relative">
+                        <Circle className="h-2 w-2 bg-violet-400 fill-violet-400 mt-2" />
+                        {index < activities.length - 1 && (
+                          <div className="absolute left-1 top-4 h-full w-px bg-[#262626]" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <p className="text-sm font-light text-white leading-tight">{activity.event}</p>
+                        <p className="text-xs text-muted-foreground font-light mt-1 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {activity.time}
+                        </p>
                       </div>
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </main>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="assets" className="flex-1 p-6 overflow-auto">
+                <h3 className="text-sm font-light text-muted-foreground mb-4">Shared Documents</h3>
+                <div className="space-y-3">
+                  <Card className="bg-[#141414] border-[#262626] hover:bg-white/5 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="text-sm font-light text-white">Product Catalog 2026.pdf</div>
+                      <div className="text-xs text-muted-foreground font-light mt-1">2.4 MB · Shared 5 min ago</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-[#141414] border-[#262626] hover:bg-white/5 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="text-sm font-light text-white">ISO 9001 Certificate.pdf</div>
+                      <div className="text-xs text-muted-foreground font-light mt-1">1.2 MB · Shared 12 min ago</div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </aside>
         </div>
       </div>
-
-      {/* Right Overlay: Factory Tactical Panel */}
-      {selectedFactoryId && (
-        <FactoryTacticalPanel
-          factoryId={selectedFactoryId}
-          trigger={<></>}
-        />
-      )}
     </DashboardLayout>
   );
 }

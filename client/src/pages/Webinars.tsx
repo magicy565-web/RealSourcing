@@ -13,11 +13,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { directus } from "@/lib/directus";
+import type { Webinar } from "@/lib/directus";
+import { readItems } from "@directus/sdk";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
+  const [webinars, setWebinars] = useState<Webinar[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const webinars = [
+  useEffect(() => {
+    const fetchWebinars = async () => {
+      try {
+        const data = await directus.request(
+          readItems('webinars', {
+            limit: 50,
+            sort: ['-created_at'],
+          })
+        );
+        setWebinars(data);
+      } catch (error) {
+        console.error('Failed to fetch webinars:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWebinars();
+  }, []);
+
+  const mockWebinars = [
     {
       id: 1,
       title: "Smart Home Products Showcase",
@@ -52,6 +78,16 @@ export default function Webinars() {
     },
   ];
 
+  // Use real data if available, otherwise fallback to mock data
+  const displayWebinars = webinars.length > 0 ? webinars.map(w => ({
+    id: w.id,
+    title: w.title,
+    status: w.status,
+    date: w.scheduled_at || w.created_at,
+    participants: 0, // TODO: fetch from webinar_participants
+    factories: 0, // TODO: fetch related factories
+  })) : mockWebinars;
+
   const getStatusBadge = (status: string) => {
     if (status === "live") {
       return (
@@ -75,11 +111,11 @@ export default function Webinars() {
   };
 
   const filterWebinars = (status: string) => {
-    if (status === "all") return webinars;
-    return webinars.filter((w) => w.status === status);
+    if (status === "all") return displayWebinars;
+    return displayWebinars.filter((w) => w.status === status);
   };
 
-  const renderWebinarList = (items: typeof webinars) => {
+  const renderWebinarList = (items: typeof displayWebinars) => {
     if (items.length === 0) {
       return (
         <div className="text-center py-16">
@@ -197,21 +233,25 @@ export default function Webinars() {
           </div>
         </div>
 
+        {loading ? (
+          <div className="text-center py-16 text-muted-foreground">Loading webinars...</div>
+        ) : (
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="all">All ({webinars.length})</TabsTrigger>
+            <TabsList>
+            <TabsTrigger value="all">All ({displayWebinars.length})</TabsTrigger>
             <TabsTrigger value="draft">Draft ({filterWebinars("draft").length})</TabsTrigger>
             <TabsTrigger value="live">Live ({filterWebinars("live").length})</TabsTrigger>
             <TabsTrigger value="scheduled">Scheduled ({filterWebinars("scheduled").length})</TabsTrigger>
             <TabsTrigger value="completed">Completed ({filterWebinars("completed").length})</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all">{renderWebinarList(webinars)}</TabsContent>
+          <TabsContent value="all">{renderWebinarList(displayWebinars)}</TabsContent>
           <TabsContent value="draft">{renderWebinarList(filterWebinars("draft"))}</TabsContent>
           <TabsContent value="live">{renderWebinarList(filterWebinars("live"))}</TabsContent>
           <TabsContent value="scheduled">{renderWebinarList(filterWebinars("scheduled"))}</TabsContent>
           <TabsContent value="completed">{renderWebinarList(filterWebinars("completed"))}</TabsContent>
         </Tabs>
+        )}
       </div>
     </DashboardLayout>
   );
