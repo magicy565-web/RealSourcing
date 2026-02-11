@@ -9,9 +9,10 @@ import {
   Users, TrendingUp, AlertTriangle, Zap, Clock, MessageSquare 
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { directus } from "@/lib/directus";
+import { directus, safeRequest } from "@/lib/directus";
 import { readItem } from "@directus/sdk";
 import type { Webinar } from "@/lib/directus";
+import { mockWebinars } from "@/lib/mock-data";
 import { agoraService } from "@/lib/agora";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
@@ -36,12 +37,17 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   useEffect(() => {
     const fetchWebinar = async () => {
       try {
-        const data = await directus.request(
-          readItem('webinars', webinarId)
+        const data = await safeRequest('webinars', () =>
+          directus.request(readItem('webinars', webinarId))
         );
         setWebinar(data);
       } catch (error) {
         console.error('Failed to fetch webinar:', error);
+        // Fallback to mock data
+        const mockWebinar = mockWebinars.find(w => w.id.toString() === webinarId);
+        if (mockWebinar) {
+          setWebinar(mockWebinar as Webinar);
+        }
       } finally {
         setLoading(false);
       }
