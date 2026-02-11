@@ -1,28 +1,227 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import {
+  createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
+  createFactory, getFactories, getFactoryById, updateFactory,
+  addFactoryToWebinar, getWebinarFactories,
+  createReport, getReports, getReportById,
+  addNegotiationEvent, getWebinarTimeline,
+  getFactoryOrders,
+  getDashboardStats,
+} from "./db";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // Dashboard
+  dashboard: router({
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      return getDashboardStats(ctx.user.id);
+    }),
+  }),
+
+  // Webinars
+  webinar: router({
+    list: protectedProcedure
+      .input(z.object({ status: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return getWebinars(input?.status);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getWebinarById(input.id);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        category: z.string().optional(),
+        language: z.string().optional(),
+        scheduledAt: z.string().optional(),
+        duration: z.number().optional(),
+        workSpec: z.string().optional(),
+        factoryIds: z.array(z.number()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { factoryIds, scheduledAt, ...rest } = input;
+        const id = await createWebinar({
+          ...rest,
+          scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+          createdById: ctx.user.id,
+        });
+
+        if (factoryIds && factoryIds.length > 0) {
+          for (const factoryId of factoryIds) {
+            await addFactoryToWebinar(id, factoryId);
+          }
+        }
+
+        return { id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        status: z.enum(["draft", "scheduled", "live", "completed", "archived"]).optional(),
+        category: z.string().optional(),
+        language: z.string().optional(),
+        duration: z.number().optional(),
+        workSpec: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await updateWebinar(id, data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteWebinar(input.id);
+        return { success: true };
+      }),
+
+    factories: protectedProcedure
+      .input(z.object({ webinarId: z.number() }))
+      .query(async ({ input }) => {
+        return getWebinarFactories(input.webinarId);
+      }),
+
+    addFactory: protectedProcedure
+      .input(z.object({
+        webinarId: z.number(),
+        factoryId: z.number(),
+        role: z.enum(["presenter", "participant"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await addFactoryToWebinar(input.webinarId, input.factoryId, input.role);
+        return { success: true };
+      }),
+
+    timeline: protectedProcedure
+      .input(z.object({ webinarId: z.number() }))
+      .query(async ({ input }) => {
+        return getWebinarTimeline(input.webinarId);
+      }),
+
+    addEvent: protectedProcedure
+      .input(z.object({
+        webinarId: z.number(),
+        type: z.enum(["system", "factory", "presentation", "pricing", "ai_insight", "negotiation", "ai_alert", "agreement"]),
+        title: z.string(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await addNegotiationEvent(input);
+        return { id };
+      }),
+  }),
+
+  // Factories
+  factory: router({
+    list: protectedProcedure
+      .input(z.object({ search: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return getFactories(input?.search);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getFactoryById(input.id);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        location: z.string().optional(),
+        category: z.string().optional(),
+        employees: z.string().optional(),
+        annualRevenue: z.string().optional(),
+        established: z.string().optional(),
+        website: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        certifications: z.array(z.string()).optional(),
+        specialties: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createFactory({
+          ...input,
+          addedById: ctx.user.id,
+        });
+        return { id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        location: z.string().optional(),
+        category: z.string().optional(),
+        status: z.enum(["pending", "verified", "suspended"]).optional(),
+        overallScore: z.number().optional(),
+        qualityScore: z.number().optional(),
+        deliveryScore: z.number().optional(),
+        communicationScore: z.number().optional(),
+        pricingScore: z.number().optional(),
+        complianceScore: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await updateFactory(id, data);
+        return { success: true };
+      }),
+
+    orders: protectedProcedure
+      .input(z.object({ factoryId: z.number() }))
+      .query(async ({ input }) => {
+        return getFactoryOrders(input.factoryId);
+      }),
+  }),
+
+  // Reports
+  report: router({
+    list: protectedProcedure.query(async () => {
+      return getReports();
+    }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getReportById(input.id);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        type: z.enum(["supplier_evaluation", "profit_analysis", "negotiation_summary"]),
+        webinarId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await createReport({
+          ...input,
+          createdById: ctx.user.id,
+        });
+        return { id };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
