@@ -8,6 +8,9 @@ import {
   ArrowLeft, Circle, Video, Mic, MicOff, VideoOff, 
   Users, TrendingUp, AlertTriangle, Zap, Clock, MessageSquare 
 } from "lucide-react";
+import ChatWindow from "@/components/ChatWindow";
+import SmartReplies from "@/components/SmartReplies";
+import type { Message } from "@/components/ChatMessage";
 import DashboardLayout from "@/components/DashboardLayout";
 import { directus, safeRequest } from "@/lib/directus";
 import { readItem } from "@directus/sdk";
@@ -30,6 +33,21 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [joined, setJoined] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<Message[]>([
+    {
+      id: "welcome",
+      role: "system",
+      content: "AI Assistant joined the session",
+      timestamp: new Date(),
+    },
+    {
+      id: "ai-intro",
+      role: "ai",
+      content: "Hello! I'm your AI negotiation assistant. I can help you with pricing analysis, quality verification, and contract drafting. How can I assist you today?",
+      timestamp: new Date(),
+    },
+  ]);
+  const [negotiationPhase, setNegotiationPhase] = useState<"intro" | "discovery" | "negotiation" | "closing">("discovery");
   
   const webinarId = params?.id || "1";
 
@@ -300,13 +318,39 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
 
           {/* Right: Analysis Panel */}
           <aside className="w-96 border-l border-[#262626] bg-[#0F0F0F] flex flex-col">
-            <Tabs defaultValue="dimensions" className="flex-1 flex flex-col">
+            <Tabs defaultValue="chat" className="flex-1 flex flex-col">
               <TabsList className="w-full bg-[#141414] border-b border-[#262626] rounded-none">
-                <TabsTrigger value="dimensions" className="flex-1 font-light">Dimensions</TabsTrigger>
-                <TabsTrigger value="timeline" className="flex-1 font-light">Timeline</TabsTrigger>
-                <TabsTrigger value="assets" className="flex-1 font-light">Assets</TabsTrigger>
+                <TabsTrigger value="chat" className="flex-1 font-light">
+                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                  Chat
+                </TabsTrigger>
+                <TabsTrigger value="dimensions" className="flex-1 font-light">Insights</TabsTrigger>
+                <TabsTrigger value="timeline" className="flex-1 font-light">Activity</TabsTrigger>
+                <TabsTrigger value="assets" className="flex-1 font-light">Files</TabsTrigger>
               </TabsList>
               
+              <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 p-0">
+                <div className="flex-1 flex flex-col min-h-0">
+                  <ChatWindow
+                    initialMessages={chatMessages}
+                    placeholder="Ask AI about pricing, quality, or negotiation..."
+                    showSmartReplies={false}
+                    className="flex-1"
+                  />
+                  <SmartReplies
+                    context={{
+                      negotiationPhase: negotiationPhase,
+                      sessionTopic: webinar?.title,
+                    }}
+                    onSelect={(reply) => {
+                      // Auto-fill input with selected reply
+                      console.log("Selected reply:", reply);
+                    }}
+                    maxReplies={3}
+                  />
+                </div>
+              </TabsContent>
+
               <TabsContent value="dimensions" className="p-6 flex-1">
                 <div className="space-y-6">
                   <h3 className="text-sm font-light text-white uppercase tracking-wider">Supplier Assessment</h3>
@@ -371,18 +415,6 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                 </div>
               </TabsContent>
             </Tabs>
-
-            {/* Bottom: Chat Input Placeholder */}
-            <div className="p-4 border-t border-[#262626] bg-[#141414]">
-              <div className="flex items-center gap-2 px-3 py-2 bg-[#0A0A0A] rounded border border-[#262626]">
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                <input 
-                  type="text" 
-                  placeholder="Type a message or AI command..." 
-                  className="bg-transparent border-none focus:ring-0 text-sm font-light text-white flex-1"
-                />
-              </div>
-            </div>
           </aside>
         </div>
       </div>
