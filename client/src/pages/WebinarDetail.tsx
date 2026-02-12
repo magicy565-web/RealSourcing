@@ -26,11 +26,12 @@ import {
 import {
   ArrowLeft, Calendar, Clock, Users, Globe, Video, Circle,
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle,
-  Play, MapPin, Shield, Star
+  Play, MapPin, Shield, Star, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { mockStore, type MockWebinar, type MockRegistration } from "@/lib/mock-data";
+import DecisionMatrix from "@/components/tactical/DecisionMatrix";
 
 interface WebinarDetailProps {
   params: {
@@ -190,6 +191,7 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
               )}
               {webinar.status === "live" && (
                 <>
+                  <DecisionMatrix />
                   <Button
                     onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
                     className="bg-violet-600 hover:bg-violet-700 text-white font-light"
@@ -207,13 +209,16 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
                 </>
               )}
               {webinar.status === "completed" && (
-                <Button
-                  onClick={() => setLocation(`/webinars/${webinar.id}/replay`)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-light"
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  View Replay & Highlights
-                </Button>
+                <>
+                  <DecisionMatrix />
+                  <Button
+                    onClick={() => setLocation(`/webinars/${webinar.id}/replay`)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-light"
+                  >
+                    <Play className="mr-2 h-4 w-4" />
+                    View Replay & Highlights
+                  </Button>
+                </>
               )}
               {webinar.status === "draft" && (
                 <Button
