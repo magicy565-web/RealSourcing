@@ -1,23 +1,21 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, Circle, Video, Mic, MicOff, VideoOff, 
-  Users, TrendingUp, AlertTriangle, Zap, Clock, MessageSquare 
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft, Circle, Video, Mic, MicOff, VideoOff,
+  Users, TrendingUp, AlertTriangle, Zap, Clock, MessageSquare,
+  Monitor, MonitorOff, Maximize2, Minimize2, PhoneOff,
+  MoreVertical, Globe, Building2, Shield, Send,
 } from "lucide-react";
-import ChatWindow from "@/components/ChatWindow";
-import SmartReplies from "@/components/SmartReplies";
-import type { Message } from "@/components/ChatMessage";
 import DashboardLayout from "@/components/DashboardLayout";
-import { directus, safeRequest } from "@/lib/directus";
-import { readItem } from "@directus/sdk";
-import type { Webinar } from "@/lib/directus";
-import { mockWebinars } from "@/lib/mock-data";
+import { mockStore, type MockWebinar, type MockRegistration } from "@/lib/mock-data";
 import { agoraService } from "@/lib/agora";
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface NegotiationRoomProps {
   params: {
@@ -25,65 +23,128 @@ interface NegotiationRoomProps {
   };
 }
 
+interface ChatMsg {
+  id: string;
+  sender: string;
+  role: "system" | "user" | "ai" | "participant";
+  content: string;
+  timestamp: Date;
+  avatar?: string;
+}
+
+interface Participant {
+  uid: string | number;
+  name: string;
+  role: "factory" | "buyer" | "admin";
+  company: string;
+  hasVideo: boolean;
+  hasAudio: boolean;
+  isLocal?: boolean;
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
 export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   const [, setLocation] = useLocation();
-  const [webinar, setWebinar] = useState<Webinar | null>(null);
+  const [webinar, setWebinar] = useState<MockWebinar | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Agora state
+  const [joined, setJoined] = useState(false);
   const [micEnabled, setMicEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
-  const [joined, setJoined] = useState(false);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<any[]>([]);
-  const [chatMessages, setChatMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "system",
-      content: "AI Assistant joined the session",
-      timestamp: new Date(),
-    },
-    {
-      id: "ai-intro",
-      role: "ai",
-      content: "Hello! I'm your AI negotiation assistant. I can help you with pricing analysis, quality verification, and contract drafting. How can I assist you today?",
-      timestamp: new Date(),
-    },
-  ]);
-  const [negotiationPhase, setNegotiationPhase] = useState<"intro" | "discovery" | "negotiation" | "closing">("discovery");
-  
+
+  // Participants
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [registrations, setRegistrations] = useState<MockRegistration[]>([]);
+
+  // Chat state
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [activeTab, setActiveTab] = useState("chat");
+
+  // Timer
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<any>(null);
+
   const webinarId = params?.id || "1";
+  const localVideoRef = useRef<HTMLDivElement>(null);
+  const roomRef = useRef<HTMLDivElement>(null);
 
-  // Fetch webinar data from Directus
+  // ─── Data Fetching ──────────────────────────────────────────────────────
+
   useEffect(() => {
-    const fetchWebinar = async () => {
-      try {
-        const data = await safeRequest('webinars', () =>
-          directus.request(readItem('webinars', webinarId))
-        );
-        setWebinar(data);
-      } catch (error) {
-        console.error('Failed to fetch webinar:', error);
-        // Fallback to mock data
-        const mockWebinar = mockWebinars.find(w => w.id.toString() === webinarId);
-        if (mockWebinar) {
-          setWebinar(mockWebinar as Webinar);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+    const w = mockStore.getWebinarById(parseInt(webinarId));
+    if (w) {
+      setWebinar(w);
+      const regs = mockStore.getRegistrations(parseInt(webinarId))
+        .filter(r => r.status === "approved");
+      setRegistrations(regs);
 
-    fetchWebinar();
+      // Build initial participant list from registrations
+      const initialParticipants: Participant[] = regs.map((r, i) => ({
+        uid: `mock-${r.id}`,
+        name: r.user_name,
+        role: r.role as "factory" | "buyer",
+        company: r.company_name,
+        hasVideo: Math.random() > 0.3,
+        hasAudio: Math.random() > 0.2,
+      }));
+      setParticipants(initialParticipants);
+    }
+    setLoading(false);
   }, [webinarId]);
 
-  // Handle remote user updates
+  // ─── Timer ──────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (joined) {
+      timerRef.current = setInterval(() => {
+        setElapsed(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [joined]);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // ─── Remote User Polling ────────────────────────────────────────────────
+
   useEffect(() => {
     let interval: any;
     if (joined) {
       interval = setInterval(() => {
-        setRemoteUsers(agoraService.getRemoteUsers());
+        const users = agoraService.getRemoteUsers();
+        setRemoteUsers(users);
       }, 2000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [joined]);
+
+  // ─── Play Remote Videos ─────────────────────────────────────────────────
+
+  useEffect(() => {
+    remoteUsers.forEach(user => {
+      const el = document.getElementById(`remote-video-${user.uid}`);
+      if (el && user.hasVideo) {
+        agoraService.playRemoteVideo(user.uid, `remote-video-${user.uid}`);
+      }
+    });
+  }, [remoteUsers]);
+
+  // ─── Agora Actions ──────────────────────────────────────────────────────
 
   const handleJoinChannel = async () => {
     if (!webinar?.agora_channel_name) return;
@@ -92,58 +153,165 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
       await agoraService.init({
         channel: webinar.agora_channel_name,
         token: webinar.agora_token || null,
-        uid: Math.floor(Math.random() * 10000)
+        uid: Math.floor(Math.random() * 10000),
       });
 
       await agoraService.createLocalTracks();
-      
-      // Play local video in the local container
+
       setTimeout(() => {
-        agoraService.playLocalVideo('local-video-container');
+        if (localVideoRef.current) {
+          agoraService.playLocalVideo("local-video-pip");
+        }
       }, 500);
 
       setJoined(true);
+
+      // Add system message
+      addMessage({
+        id: `sys-${Date.now()}`,
+        sender: "System",
+        role: "system",
+        content: "You joined the session",
+        timestamp: new Date(),
+      });
+
+      // Simulate AI welcome
+      setTimeout(() => {
+        addMessage({
+          id: `ai-${Date.now()}`,
+          sender: "AI Assistant",
+          role: "ai",
+          content: `Welcome to "${webinar.title}". I'm your AI sourcing assistant. I can help with pricing analysis, quality verification, and negotiation strategies. How can I assist you?`,
+          timestamp: new Date(),
+        });
+      }, 1500);
     } catch (error) {
-      console.error('Failed to join channel:', error);
+      console.error("Failed to join channel:", error);
+      // Still allow "joining" for demo purposes
+      setJoined(true);
+      addMessage({
+        id: `sys-${Date.now()}`,
+        sender: "System",
+        role: "system",
+        content: "Connected in demo mode (no camera/mic access)",
+        timestamp: new Date(),
+      });
     }
   };
 
   const handleLeaveChannel = async () => {
-    await agoraService.leave();
+    try {
+      await agoraService.leave();
+    } catch (e) {
+      console.log("Leave error:", e);
+    }
     setJoined(false);
+    setElapsed(0);
+    setRemoteUsers([]);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const toggleMic = async () => {
-    await agoraService.toggleAudio(!micEnabled);
+    try {
+      await agoraService.toggleAudio(!micEnabled);
+    } catch (e) {}
     setMicEnabled(!micEnabled);
   };
 
   const toggleVideo = async () => {
-    await agoraService.toggleVideo(!videoEnabled);
+    try {
+      await agoraService.toggleVideo(!videoEnabled);
+    } catch (e) {}
     setVideoEnabled(!videoEnabled);
   };
 
-  // Mock data for AI insights
-  const radarData = [
-    { dimension: 'Quality', value: 85 },
-    { dimension: 'Price', value: 78 },
-    { dimension: 'Lead Time', value: 92 },
-    { dimension: 'Compliance', value: 88 },
-    { dimension: 'Capacity', value: 75 },
+  const toggleFullscreen = () => {
+    if (!fullscreen && roomRef.current) {
+      roomRef.current.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+    setFullscreen(!fullscreen);
+  };
+
+  // ─── Chat ───────────────────────────────────────────────────────────────
+
+  const addMessage = useCallback((msg: ChatMsg) => {
+    setMessages(prev => [...prev, msg]);
+  }, []);
+
+  const handleSendMessage = () => {
+    if (!inputValue.trim()) return;
+
+    const userMsg: ChatMsg = {
+      id: `user-${Date.now()}`,
+      sender: "You",
+      role: "user",
+      content: inputValue.trim(),
+      timestamp: new Date(),
+    };
+    addMessage(userMsg);
+    const msgText = inputValue.trim();
+    setInputValue("");
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse = generateAIResponse(msgText);
+      addMessage({
+        id: `ai-${Date.now()}`,
+        sender: "AI Assistant",
+        role: "ai",
+        content: aiResponse,
+        timestamp: new Date(),
+      });
+    }, 1200);
+  };
+
+  const generateAIResponse = (msg: string): string => {
+    const lower = msg.toLowerCase();
+    if (lower.includes("price") || lower.includes("cost") || lower.includes("quote")) {
+      return "Based on current market data, the average unit price for this category is $8.50-$14.20. The supplier's offer of $12.50 is within range. I recommend negotiating for volume discounts above 2,000 units.";
+    }
+    if (lower.includes("moq") || lower.includes("minimum")) {
+      return "The standard MOQ for this product line is 500 units. For first-time buyers, some factories offer trial orders of 200 units at a 10% premium. Shall I suggest this option?";
+    }
+    if (lower.includes("quality") || lower.includes("cert")) {
+      return "This factory holds ISO 9001:2015, CE, and FCC certifications. Their defect rate is reported at 0.3%, which is below industry average. I recommend requesting a pre-shipment inspection report.";
+    }
+    if (lower.includes("delivery") || lower.includes("ship") || lower.includes("lead")) {
+      return "Standard lead time is 30-45 days. Express production (20 days) is available with a 15% surcharge. Shipping options include FOB Shenzhen, CIF, and DDP.";
+    }
+    if (lower.includes("sample")) {
+      return "I recommend requesting 2-3 samples before placing a bulk order. Most factories offer free samples with buyer-paid shipping (~$30-50 via DHL Express). Shall I draft a sample request?";
+    }
+    return "I'm analyzing your request. Based on the session context, I suggest focusing on payment terms and quality assurance. Would you like me to provide a detailed comparison or draft specific questions for the supplier?";
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // ─── Smart Replies ──────────────────────────────────────────────────────
+
+  const smartReplies = [
+    "What's the unit price for 1,000+ units?",
+    "Can you share quality certificates?",
+    "What's your standard lead time?",
   ];
 
-  const activities = [
-    { time: "2 min ago", event: "Factory shared product catalog", type: "document" },
-    { time: "5 min ago", event: "Price negotiation started", type: "negotiation" },
-    { time: "12 min ago", event: "Quality certification verified", type: "verification" },
-    { time: "18 min ago", event: "Factory joined the session", type: "join" },
-  ];
+  // ─── Render ─────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
-          <div className="text-muted-foreground font-light">Loading webinar...</div>
+          <div className="text-center space-y-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-600 border-t-transparent mx-auto" />
+            <p className="text-muted-foreground font-light text-sm">Loading session...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -153,7 +321,13 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
-          <div className="text-muted-foreground font-light">Webinar not found</div>
+          <div className="text-center space-y-3">
+            <Video className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+            <p className="text-muted-foreground font-light">Session not found</p>
+            <Button variant="outline" onClick={() => setLocation("/webinars")} className="border-[#262626] font-light">
+              Back to Webinars
+            </Button>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -161,68 +335,119 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
 
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-64px)] flex flex-col bg-[#0A0A0A]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#262626] bg-[#0F0F0F]">
+      <div ref={roomRef} className="h-[calc(100vh-64px)] flex flex-col bg-[#0A0A0A]">
+        {/* ─── Header Bar ─────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#1A1A1A] bg-[#0A0A0A]/95 backdrop-blur-sm z-10">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setLocation("/webinars")}
-              className="text-muted-foreground hover:text-white hover:bg-white/5"
+              onClick={() => setLocation(`/webinars/${webinar.id}`)}
+              className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-white/5"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-light text-white tracking-tight">
-                  {webinar.title}
-                </h1>
-                {webinar.status === 'live' && (
-                  <Badge className="bg-red-500/10 text-red-400 border-red-500/20 animate-pulse">
-                    <Circle className="h-2 w-2 fill-red-400 mr-1" />
-                    LIVE
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1 font-light">
-                {webinar.description || 'No description'}
-              </p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-base font-light text-white tracking-tight truncate max-w-[300px]">
+                {webinar.title}
+              </h1>
+              {joined && (
+                <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] animate-pulse">
+                  <Circle className="h-1.5 w-1.5 fill-red-400 mr-1" />
+                  LIVE
+                </Badge>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {joined && (
+              <>
+                {/* Timer */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#1A1A1A] mr-2">
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs font-mono text-white">{formatTime(elapsed)}</span>
+                </div>
+
+                {/* Participants count */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#1A1A1A] mr-2">
+                  <Users className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-white">{participants.length + 1}</span>
+                </div>
+              </>
+            )}
+
             {!joined ? (
-              <Button 
-                className="bg-violet-600 hover:bg-violet-700 text-white font-light"
+              <Button
+                className="bg-violet-600 hover:bg-violet-700 text-white font-light text-sm h-9 px-5"
                 onClick={handleJoinChannel}
               >
-                <Video className="mr-2 h-4 w-4" />
+                <Video className="mr-2 h-3.5 w-3.5" />
                 Join Session
               </Button>
             ) : (
               <>
+                {/* Mic */}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={toggleMic}
-                  className={`border-[#262626] ${micEnabled ? 'hover:bg-white/5' : 'bg-red-500/10 border-red-500/20'}`}
+                  className={cn(
+                    "h-9 w-9 rounded-lg transition-all",
+                    micEnabled
+                      ? "text-white hover:bg-white/10"
+                      : "bg-red-500/15 text-red-400 hover:bg-red-500/25"
+                  )}
                 >
-                  {micEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4 text-red-400" />}
+                  {micEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
                 </Button>
+
+                {/* Camera */}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={toggleVideo}
-                  className={`border-[#262626] ${videoEnabled ? 'hover:bg-white/5' : 'bg-red-500/10 border-red-500/20'}`}
+                  className={cn(
+                    "h-9 w-9 rounded-lg transition-all",
+                    videoEnabled
+                      ? "text-white hover:bg-white/10"
+                      : "bg-red-500/15 text-red-400 hover:bg-red-500/25"
+                  )}
                 >
-                  {videoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4 text-red-400" />}
+                  {videoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                 </Button>
+
+                {/* Screen Share */}
                 <Button
-                  variant="outline"
-                  onClick={handleLeaveChannel}
-                  className="border-[#262626] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 font-light"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setScreenSharing(!screenSharing)}
+                  className={cn(
+                    "h-9 w-9 rounded-lg transition-all",
+                    screenSharing
+                      ? "bg-violet-500/15 text-violet-400 hover:bg-violet-500/25"
+                      : "text-white hover:bg-white/10"
+                  )}
                 >
+                  {screenSharing ? <MonitorOff className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+                </Button>
+
+                {/* Fullscreen */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="h-9 w-9 rounded-lg text-white hover:bg-white/10"
+                >
+                  {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+
+                {/* Leave */}
+                <Button
+                  onClick={handleLeaveChannel}
+                  className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white font-light text-sm ml-1"
+                >
+                  <PhoneOff className="mr-1.5 h-3.5 w-3.5" />
                   Leave
                 </Button>
               </>
@@ -230,187 +455,494 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* ─── Main Content ───────────────────────────────────────────── */}
         <div className="flex-1 flex min-h-0">
-          {/* Left: Video Feed */}
-          <div className="flex-1 flex flex-col bg-[#0A0A0A] p-6">
-            <div className="flex-1 bg-[#141414] rounded-lg border border-[#262626] overflow-hidden relative">
-              {/* Remote Video Container */}
-              <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-2 p-2">
-                {remoteUsers.length === 0 && !joined && (
-                  <div className="col-span-full flex items-center justify-center h-full">
-                    <div className="text-center space-y-4">
-                      <div className="h-16 w-16 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto">
-                        <Video className="h-8 w-8 text-violet-400" />
+          {/* ─── Left: Video Area ──────────────────────────────────────── */}
+          <div className="flex-1 flex flex-col p-4 gap-4">
+            {/* Main Video Grid */}
+            <div className="flex-1 relative rounded-xl overflow-hidden bg-[#111111] border border-[#1A1A1A]">
+              {!joined ? (
+                /* Pre-join Screen */
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center space-y-6 max-w-md">
+                    <div className="relative mx-auto w-24 h-24">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-600/20 to-cyan-600/20 animate-pulse" />
+                      <div className="absolute inset-2 rounded-full bg-[#141414] flex items-center justify-center">
+                        <Video className="h-10 w-10 text-violet-400" />
                       </div>
-                      <p className="text-muted-foreground font-light">Click "Join Session" to start</p>
                     </div>
+                    <div>
+                      <h2 className="text-xl font-light text-white mb-2">{webinar.title}</h2>
+                      <p className="text-sm text-muted-foreground font-light">
+                        {participants.length} participants waiting · {webinar.duration} min session
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="flex -space-x-2">
+                        {participants.slice(0, 4).map((p, i) => (
+                          <div
+                            key={p.uid}
+                            className={cn(
+                              "h-8 w-8 rounded-full border-2 border-[#111111] flex items-center justify-center text-[10px] font-light",
+                              p.role === "factory"
+                                ? "bg-orange-500/20 text-orange-400"
+                                : "bg-cyan-500/20 text-cyan-400"
+                            )}
+                          >
+                            {p.name.charAt(0)}
+                          </div>
+                        ))}
+                        {participants.length > 4 && (
+                          <div className="h-8 w-8 rounded-full border-2 border-[#111111] bg-[#262626] flex items-center justify-center text-[10px] text-muted-foreground">
+                            +{participants.length - 4}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleJoinChannel}
+                      className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-light px-8 h-11 text-sm shadow-lg shadow-violet-900/30"
+                    >
+                      <Video className="mr-2 h-4 w-4" />
+                      Join Session Now
+                    </Button>
                   </div>
-                )}
-                
-                {/* Remote User Tracks */}
-                {remoteUsers.map(user => (
-                  <div 
-                    key={user.uid} 
-                    id={`remote-video-${user.uid}`}
-                    className="bg-[#0A0A0A] rounded-lg border border-[#262626] relative overflow-hidden h-full"
+                </div>
+              ) : (
+                /* Video Grid */
+                <div className="absolute inset-0">
+                  {/* Main stage - show participants or placeholder */}
+                  <div className={cn(
+                    "w-full h-full grid gap-1.5 p-1.5",
+                    remoteUsers.length === 0 ? "grid-cols-1" :
+                    remoteUsers.length === 1 ? "grid-cols-1" :
+                    remoteUsers.length <= 4 ? "grid-cols-2" :
+                    "grid-cols-3"
+                  )}>
+                    {remoteUsers.length === 0 ? (
+                      /* No remote users - show participant cards */
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-4">
+                        {participants.slice(0, 6).map((p) => (
+                          <div
+                            key={p.uid}
+                            className="bg-[#0A0A0A] rounded-lg border border-[#1A1A1A] flex flex-col items-center justify-center p-6 space-y-3"
+                          >
+                            <div className={cn(
+                              "h-16 w-16 rounded-full flex items-center justify-center text-xl font-light",
+                              p.role === "factory"
+                                ? "bg-gradient-to-br from-orange-500/20 to-amber-500/20 text-orange-400"
+                                : "bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400"
+                            )}>
+                              {p.name.split(" ").map(n => n[0]).join("")}
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-light text-white">{p.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-light">{p.company}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={cn(
+                                "text-[9px] border-[#262626]",
+                                p.role === "factory" ? "text-orange-400" : "text-cyan-400"
+                              )}>
+                                {p.role === "factory" ? <Building2 className="h-2.5 w-2.5 mr-1" /> : <Globe className="h-2.5 w-2.5 mr-1" />}
+                                {p.role === "factory" ? "Factory" : "Buyer"}
+                              </Badge>
+                              {p.hasAudio && <Mic className="h-3 w-3 text-green-400" />}
+                              {p.hasVideo && <Video className="h-3 w-3 text-green-400" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* Remote video tracks */
+                      remoteUsers.map(user => (
+                        <div
+                          key={user.uid}
+                          id={`remote-video-${user.uid}`}
+                          className="bg-[#0A0A0A] rounded-lg overflow-hidden relative"
+                        >
+                          <div className="absolute top-2 left-2 z-10">
+                            <Badge variant="outline" className="bg-black/60 backdrop-blur-sm border-[#262626] text-[10px] font-light">
+                              User {user.uid}
+                            </Badge>
+                          </div>
+                          {!user.hasVideo && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="h-16 w-16 rounded-full bg-[#262626] flex items-center justify-center">
+                                <VideoOff className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Local Video PIP */}
+                  <div
+                    id="local-video-pip"
+                    ref={localVideoRef}
+                    className="absolute bottom-4 right-4 w-44 h-32 bg-[#0A0A0A] rounded-xl border border-[#262626] overflow-hidden z-20 shadow-2xl shadow-black/50 group cursor-move"
                   >
-                    <div className="absolute top-2 left-2 z-10">
-                      <Badge variant="outline" className="bg-black/50 border-[#262626] text-xs font-light">
-                        User {user.uid}
+                    {!videoEnabled && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0A]">
+                        <div className="h-10 w-10 rounded-full bg-[#262626] flex items-center justify-center">
+                          <VideoOff className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-1.5 left-1.5 z-10">
+                      <Badge variant="outline" className="bg-black/60 backdrop-blur-sm border-[#262626] text-[9px] font-light">
+                        You
                       </Badge>
                     </div>
-                    {useEffect(() => {
-                      agoraService.playRemoteVideo(user.uid, `remote-video-${user.uid}`);
-                    }, [user.uid])}
                   </div>
-                ))}
-              </div>
-
-              {/* Local Video (Picture-in-Picture) */}
-              {joined && (
-                <div 
-                  id="local-video-container"
-                  className="absolute bottom-4 right-4 w-48 h-36 bg-[#0A0A0A] rounded-lg border border-[#262626] overflow-hidden z-20 shadow-2xl"
-                />
+                </div>
               )}
             </div>
 
-            {/* AI Insights Bar */}
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <Card className="bg-[#141414] border-[#262626]">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded bg-green-500/10 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-green-400" />
+            {/* Bottom Stats Bar */}
+            {joined && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A]">
+                  <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-green-400" />
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground font-light">Confidence</div>
-                    <div className="text-lg font-light text-white">87%</div>
+                    <div className="text-[10px] text-muted-foreground font-light uppercase tracking-wider">Confidence</div>
+                    <div className="text-sm font-light text-white">87%</div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[#141414] border-[#262626]">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded bg-orange-500/10 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-orange-400" />
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A]">
+                  <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 text-orange-400" />
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground font-light">Risk Level</div>
-                    <div className="text-lg font-light text-white">Low</div>
+                    <div className="text-[10px] text-muted-foreground font-light uppercase tracking-wider">Risk Level</div>
+                    <div className="text-sm font-light text-white">Low</div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[#141414] border-[#262626]">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded bg-blue-500/10 flex items-center justify-center">
-                    <Zap className="h-5 w-5 text-blue-400" />
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A]">
+                  <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Zap className="h-4 w-4 text-blue-400" />
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground font-light">Market Fit</div>
-                    <div className="text-lg font-light text-white">High</div>
+                    <div className="text-[10px] text-muted-foreground font-light uppercase tracking-wider">Market Fit</div>
+                    <div className="text-sm font-light text-white">High</div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right: Analysis Panel */}
-          <aside className="w-96 border-l border-[#262626] bg-[#0F0F0F] flex flex-col">
-            <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-              <TabsList className="w-full bg-[#141414] border-b border-[#262626] rounded-none">
-                <TabsTrigger value="chat" className="flex-1 font-light">
-                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+          {/* ─── Right: Side Panel ─────────────────────────────────────── */}
+          <aside className="w-[380px] border-l border-[#1A1A1A] bg-[#0A0A0A] flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="w-full bg-transparent border-b border-[#1A1A1A] rounded-none h-10 px-1">
+                <TabsTrigger
+                  value="chat"
+                  className="flex-1 font-light text-xs data-[state=active]:bg-transparent data-[state=active]:text-violet-400 data-[state=active]:border-b-2 data-[state=active]:border-violet-500 data-[state=active]:shadow-none rounded-none"
+                >
+                  <MessageSquare className="h-3 w-3 mr-1.5" />
                   Chat
                 </TabsTrigger>
-                <TabsTrigger value="dimensions" className="flex-1 font-light">Insights</TabsTrigger>
-                <TabsTrigger value="timeline" className="flex-1 font-light">Activity</TabsTrigger>
-                <TabsTrigger value="assets" className="flex-1 font-light">Files</TabsTrigger>
+                <TabsTrigger
+                  value="participants"
+                  className="flex-1 font-light text-xs data-[state=active]:bg-transparent data-[state=active]:text-violet-400 data-[state=active]:border-b-2 data-[state=active]:border-violet-500 data-[state=active]:shadow-none rounded-none"
+                >
+                  <Users className="h-3 w-3 mr-1.5" />
+                  People
+                  <Badge className="ml-1.5 h-4 px-1 text-[9px] bg-[#262626] text-muted-foreground border-none">
+                    {participants.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="insights"
+                  className="flex-1 font-light text-xs data-[state=active]:bg-transparent data-[state=active]:text-violet-400 data-[state=active]:border-b-2 data-[state=active]:border-violet-500 data-[state=active]:shadow-none rounded-none"
+                >
+                  <Zap className="h-3 w-3 mr-1.5" />
+                  AI Insights
+                </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 p-0">
-                <div className="flex-1 flex flex-col min-h-0">
-                  <ChatWindow
-                    initialMessages={chatMessages}
-                    placeholder="Ask AI about pricing, quality, or negotiation..."
-                    showSmartReplies={false}
-                    className="flex-1"
-                  />
-                  <SmartReplies
-                    context={{
-                      negotiationPhase: negotiationPhase,
-                      sessionTopic: webinar?.title,
-                    }}
-                    onSelect={(reply) => {
-                      // Auto-fill input with selected reply
-                      console.log("Selected reply:", reply);
-                    }}
-                    maxReplies={3}
-                  />
-                </div>
-              </TabsContent>
 
-              <TabsContent value="dimensions" className="p-6 flex-1">
-                <div className="space-y-6">
-                  <h3 className="text-sm font-light text-white uppercase tracking-wider">Supplier Assessment</h3>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke="#262626" />
-                        <PolarAngleAxis dataKey="dimension" tick={{ fill: '#737373', fontSize: 12 }} />
-                        <Radar
-                          name="Assessment"
-                          dataKey="value"
-                          stroke="#7c3aed"
-                          fill="#7c3aed"
-                          fillOpacity={0.3}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="space-y-3">
-                    {radarData.map(item => (
-                      <div key={item.dimension} className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground font-light">{item.dimension}</span>
-                        <span className="text-sm text-white font-light">{item.value}/100</span>
+              {/* ─── Chat Tab ──────────────────────────────────────────── */}
+              <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 m-0 p-0">
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ scrollbarWidth: "thin" }}>
+                  {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
+                      <div className="h-14 w-14 rounded-full bg-violet-500/10 flex items-center justify-center">
+                        <MessageSquare className="h-7 w-7 text-violet-400" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-sm font-light text-white">AI Assistant Ready</p>
+                        <p className="text-xs text-muted-foreground font-light mt-1 max-w-[240px]">
+                          Join the session to start chatting with AI and other participants
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div key={msg.id} className={cn(
+                        "animate-in fade-in slide-in-from-bottom-1 duration-200",
+                        msg.role === "system" && "flex justify-center"
+                      )}>
+                        {msg.role === "system" ? (
+                          <div className="px-3 py-1 rounded-full bg-[#141414] border border-[#1A1A1A] text-[10px] text-muted-foreground font-light">
+                            {msg.content}
+                          </div>
+                        ) : (
+                          <div className={cn(
+                            "flex gap-2.5",
+                            msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                          )}>
+                            <div className={cn(
+                              "h-7 w-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px]",
+                              msg.role === "ai"
+                                ? "bg-gradient-to-br from-violet-600/30 to-purple-600/30 text-violet-300"
+                                : "bg-gradient-to-br from-violet-500 to-purple-600 text-white"
+                            )}>
+                              {msg.role === "ai" ? "AI" : msg.sender.charAt(0)}
+                            </div>
+                            <div className={cn(
+                              "max-w-[75%] px-3.5 py-2.5 rounded-2xl",
+                              msg.role === "user"
+                                ? "bg-gradient-to-br from-violet-600 to-purple-700 text-white"
+                                : "bg-[#141414] border border-[#1A1A1A] text-white"
+                            )}>
+                              <p className="text-[13px] leading-relaxed font-light">{msg.content}</p>
+                              <p className={cn(
+                                "text-[9px] mt-1.5 font-light",
+                                msg.role === "user" ? "text-white/50" : "text-muted-foreground"
+                              )}>
+                                {msg.timestamp.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Smart Replies */}
+                {joined && messages.length > 0 && (
+                  <div className="px-3 py-2 border-t border-[#1A1A1A]">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Zap className="h-2.5 w-2.5 text-violet-400" />
+                      <span className="text-[9px] text-muted-foreground uppercase tracking-wider">Suggestions</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {smartReplies.map((reply, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setInputValue(reply)}
+                          className="px-2.5 py-1.5 rounded-lg bg-[#141414] border border-[#1A1A1A] text-[11px] text-white font-light hover:border-violet-500/30 hover:bg-violet-500/5 transition-all"
+                        >
+                          {reply}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input */}
+                <div className="p-3 border-t border-[#1A1A1A]">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      placeholder={joined ? "Ask AI or message participants..." : "Join session to chat"}
+                      disabled={!joined}
+                      className="flex-1 px-3.5 py-2.5 bg-[#111111] border border-[#1A1A1A] rounded-xl text-[13px] font-light text-white placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-violet-500/40 focus:border-violet-500/40 transition-all disabled:opacity-40"
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!inputValue.trim() || !joined}
+                      size="icon"
+                      className="h-9 w-9 bg-violet-600 hover:bg-violet-700 disabled:bg-[#262626] disabled:text-muted-foreground transition-all rounded-xl"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="timeline" className="p-6 flex-1">
-                <div className="space-y-6">
-                  <h3 className="text-sm font-light text-white uppercase tracking-wider">Live Activity</h3>
-                  <div className="space-y-4">
-                    {activities.map((activity, i) => (
-                      <div key={i} className="flex gap-3">
-                        <div className="mt-1">
-                          <div className="h-2 w-2 rounded-full bg-violet-500" />
+              {/* ─── Participants Tab ───────────────────────────────────── */}
+              <TabsContent value="participants" className="flex-1 overflow-y-auto m-0 p-4" style={{ scrollbarWidth: "thin" }}>
+                <div className="space-y-4">
+                  {/* You */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-medium">You</p>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-violet-500/20">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-xs text-white">
+                        <Shield className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-light text-white">Magic User</p>
+                        <p className="text-[10px] text-muted-foreground font-light">Admin</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {micEnabled ? (
+                          <Mic className="h-3.5 w-3.5 text-green-400" />
+                        ) : (
+                          <MicOff className="h-3.5 w-3.5 text-red-400" />
+                        )}
+                        {videoEnabled ? (
+                          <Video className="h-3.5 w-3.5 text-green-400" />
+                        ) : (
+                          <VideoOff className="h-3.5 w-3.5 text-red-400" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Factories */}
+                  {participants.filter(p => p.role === "factory").length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-medium">
+                        Factories ({participants.filter(p => p.role === "factory").length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {participants.filter(p => p.role === "factory").map(p => (
+                          <div key={p.uid} className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A] hover:border-[#262626] transition-colors">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center text-xs text-orange-400 font-light">
+                              {p.name.split(" ").map(n => n[0]).join("")}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-light text-white truncate">{p.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-light truncate">{p.company}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {p.hasAudio ? (
+                                <Mic className="h-3.5 w-3.5 text-green-400" />
+                              ) : (
+                                <MicOff className="h-3.5 w-3.5 text-muted-foreground/40" />
+                              )}
+                              {p.hasVideo ? (
+                                <Video className="h-3.5 w-3.5 text-green-400" />
+                              ) : (
+                                <VideoOff className="h-3.5 w-3.5 text-muted-foreground/40" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Buyers */}
+                  {participants.filter(p => p.role === "buyer").length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 font-medium">
+                        Buyers ({participants.filter(p => p.role === "buyer").length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {participants.filter(p => p.role === "buyer").map(p => (
+                          <div key={p.uid} className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A] hover:border-[#262626] transition-colors">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xs text-cyan-400 font-light">
+                              {p.name.split(" ").map(n => n[0]).join("")}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-light text-white truncate">{p.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-light truncate">{p.company}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {p.hasAudio ? (
+                                <Mic className="h-3.5 w-3.5 text-green-400" />
+                              ) : (
+                                <MicOff className="h-3.5 w-3.5 text-muted-foreground/40" />
+                              )}
+                              {p.hasVideo ? (
+                                <Video className="h-3.5 w-3.5 text-green-400" />
+                              ) : (
+                                <VideoOff className="h-3.5 w-3.5 text-muted-foreground/40" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* ─── AI Insights Tab ───────────────────────────────────── */}
+              <TabsContent value="insights" className="flex-1 overflow-y-auto m-0 p-4" style={{ scrollbarWidth: "thin" }}>
+                <div className="space-y-5">
+                  {/* Supplier Score */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3 font-medium">Supplier Assessment</p>
+                    <div className="space-y-3">
+                      {[
+                        { label: "Quality", value: 85, color: "bg-green-500" },
+                        { label: "Price Competitiveness", value: 78, color: "bg-blue-500" },
+                        { label: "Lead Time", value: 92, color: "bg-violet-500" },
+                        { label: "Compliance", value: 88, color: "bg-cyan-500" },
+                        { label: "Capacity", value: 75, color: "bg-orange-500" },
+                      ].map(item => (
+                        <div key={item.label} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground font-light">{item.label}</span>
+                            <span className="text-xs text-white font-light">{item.value}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-[#1A1A1A] overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full transition-all duration-1000", item.color)}
+                              style={{ width: `${item.value}%`, opacity: 0.7 }}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-white font-light">{activity.event}</p>
-                          <p className="text-xs text-muted-foreground font-light">{activity.time}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </TabsContent>
 
-              <TabsContent value="assets" className="p-6 flex-1">
-                <div className="space-y-6">
-                  <h3 className="text-sm font-light text-white uppercase tracking-wider">Shared Resources</h3>
-                  <div className="space-y-2">
-                    {['Product_Catalog_2026.pdf', 'Quality_Cert_ISO9001.jpg', 'Pricing_Tier_Structure.xlsx'].map(file => (
-                      <div key={file} className="flex items-center justify-between p-3 rounded bg-[#141414] border border-[#262626]">
-                        <span className="text-xs text-white font-light">{file}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                        </Button>
-                      </div>
-                    ))}
+                  {/* Key Insights */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3 font-medium">Key Insights</p>
+                    <div className="space-y-2">
+                      {[
+                        { icon: TrendingUp, text: "Price is 8% below market average", color: "text-green-400 bg-green-500/10" },
+                        { icon: Shield, text: "All certifications verified", color: "text-cyan-400 bg-cyan-500/10" },
+                        { icon: Clock, text: "Lead time is industry-leading", color: "text-violet-400 bg-violet-500/10" },
+                        { icon: AlertTriangle, text: "Request sample before bulk order", color: "text-orange-400 bg-orange-500/10" },
+                      ].map((insight, i) => (
+                        <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#111111] border border-[#1A1A1A]">
+                          <div className={cn("h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0", insight.color.split(" ")[1])}>
+                            <insight.icon className={cn("h-3.5 w-3.5", insight.color.split(" ")[0])} />
+                          </div>
+                          <p className="text-xs text-white font-light leading-relaxed pt-1">{insight.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Session Activity */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3 font-medium">Session Activity</p>
+                    <div className="space-y-3">
+                      {[
+                        { time: "Just now", event: "Session started", dot: "bg-green-500" },
+                        { time: "2 min ago", event: "Factory shared product catalog", dot: "bg-violet-500" },
+                        { time: "5 min ago", event: "Price discussion initiated", dot: "bg-blue-500" },
+                        { time: "12 min ago", event: "Quality certs verified by AI", dot: "bg-cyan-500" },
+                      ].map((activity, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="mt-1.5 relative">
+                            <div className={cn("h-2 w-2 rounded-full", activity.dot)} />
+                            {i < 3 && (
+                              <div className="absolute top-2 left-[3px] w-[2px] h-6 bg-[#1A1A1A]" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-white font-light">{activity.event}</p>
+                            <p className="text-[10px] text-muted-foreground font-light">{activity.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </TabsContent>

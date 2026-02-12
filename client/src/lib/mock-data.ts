@@ -1,61 +1,395 @@
-// Mock data for development when Directus API is not available
-export const mockWebinars = [
+// ============================================================
+// RealSourcing Mock Data Store
+// Provides complete mock data and state management for demo mode
+// When Directus backend is ready, replace with real API calls
+// ============================================================
+
+export interface MockWebinar {
+  id: number;
+  title: string;
+  description: string;
+  type: 'public' | 'private';
+  status: 'draft' | 'scheduled' | 'live' | 'completed' | 'cancelled';
+  scheduled_at: string;
+  duration: number; // minutes
+  category: string;
+  language: string;
+  agora_channel_name: string;
+  agora_token?: string;
+  cover_image?: string;
+  max_participants: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MockFactory {
+  id: number;
+  name: string;
+  location: string;
+  category: string;
+  description: string;
+  score: number;
+  certifications: string;
+  logo?: string;
+  contact_email: string;
+  contact_phone: string;
+  employee_count: number;
+  year_established: number;
+  created_at: string;
+}
+
+export interface MockRegistration {
+  id: number;
+  webinar_id: number;
+  user_name: string;
+  user_email: string;
+  company_name: string;
+  role: 'factory' | 'buyer';
+  status: 'pending' | 'approved' | 'rejected';
+  registered_at: string;
+  notes?: string;
+}
+
+export interface MockCommission {
+  id: number;
+  webinar_id: number;
+  factory_id: number;
+  factory_name: string;
+  title: string;
+  description: string;
+  target_buyers: string;
+  status: 'pending' | 'approved' | 'rejected' | 'active';
+  created_at: string;
+}
+
+// ============ Initial Mock Data ============
+
+export const mockWebinars: MockWebinar[] = [
   {
     id: 1,
-    title: "Smart Home Products Showcase",
-    description: "Explore the latest smart home innovations",
-    type: "public" as const,
-    status: "live" as const,
+    title: "Smart Home Products Showcase 2026",
+    description: "Explore the latest smart home innovations from top Chinese manufacturers. This webinar features live product demonstrations, real-time Q&A sessions, and exclusive pricing for international buyers.",
+    type: "public",
+    status: "live",
     scheduled_at: new Date().toISOString(),
-    agora_channel_name: "smart_home_001",
-    created_at: new Date().toISOString(),
+    duration: 90,
+    category: "smart-home",
+    language: "en",
+    agora_channel_name: "webinar_smart_home_001",
+    max_participants: 50,
+    created_by: "admin",
+    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+    updated_at: new Date().toISOString(),
   },
   {
     id: 2,
-    title: "Electronics Components Q1 Sourcing",
-    description: "Discuss Q1 sourcing requirements for electronics",
-    type: "private" as const,
-    status: "scheduled" as const,
-    scheduled_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
+    title: "Consumer Electronics Q1 Sourcing Fair",
+    description: "Connect with verified electronics manufacturers for Q1 2026 procurement. Categories include mobile accessories, audio equipment, and wearable devices.",
+    type: "public",
+    status: "scheduled",
+    scheduled_at: new Date(Date.now() + 3 * 86400000).toISOString(),
+    duration: 120,
+    category: "electronics",
+    language: "en",
+    agora_channel_name: "webinar_electronics_q1",
+    max_participants: 100,
+    created_by: "admin",
+    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
   },
   {
     id: 3,
-    title: "IoT Devices Supplier Meeting",
-    description: "Connect with IoT device suppliers",
-    type: "public" as const,
-    status: "scheduled" as const,
-    scheduled_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
+    title: "Sustainable Packaging Solutions",
+    description: "Discover eco-friendly packaging alternatives from certified green manufacturers. Topics include biodegradable materials, recycled packaging, and carbon-neutral shipping solutions.",
+    type: "public",
+    status: "completed",
+    scheduled_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    duration: 60,
+    category: "consumer-goods",
+    language: "en",
+    agora_channel_name: "webinar_packaging_green",
+    max_participants: 30,
+    created_by: "admin",
+    created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+  },
+  {
+    id: 4,
+    title: "LED Lighting Solutions 2026",
+    description: "Annual LED lighting sourcing event featuring the newest energy-efficient lighting technologies, smart lighting systems, and commercial lighting solutions.",
+    type: "private",
+    status: "scheduled",
+    scheduled_at: new Date(Date.now() + 8 * 86400000).toISOString(),
+    duration: 90,
+    category: "electronics",
+    language: "zh",
+    agora_channel_name: "webinar_led_2026",
+    max_participants: 40,
+    created_by: "admin",
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
   },
 ];
 
-export const mockFactories = [
+export const mockFactories: MockFactory[] = [
   {
     id: 1,
-    name: "Ningbo AutoParts Co.",
-    location: "Ningbo, China",
-    category: "Automotive Parts",
+    name: "Shenzhen Electronics Co., Ltd.",
+    location: "Shenzhen, Guangdong",
+    category: "Electronics",
+    description: "Leading manufacturer of consumer electronics and smart home devices with 15+ years of export experience.",
     score: 92,
-    certifications: "ISO 9001, TS 16949",
-    created_at: new Date().toISOString(),
+    certifications: "ISO 9001, ISO 14001, CE, FCC",
+    contact_email: "export@szelectronics.cn",
+    contact_phone: "+86-755-8888-0001",
+    employee_count: 2500,
+    year_established: 2008,
+    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
   },
   {
     id: 2,
-    name: "Shaoxing Gear Manufacturing",
-    location: "Shaoxing, China",
-    category: "Mechanical Components",
+    name: "Guangzhou Smart Home Ltd.",
+    location: "Guangzhou, Guangdong",
+    category: "Smart Home",
+    description: "Specializing in IoT-enabled home automation products including smart locks, sensors, and control systems.",
     score: 88,
-    certifications: "ISO 9001",
-    created_at: new Date().toISOString(),
+    certifications: "ISO 9001, CE, UL",
+    contact_email: "sales@gzsmarthome.cn",
+    contact_phone: "+86-20-8888-0002",
+    employee_count: 800,
+    year_established: 2015,
+    created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
   },
   {
     id: 3,
-    name: "Hangzhou Motors Ltd.",
-    location: "Hangzhou, China",
-    category: "Electric Motors",
-    score: 95,
-    certifications: "ISO 9001, CE",
-    created_at: new Date().toISOString(),
+    name: "Dongguan Manufacturing Group",
+    location: "Dongguan, Guangdong",
+    category: "Consumer Goods",
+    description: "Full-service OEM/ODM manufacturer for household products, kitchenware, and personal care items.",
+    score: 85,
+    certifications: "ISO 9001, BSCI, FDA",
+    contact_email: "inquiry@dgmanufacturing.cn",
+    contact_phone: "+86-769-8888-0003",
+    employee_count: 3200,
+    year_established: 2003,
+    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+  },
+  {
+    id: 4,
+    name: "Foshan Furniture Works",
+    location: "Foshan, Guangdong",
+    category: "Furniture",
+    description: "Premium furniture manufacturer specializing in modern office and home furniture with sustainable materials.",
+    score: 79,
+    certifications: "ISO 9001, FSC, CARB",
+    contact_email: "export@foshanfurniture.cn",
+    contact_phone: "+86-757-8888-0004",
+    employee_count: 1500,
+    year_established: 2010,
+    created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+  },
+  {
+    id: 5,
+    name: "Ningbo Textile Corp.",
+    location: "Ningbo, Zhejiang",
+    category: "Textiles",
+    description: "High-quality textile and garment manufacturer with advanced dyeing and printing capabilities.",
+    score: 91,
+    certifications: "ISO 9001, OEKO-TEX, GOTS",
+    contact_email: "trade@nbtextile.cn",
+    contact_phone: "+86-574-8888-0005",
+    employee_count: 4000,
+    year_established: 2001,
+    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+  },
+  {
+    id: 6,
+    name: "Yiwu Trading Center",
+    location: "Yiwu, Zhejiang",
+    category: "General Merchandise",
+    description: "One-stop sourcing platform for small commodities, gifts, and promotional items.",
+    score: 76,
+    certifications: "ISO 9001",
+    contact_email: "info@yiwutrading.cn",
+    contact_phone: "+86-579-8888-0006",
+    employee_count: 600,
+    year_established: 2012,
+    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
   },
 ];
+
+export const mockRegistrations: MockRegistration[] = [
+  { id: 1, webinar_id: 1, user_name: "John Smith", user_email: "john@globalbuyers.com", company_name: "Global Buyers Inc.", role: "buyer", status: "approved", registered_at: new Date(Date.now() - 5 * 86400000).toISOString() },
+  { id: 2, webinar_id: 1, user_name: "Sarah Chen", user_email: "sarah@techimports.eu", company_name: "Tech Imports EU", role: "buyer", status: "approved", registered_at: new Date(Date.now() - 4 * 86400000).toISOString() },
+  { id: 3, webinar_id: 1, user_name: "Wang Lei", user_email: "wang@szelectronics.cn", company_name: "Shenzhen Electronics Co.", role: "factory", status: "approved", registered_at: new Date(Date.now() - 6 * 86400000).toISOString() },
+  { id: 4, webinar_id: 1, user_name: "Li Ming", user_email: "li@gzsmarthome.cn", company_name: "Guangzhou Smart Home Ltd.", role: "factory", status: "approved", registered_at: new Date(Date.now() - 5 * 86400000).toISOString() },
+  { id: 5, webinar_id: 2, user_name: "Ahmed Hassan", user_email: "ahmed@metrading.ae", company_name: "ME Trading LLC", role: "buyer", status: "pending", registered_at: new Date(Date.now() - 1 * 86400000).toISOString() },
+  { id: 6, webinar_id: 2, user_name: "Maria Garcia", user_email: "maria@latamgoods.br", company_name: "LatAm Goods", role: "buyer", status: "pending", registered_at: new Date(Date.now() - 2 * 86400000).toISOString() },
+  { id: 7, webinar_id: 2, user_name: "Zhang Wei", user_email: "zhang@dgmanufacturing.cn", company_name: "Dongguan Manufacturing", role: "factory", status: "approved", registered_at: new Date(Date.now() - 3 * 86400000).toISOString() },
+  { id: 8, webinar_id: 3, user_name: "Emma Wilson", user_email: "emma@greenpack.uk", company_name: "GreenPack UK", role: "buyer", status: "approved", registered_at: new Date(Date.now() - 10 * 86400000).toISOString() },
+];
+
+export const mockCommissions: MockCommission[] = [
+  { id: 1, webinar_id: 1, factory_id: 1, factory_name: "Shenzhen Electronics Co.", title: "Smart Switch Series Showcase", description: "Presenting our new WiFi-enabled smart switch series with voice control support.", target_buyers: "Home automation distributors", status: "approved", created_at: new Date(Date.now() - 4 * 86400000).toISOString() },
+  { id: 2, webinar_id: 1, factory_id: 2, factory_name: "Guangzhou Smart Home Ltd.", title: "IoT Sensor Bundle", description: "Complete IoT sensor package for smart home integration.", target_buyers: "Smart home retailers", status: "approved", created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
+  { id: 3, webinar_id: 2, factory_id: 3, factory_name: "Dongguan Manufacturing", title: "Eco-Friendly Phone Cases", description: "Biodegradable phone cases made from plant-based materials.", target_buyers: "Mobile accessories importers", status: "pending", created_at: new Date(Date.now() - 1 * 86400000).toISOString() },
+];
+
+// ============ Mock Data Store (In-Memory State Management) ============
+
+class MockDataStore {
+  private webinars: MockWebinar[] = [...mockWebinars];
+  private factories: MockFactory[] = [...mockFactories];
+  private registrations: MockRegistration[] = [...mockRegistrations];
+  private commissions: MockCommission[] = [...mockCommissions];
+  private nextWebinarId = 5;
+  private nextRegistrationId = 9;
+  private nextCommissionId = 4;
+
+  // ---- Webinars ----
+  getWebinars(status?: string): MockWebinar[] {
+    if (status && status !== 'all') {
+      return this.webinars.filter(w => w.status === status);
+    }
+    return [...this.webinars].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  getWebinarById(id: number): MockWebinar | undefined {
+    return this.webinars.find(w => w.id === id);
+  }
+
+  createWebinar(data: Partial<MockWebinar>): MockWebinar {
+    const newWebinar: MockWebinar = {
+      id: this.nextWebinarId++,
+      title: data.title || 'Untitled Webinar',
+      description: data.description || '',
+      type: data.type || 'public',
+      status: data.status || 'scheduled',
+      scheduled_at: data.scheduled_at || new Date().toISOString(),
+      duration: data.duration || 60,
+      category: data.category || 'other',
+      language: data.language || 'en',
+      agora_channel_name: `webinar_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+      max_participants: data.max_participants || 50,
+      created_by: 'admin',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    this.webinars.unshift(newWebinar);
+    return newWebinar;
+  }
+
+  updateWebinar(id: number, data: Partial<MockWebinar>): MockWebinar | undefined {
+    const index = this.webinars.findIndex(w => w.id === id);
+    if (index === -1) return undefined;
+    this.webinars[index] = { ...this.webinars[index], ...data, updated_at: new Date().toISOString() };
+    return this.webinars[index];
+  }
+
+  deleteWebinar(id: number): boolean {
+    const index = this.webinars.findIndex(w => w.id === id);
+    if (index === -1) return false;
+    this.webinars.splice(index, 1);
+    return true;
+  }
+
+  // ---- Factories ----
+  getFactories(search?: string): MockFactory[] {
+    if (search) {
+      const q = search.toLowerCase();
+      return this.factories.filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        f.category.toLowerCase().includes(q) ||
+        f.location.toLowerCase().includes(q)
+      );
+    }
+    return [...this.factories].sort((a, b) => b.score - a.score);
+  }
+
+  getFactoryById(id: number): MockFactory | undefined {
+    return this.factories.find(f => f.id === id);
+  }
+
+  // ---- Registrations ----
+  getRegistrations(webinarId?: number): MockRegistration[] {
+    if (webinarId) {
+      return this.registrations.filter(r => r.webinar_id === webinarId);
+    }
+    return [...this.registrations];
+  }
+
+  getRegistrationsByStatus(webinarId: number, status: string): MockRegistration[] {
+    return this.registrations.filter(r => r.webinar_id === webinarId && r.status === status);
+  }
+
+  createRegistration(data: Partial<MockRegistration>): MockRegistration {
+    const newReg: MockRegistration = {
+      id: this.nextRegistrationId++,
+      webinar_id: data.webinar_id || 0,
+      user_name: data.user_name || '',
+      user_email: data.user_email || '',
+      company_name: data.company_name || '',
+      role: data.role || 'buyer',
+      status: 'pending',
+      registered_at: new Date().toISOString(),
+      notes: data.notes,
+    };
+    this.registrations.push(newReg);
+    return newReg;
+  }
+
+  updateRegistrationStatus(id: number, status: 'approved' | 'rejected'): MockRegistration | undefined {
+    const reg = this.registrations.find(r => r.id === id);
+    if (reg) {
+      reg.status = status;
+    }
+    return reg;
+  }
+
+  // ---- Commissions ----
+  getCommissions(webinarId?: number): MockCommission[] {
+    if (webinarId) {
+      return this.commissions.filter(c => c.webinar_id === webinarId);
+    }
+    return [...this.commissions];
+  }
+
+  createCommission(data: Partial<MockCommission>): MockCommission {
+    const newComm: MockCommission = {
+      id: this.nextCommissionId++,
+      webinar_id: data.webinar_id || 0,
+      factory_id: data.factory_id || 0,
+      factory_name: data.factory_name || '',
+      title: data.title || '',
+      description: data.description || '',
+      target_buyers: data.target_buyers || '',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    };
+    this.commissions.push(newComm);
+    return newComm;
+  }
+
+  updateCommissionStatus(id: number, status: 'approved' | 'rejected' | 'active'): MockCommission | undefined {
+    const comm = this.commissions.find(c => c.id === id);
+    if (comm) {
+      comm.status = status;
+    }
+    return comm;
+  }
+
+  // ---- Dashboard Stats ----
+  getDashboardStats() {
+    return {
+      activeWebinars: this.webinars.filter(w => w.status === 'live').length,
+      scheduledWebinars: this.webinars.filter(w => w.status === 'scheduled').length,
+      totalFactories: this.factories.length,
+      totalRegistrations: this.registrations.filter(r => r.status === 'approved').length,
+      pendingReviews: this.registrations.filter(r => r.status === 'pending').length + this.commissions.filter(c => c.status === 'pending').length,
+    };
+  }
+}
+
+// Singleton instance
+export const mockStore = new MockDataStore();

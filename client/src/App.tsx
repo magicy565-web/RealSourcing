@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Webinars from "./pages/Webinars";
 import WebinarCreate from "./pages/CreateWebinar";
+import WebinarDetail from "./pages/WebinarDetail";
 import NegotiationRoom from "./pages/NegotiationRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
@@ -21,7 +22,7 @@ function Router() {
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
       <Route path="/webinars/:id/room" component={NegotiationRoom} />
-      <Route path="/webinars/:id" component={NegotiationRoom} />
+      <Route path="/webinars/:id">{(params) => <WebinarDetail params={params} />}</Route>
       <Route path="/factories" component={Factories} />
       <Route path="/factories/:id" component={FactoryDetail} />
       <Route path="/reports" component={Reports} />

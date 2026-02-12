@@ -4,254 +4,280 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Calendar, Users, MoreHorizontal, Circle } from "lucide-react";
+import {
+  Plus, Search, Calendar, Users, MoreHorizontal, Circle, Clock,
+  Building2, Globe, Video, Trash2, Eye
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { directus } from "@/lib/directus";
-import type { Webinar } from "@/lib/directus";
-import { readItems } from "@directus/sdk";
+import { cn } from "@/lib/utils";
+import { mockStore, type MockWebinar } from "@/lib/mock-data";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
-  const [webinars, setWebinars] = useState<Webinar[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [webinars, setWebinars] = useState<MockWebinar[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const fetchWebinars = async () => {
-      try {
-        const data = await directus.request(
-          readItems('webinars', {
-            limit: 50,
-            sort: ['-created_at'],
-          })
-        );
-        setWebinars(data);
-      } catch (error) {
-        console.error('Failed to fetch webinars:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWebinars();
+    setWebinars(mockStore.getWebinars());
   }, []);
 
-  const mockWebinars = [
-    {
-      id: 1,
-      title: "Smart Home Products Showcase",
-      status: "live",
-      date: "2026-02-10 10:00",
-      participants: 12,
-      factories: 3,
-    },
-    {
-      id: 2,
-      title: "Consumer Electronics Q1 2026",
-      status: "draft",
-      date: "2026-02-15 14:00",
-      participants: 0,
-      factories: 0,
-    },
-    {
-      id: 3,
-      title: "Sustainable Packaging Solutions",
-      status: "completed",
-      date: "2026-02-05 09:00",
-      participants: 18,
-      factories: 5,
-    },
-    {
-      id: 4,
-      title: "LED Lighting Solutions 2026",
-      status: "scheduled",
-      date: "2026-02-20 11:00",
-      participants: 0,
-      factories: 4,
-    },
-  ];
+  const refreshWebinars = () => {
+    setWebinars(mockStore.getWebinars());
+  };
 
-  // Use real data if available, otherwise fallback to mock data
-  const displayWebinars = webinars.length > 0 ? webinars.map(w => ({
-    id: w.id,
-    title: w.title,
-    status: w.status,
-    date: w.scheduled_at || w.created_at,
-    participants: 0, // TODO: fetch from webinar_participants
-    factories: 0, // TODO: fetch related factories
-  })) : mockWebinars;
+  const filteredWebinars = searchQuery
+    ? webinars.filter(w =>
+        w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        w.category.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : webinars;
 
   const getStatusBadge = (status: string) => {
-    if (status === "live") {
-      return (
-        <Badge variant="default" className="bg-red-500/20 text-red-400 border-red-500/30">
-          <Circle className="h-2 w-2 fill-red-400 mr-1" />
-          Live
-        </Badge>
-      );
-    }
-    const variants: Record<string, "secondary" | "outline"> = {
-      draft: "secondary",
-      completed: "outline",
-      scheduled: "secondary",
-      archived: "outline",
+    const config: Record<string, { color: string; label: string; dot?: boolean }> = {
+      live: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "Live", dot: true },
+      scheduled: { color: "bg-blue-500/10 text-blue-400 border-blue-500/20", label: "Scheduled" },
+      draft: { color: "bg-gray-500/10 text-gray-400 border-gray-500/20", label: "Draft" },
+      completed: { color: "bg-green-500/10 text-green-400 border-green-500/20", label: "Completed" },
+      cancelled: { color: "bg-orange-500/10 text-orange-400 border-orange-500/20", label: "Cancelled" },
     };
+    const c = config[status] || config.draft;
     return (
-      <Badge variant={variants[status] || "secondary"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <Badge className={cn("text-xs font-light", c.color)}>
+        {c.dot && <Circle className="h-2 w-2 fill-current mr-1 animate-pulse" />}
+        {c.label}
       </Badge>
     );
   };
 
-  const filterWebinars = (status: string) => {
-    if (status === "all") return displayWebinars;
-    return displayWebinars.filter((w) => w.status === status);
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      electronics: "Electronics",
+      "smart-home": "Smart Home",
+      "consumer-goods": "Consumer Goods",
+      textiles: "Textiles",
+      furniture: "Furniture",
+      automotive: "Automotive",
+      packaging: "Packaging",
+      other: "Other",
+    };
+    return labels[category] || category;
   };
 
-  const renderWebinarList = (items: typeof displayWebinars) => {
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    mockStore.deleteWebinar(id);
+    refreshWebinars();
+    toast.success("Webinar deleted");
+  };
+
+  const filterByStatus = (status: string) => {
+    if (status === "all") return filteredWebinars;
+    return filteredWebinars.filter(w => w.status === status);
+  };
+
+  const renderWebinarList = (items: MockWebinar[]) => {
     if (items.length === 0) {
       return (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">No webinars found</p>
+        <div className="text-center py-20">
+          <Video className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+          <p className="text-muted-foreground font-light">No webinars found</p>
+          <p className="text-xs text-muted-foreground/60 font-light mt-1">Create your first webinar to get started</p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-4">
-        {items.map((webinar) => (
-          <Card key={webinar.id} className="hover:border-muted-foreground/30 transition-colors">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => {
-                      if (webinar.status === "live") {
-                        setLocation(`/webinars/${webinar.id}/room`);
-                      } else {
-                        toast("Feature coming soon");
-                      }
-                    }}
-                  >
-                    {webinar.title}
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {webinar.date}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {webinar.participants} participants
-                    </span>
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(webinar.status)}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
+      <div className="space-y-3">
+        {items.map((webinar) => {
+          const regs = mockStore.getRegistrations(webinar.id);
+          const approvedCount = regs.filter(r => r.status === "approved").length;
+          const factoryCount = regs.filter(r => r.role === "factory" && r.status === "approved").length;
+          const buyerCount = regs.filter(r => r.role === "buyer" && r.status === "approved").length;
+          const pendingCount = regs.filter(r => r.status === "pending").length;
+
+          return (
+            <Card
+              key={webinar.id}
+              className="bg-[#141414] border-[#262626] hover:border-[#404040] transition-all cursor-pointer group"
+              onClick={() => setLocation(`/webinars/${webinar.id}`)}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-light text-white group-hover:text-violet-400 transition-colors truncate">
+                        {webinar.title}
+                      </h3>
+                      {getStatusBadge(webinar.status)}
+                      {pendingCount > 0 && (
+                        <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-xs font-light">
+                          {pendingCount} pending
+                        </Badge>
+                      )}
+                    </div>
+                    {webinar.description && (
+                      <p className="text-sm text-muted-foreground font-light line-clamp-1 mb-3 max-w-2xl">
+                        {webinar.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3" />
+                        {formatDate(webinar.scheduled_at)}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        {webinar.duration} min
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Users className="h-3 w-3" />
+                        {approvedCount} / {webinar.max_participants}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Building2 className="h-3 w-3" />
+                        {factoryCount} factories
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Globe className="h-3 w-3" />
+                        {buyerCount} buyers
+                      </span>
+                      {webinar.category && (
+                        <Badge variant="outline" className="text-[10px] border-[#262626] text-muted-foreground font-light">
+                          {getCategoryLabel(webinar.category)}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                    {webinar.status === "live" && (
+                      <Button
+                        size="sm"
+                        onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
+                        className="bg-violet-600 hover:bg-violet-700 text-white font-light"
+                      >
+                        <Video className="mr-1.5 h-3.5 w-3.5" />
+                        Join Room
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => toast("Feature coming soon")}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toast("Feature coming soon")}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toast("Feature coming soon")}>
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => toast("Feature coming soon")}>
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white hover:bg-white/5">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-[#141414] border-[#262626] text-white">
+                        <DropdownMenuItem
+                          onClick={() => setLocation(`/webinars/${webinar.id}`)}
+                          className="focus:bg-white/5 cursor-pointer font-light"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        {webinar.status === "live" && (
+                          <DropdownMenuItem
+                            onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
+                            className="focus:bg-white/5 cursor-pointer font-light"
+                          >
+                            <Video className="mr-2 h-4 w-4" />
+                            Enter Room
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator className="bg-[#262626]" />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(webinar.id)}
+                          className="focus:bg-red-500/10 text-red-400 cursor-pointer font-light"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                <span>{webinar.factories} factories invited</span>
-                {webinar.status === "live" && (
-                  <Button size="sm" variant="default" onClick={() => setLocation(`/webinars/${webinar.id}/room`)}>
-                    Join Negotiation Room
-                  </Button>
-                )}
-                {webinar.status === "draft" && (
-                  <Button size="sm" variant="outline" onClick={() => setLocation("/webinars/create")}>
-                    Continue Setup
-                  </Button>
-                )}
-                {webinar.status === "completed" && (
-                  <Button size="sm" variant="outline" onClick={() => setLocation("/reports")}>
-                    View Report
-                  </Button>
-                )}
-                {webinar.status === "scheduled" && (
-                  <Button size="sm" variant="outline" onClick={() => toast("Feature coming soon")}>
-                    View Details
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   };
 
   return (
     <DashboardLayout>
-      <div className="p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Webinars</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your live sourcing webinars and negotiations
-            </p>
+      <div className="h-full overflow-auto">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-light tracking-tight text-white">Webinars</h1>
+              <p className="text-muted-foreground mt-1 font-light text-sm">
+                Manage your online sourcing exhibitions and live events
+              </p>
+            </div>
+            <Button
+              onClick={() => setLocation("/webinars/create")}
+              className="bg-violet-600 hover:bg-violet-700 text-white font-light"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Webinar
+            </Button>
           </div>
-          <Button onClick={() => setLocation("/webinars/create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Webinar
-          </Button>
-        </div>
 
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search webinars..." className="pl-10" />
+          {/* Search */}
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search webinars..."
+                className="pl-10 bg-[#141414] border-[#262626] text-white focus:ring-violet-600 font-light"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="all" className="space-y-6">
+            <TabsList className="bg-[#141414] border border-[#262626]">
+              <TabsTrigger value="all" className="font-light data-[state=active]:bg-violet-600/10 data-[state=active]:text-violet-400">
+                All ({filteredWebinars.length})
+              </TabsTrigger>
+              <TabsTrigger value="live" className="font-light data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400">
+                Live ({filterByStatus("live").length})
+              </TabsTrigger>
+              <TabsTrigger value="scheduled" className="font-light data-[state=active]:bg-blue-500/10 data-[state=active]:text-blue-400">
+                Scheduled ({filterByStatus("scheduled").length})
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="font-light data-[state=active]:bg-green-500/10 data-[state=active]:text-green-400">
+                Completed ({filterByStatus("completed").length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all">{renderWebinarList(filteredWebinars)}</TabsContent>
+            <TabsContent value="live">{renderWebinarList(filterByStatus("live"))}</TabsContent>
+            <TabsContent value="scheduled">{renderWebinarList(filterByStatus("scheduled"))}</TabsContent>
+            <TabsContent value="completed">{renderWebinarList(filterByStatus("completed"))}</TabsContent>
+          </Tabs>
         </div>
-
-        {loading ? (
-          <div className="text-center py-16 text-muted-foreground">Loading webinars...</div>
-        ) : (
-        <Tabs defaultValue="all" className="space-y-6">
-            <TabsList>
-            <TabsTrigger value="all">All ({displayWebinars.length})</TabsTrigger>
-            <TabsTrigger value="draft">Draft ({filterWebinars("draft").length})</TabsTrigger>
-            <TabsTrigger value="live">Live ({filterWebinars("live").length})</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled ({filterWebinars("scheduled").length})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({filterWebinars("completed").length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all">{renderWebinarList(displayWebinars)}</TabsContent>
-          <TabsContent value="draft">{renderWebinarList(filterWebinars("draft"))}</TabsContent>
-          <TabsContent value="live">{renderWebinarList(filterWebinars("live"))}</TabsContent>
-          <TabsContent value="scheduled">{renderWebinarList(filterWebinars("scheduled"))}</TabsContent>
-          <TabsContent value="completed">{renderWebinarList(filterWebinars("completed"))}</TabsContent>
-        </Tabs>
-        )}
       </div>
     </DashboardLayout>
   );

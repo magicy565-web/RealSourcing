@@ -7,7 +7,7 @@ import AgoraRTC, {
 } from 'agora-rtc-sdk-ng';
 
 // Agora App ID (Priority: User provided key -> Environment variable -> Fallback)
-const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID || 'f48e44adf06a425a869ebebd62e90ad2';
+const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID || '0deed6e0ce284935b09babccaa5eb882';
 
 export interface AgoraConfig {
   appId?: string;

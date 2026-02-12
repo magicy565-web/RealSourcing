@@ -1,4 +1,5 @@
-import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
+import AgoraToken from 'agora-access-token';
+const { RtcTokenBuilder, RtcRole } = AgoraToken;
 
 const APP_ID = process.env.AGORA_APP_ID || '';
 const APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE || '';
