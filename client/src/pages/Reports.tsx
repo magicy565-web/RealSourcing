@@ -133,7 +133,7 @@ export default function Reports() {
               <div className="flex items-center gap-3">
                 {report.status === "completed" ? (
                   <>
-                    <Button size="sm" variant="default" onClick={() => setLocation(`/webinars/${report.id}/replay`)}>
+                    <Button size="sm" variant="default" onClick={() => setLocation(`/webinars/${report.id === 1 ? 5 : report.id}/replay`)}>
                       <Eye className="mr-2 h-4 w-4" />
                       View Replay Details
                     </Button>

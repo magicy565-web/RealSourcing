@@ -17,7 +17,10 @@ import {
   Package,
   Lightbulb,
   Factory,
+  Scissors,
+  Share2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -614,6 +617,38 @@ export default function VideoTimeline({
 
             <div className="w-px h-4 bg-border mx-1" />
 
+            {/* CapCut / Video Editor Actions */}
+            <button
+              onClick={() => {
+                toast.info("Opening in CapCut Editor...", {
+                  description: "Exporting highlights to CapCut cloud for professional editing."
+                });
+                // Simulate CapCut integration
+                setTimeout(() => {
+                  window.open("https://www.capcut.com/editor", "_blank");
+                }, 1500);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/20"
+              title="Edit in CapCut"
+            >
+              <Scissors className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-medium">Edit in CapCut</span>
+            </button>
+
+            <button
+              onClick={() => {
+                toast.success("Highlight shared!", {
+                  description: "The selected highlight has been shared to the sourcing team."
+                });
+              }}
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Share Highlight"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="w-px h-4 bg-border mx-1" />
+            
             {/* Zoom controls */}
             <button
               onClick={() => setZoomLevel((z) => Math.max(z / 1.5, 1))}

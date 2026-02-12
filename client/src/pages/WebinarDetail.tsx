@@ -206,6 +206,15 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
                   </Button>
                 </>
               )}
+              {webinar.status === "completed" && (
+                <Button
+                  onClick={() => setLocation(`/webinars/${webinar.id}/replay`)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-light"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  View Replay & Highlights
+                </Button>
+              )}
               {webinar.status === "draft" && (
                 <Button
                   onClick={() => handleStatusChange("scheduled")}
