@@ -5,25 +5,48 @@ export interface Webinar {
   id: number;
   title: string;
   description?: string;
-  type: 'public' | 'private';
-  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  type: 'one_on_one' | 'small_group' | 'medium' | 'large' | 'extra_large';
+  scenario?: 'general' | 'tiktok_dropshipper' | 'influencer_selection' | 'negotiation' | 'small_batch' | 'product_launch' | 'factory_tour' | 'industry_summit';
+  visibility?: 'public' | 'semi_public' | 'private';
+  status: 'draft' | 'scheduled' | 'live' | 'completed' | 'cancelled';
   scheduled_at?: string;
+  duration?: number;
+  category?: string;
+  language?: string;
   agora_channel_name?: string;
   agora_token?: string;
+  cover_image?: string;
+  max_participants?: number;
+  actual_participants?: number;
+  host_type?: 'factory' | 'buyer';
   creator_id?: number;
   created_at: string;
   updated_at?: string;
 }
 
 export interface Factory {
-  id: number;
+  id: string;
   name: string;
   location?: string;
   category?: string;
   description?: string;
   score?: number;
-  certifications?: string;
+  logo?: string;
+  year_established?: number;
+  employee_count?: number;
+  annual_revenue?: string;
+  website?: string;
+  verification_status?: 'pending' | 'verified' | 'rejected';
+  webinars_attended?: number;
+  orders_completed?: number;
+  certifications?: any;
+  main_products?: string[];
+  moq?: number;
+  lead_time?: number;
+  country?: string;
+  city?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Inquiry {
@@ -73,6 +96,26 @@ export interface WebinarParticipant {
 }
 
 // Schema definition for Directus SDK
+export interface Message {
+  id: number;
+  webinar_id: number;
+  sender_id: string;
+  sender_name: string;
+  content: string;
+  message_type: 'text' | 'system' | 'file';
+  created_at: string;
+}
+
+export interface Report {
+  id: number;
+  webinar_id: number;
+  title: string;
+  report_type: 'supplier_comparison' | 'negotiation_summary' | 'ai_insights';
+  content: any;
+  generated_by: string;
+  created_at: string;
+}
+
 export interface Schema {
   webinars: Webinar[];
   factories: Factory[];
@@ -80,6 +123,8 @@ export interface Schema {
   quotes: Quote[];
   orders: Order[];
   webinar_participants: WebinarParticipant[];
+  messages: Message[];
+  reports: Report[];
 }
 
 // Mock Data for Fallback (when CORS or Connection fails)

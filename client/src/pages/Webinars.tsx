@@ -20,11 +20,17 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { mockStore, type MockWebinar } from "@/lib/mock-data";
+import { CreateWebinarModal } from "@/components/CreateWebinarModal";
+import { WebinarTypeLabel } from "@/components/WebinarTypeLabel";
+import { WebinarScenarioLabel } from "@/components/WebinarScenarioLabel";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
   const [webinars, setWebinars] = useState<MockWebinar[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [scenarioFilter, setScenarioFilter] = useState<string>("all");
 
   useEffect(() => {
     setWebinars(mockStore.getWebinars());
@@ -34,12 +40,23 @@ export default function Webinars() {
     setWebinars(mockStore.getWebinars());
   };
 
-  const filteredWebinars = searchQuery
-    ? webinars.filter(w =>
-        w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : webinars;
+  const filteredWebinars = webinars.filter(w => {
+    // Search filter
+    if (searchQuery) {
+      const matchesSearch = w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        w.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (w.description && w.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      if (!matchesSearch) return false;
+    }
+    
+    // Type filter
+    if (typeFilter !== "all" && w.type !== typeFilter) return false;
+    
+    // Scenario filter
+    if (scenarioFilter !== "all" && w.scenario !== scenarioFilter) return false;
+    
+    return true;
+  });
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { color: string; label: string; dot?: boolean }> = {
@@ -140,11 +157,13 @@ export default function Webinars() {
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0 py-5 pr-5">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <h3 className="text-lg font-light text-white group-hover:text-violet-400 transition-colors truncate">
                         {webinar.title}
                       </h3>
                       {getStatusBadge(webinar.status)}
+                      {webinar.type && <WebinarTypeLabel type={webinar.type} />}
+                      {webinar.scenario && <WebinarScenarioLabel scenario={webinar.scenario} />}
                       {pendingCount > 0 && (
                         <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-xs font-light">
                           {pendingCount} pending
@@ -240,7 +259,7 @@ export default function Webinars() {
     );
   };
 
-  return (
+  return (<>
     <DashboardLayout>
       <div className="h-full overflow-auto">
         <div className="p-8">
@@ -253,7 +272,7 @@ export default function Webinars() {
               </p>
             </div>
             <Button
-              onClick={() => setLocation("/webinars/create")}
+              onClick={() => setCreateModalOpen(true)}
               className="bg-violet-600 hover:bg-violet-700 text-white font-light"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -261,8 +280,8 @@ export default function Webinars() {
             </Button>
           </div>
 
-          {/* Search */}
-          <div className="mb-6">
+          {/* Search and Filters */}
+          <div className="mb-6 space-y-4">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -271,6 +290,109 @@ export default function Webinars() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+            </div>
+            
+            {/* Type and Scenario Filters */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Type:</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTypeFilter("all")}
+                    className={cn(
+                      "h-8 text-xs",
+                      typeFilter === "all" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTypeFilter("one_on_one")}
+                    className={cn(
+                      "h-8 text-xs",
+                      typeFilter === "one_on_one" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    💬 1对1
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTypeFilter("small_group")}
+                    className={cn(
+                      "h-8 text-xs",
+                      typeFilter === "small_group" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    👥 小组
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTypeFilter("large")}
+                    className={cn(
+                      "h-8 text-xs",
+                      typeFilter === "large" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    🎪 大型
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Scenario:</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScenarioFilter("all")}
+                    className={cn(
+                      "h-8 text-xs",
+                      scenarioFilter === "all" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScenarioFilter("tiktok_dropshipper")}
+                    className={cn(
+                      "h-8 text-xs",
+                      scenarioFilter === "tiktok_dropshipper" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    🎵 TikTok
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScenarioFilter("influencer_selection")}
+                    className={cn(
+                      "h-8 text-xs",
+                      scenarioFilter === "influencer_selection" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    ⭐ 网红
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScenarioFilter("negotiation")}
+                    className={cn(
+                      "h-8 text-xs",
+                      scenarioFilter === "negotiation" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
+                    )}
+                  >
+                    💼 谈判
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -299,5 +421,12 @@ export default function Webinars() {
         </div>
       </div>
     </DashboardLayout>
-  );
+    
+    {/* Create Webinar Modal */}
+    <CreateWebinarModal
+      open={createModalOpen}
+      onClose={() => setCreateModalOpen(false)}
+      onSuccess={refreshWebinars}
+    />
+  </>);
 }
