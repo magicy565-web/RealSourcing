@@ -1,10 +1,14 @@
 import OpenAI from "openai";
 import { getWebinarById, getWebinarFactories, getWebinarTimeline } from "../db";
 
-// Initialize OpenAI client
+// Initialize OpenAI client with third-party API
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || "sk-LIs2MGKmDuGZhcfHbvLs1EiWHPwm2ELf3E8JkJXlFXgFLPBM",
+  baseURL: process.env.OPENAI_BASE_URL || "https://once.novai.su/v1",
 });
+
+// Model name for third-party API
+const AI_MODEL = process.env.OPENAI_MODEL || "[逆次]o4-mini";
 
 // Report type definitions
 export type ReportType = "supplier_evaluation" | "profit_analysis" | "negotiation_summary";
@@ -141,7 +145,7 @@ Format the response as JSON with this structure:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: AI_MODEL,
       messages: [
         {
           role: "system",
@@ -210,7 +214,7 @@ Format the response as JSON with this structure:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: AI_MODEL,
       messages: [
         {
           role: "system",
@@ -284,7 +288,7 @@ Format the response as JSON with this structure:
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: AI_MODEL,
       messages: [
         {
           role: "system",
