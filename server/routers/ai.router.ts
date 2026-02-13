@@ -1,6 +1,12 @@
 import { z } from "zod";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { OpenAI } from "openai";
+import {
+  extractPurchaseInfo,
+  generateIntentContract,
+  assistConversation,
+  translateText,
+} from '../services/ai-conversation';
 
 // AI Configuration from environment or user provided defaults
 const AI_CONFIG = {
@@ -63,5 +69,86 @@ Be professional, concise, and provide actionable insights on pricing, quality, a
           content: "I'm having trouble connecting to my brain right now. Please try again in a moment.",
         };
       }
+    }),
+
+  /**
+   * 从对话中提取采购信息
+   */
+  extractPurchaseInfo: protectedProcedure
+    .input(
+      z.object({
+        conversationHistory: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const purchaseInfo = await extractPurchaseInfo(input.conversationHistory);
+      return purchaseInfo;
+    }),
+
+  /**
+   * 生成意向合同
+   */
+  generateContract: protectedProcedure
+    .input(
+      z.object({
+        buyerName: z.string(),
+        factoryName: z.string(),
+        purchaseInfo: z.object({
+          productName: z.string().optional(),
+          quantity: z.number().optional(),
+          targetPrice: z.number().optional(),
+          currency: z.string().optional(),
+          deliveryDate: z.string().optional(),
+          paymentTerms: z.string().optional(),
+          qualityRequirements: z.array(z.string()).optional(),
+          additionalNotes: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const contract = await generateIntentContract(
+        input.buyerName,
+        input.factoryName,
+        input.purchaseInfo
+      );
+      return contract;
+    }),
+
+  /**
+   * AI 辅助对话
+   */
+  assistConversation: protectedProcedure
+    .input(
+      z.object({
+        conversationContext: z.string(),
+        userQuestion: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const response = await assistConversation(
+        input.conversationContext,
+        input.userQuestion
+      );
+      return { response };
+    }),
+
+  /**
+   * AI 翻译
+   */
+  translate: protectedProcedure
+    .input(
+      z.object({
+        text: z.string(),
+        sourceLang: z.enum(['zh', 'en']),
+        targetLang: z.enum(['zh', 'en']),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const translatedText = await translateText(
+        input.text,
+        input.sourceLang,
+        input.targetLang
+      );
+      return { translatedText };
     }),
 });

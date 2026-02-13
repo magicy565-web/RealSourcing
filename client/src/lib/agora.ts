@@ -34,7 +34,7 @@ export class AgoraService {
 
   constructor() {
     // Set Agora log level
-    AgoraRTC.setLogLevel(1); // 0: DEBUG, 1: INFO, 2: WARNING, 3: ERROR, 4: NONE
+    AgoraRTC.setLogLevel(0); // 0: DEBUG, 1: INFO, 2: WARNING, 3: ERROR, 4: NONE
   }
 
   /**
@@ -52,7 +52,7 @@ export class AgoraService {
       try {
         // 1: Global Cloud Proxy, 2: Regional Cloud Proxy
         // Using force UDP proxy might help with "CAN_NOT_GET_GATEWAY_SERVER"
-        this.client.startProxyServer(3); 
+        this.client.startProxyServer(1); // Use global cloud proxy for better compatibility 
         console.log('🌐 Agora Cloud Proxy enabled');
       } catch (e) {
         console.warn('⚠️ Failed to start Agora Cloud Proxy:', e);
@@ -78,6 +78,11 @@ export class AgoraService {
       console.log('✅ Joined Agora channel:', config.channel);
     } catch (error) {
       console.error('❌ Failed to initialize Agora:', error);
+      if (error.code === 'INVALID_APP_ID') {
+        console.error('Please check your Agora App ID in .env file.');
+      } else if (error.code === 'INVALID_TOKEN') {
+        console.error('Invalid or expired token. Please generate a new token.');
+      }
       throw error;
     }
   }
