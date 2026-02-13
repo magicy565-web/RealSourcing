@@ -13,7 +13,7 @@ export const usageRouter = router({
           "inquiry_received",
         ]),
         count: z.number().optional().default(1),
-        metadata: z.record(z.unknown()).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

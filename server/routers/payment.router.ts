@@ -121,7 +121,7 @@ export const paymentRouter = router({
         orderNo: z.string(),
         paymentId: z.string(),
         status: z.enum(["paid", "failed"]),
-        metadata: z.record(z.unknown()).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
       })
     )
     .mutation(async ({ input }) => {

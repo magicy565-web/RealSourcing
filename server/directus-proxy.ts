@@ -42,7 +42,7 @@ router.all("/*", async (req, res) => {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     // Copy response headers
-    response.headers.forEach((value, name) => {
+    response.headers.forEach((value: string, name: string) => {
       if (
         !name.toLowerCase().includes("transfer-encoding") &&
         !name.toLowerCase().includes("content-encoding")
