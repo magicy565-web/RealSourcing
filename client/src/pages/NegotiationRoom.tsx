@@ -83,7 +83,7 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
 
   // ─── Data Fetching ──────────────────────────────────────────────────────
 
-  const { data: timelineData, isLoading: loadingEvents } = trpc.webinar.timeline.useQuery({ webinarId: parseInt(params?.id || "1") });
+  const { data: timelineData, isLoading: isTimelineLoading } = trpc.webinar.timeline.useQuery({ webinarId: parseInt(params?.id || "1") });
   const { data: factoryData } = trpc.webinar.factories.useQuery({ webinarId: parseInt(params?.id || "1") });
 
   useEffect(() => {

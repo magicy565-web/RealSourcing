@@ -34,7 +34,7 @@ export class AgoraService {
 
   constructor() {
     // Set Agora log level
-    AgoraRTC.setLogLevel(3); // 0: DEBUG, 1: INFO, 2: WARNING, 3: ERROR, 4: NONE
+    AgoraRTC.setLogLevel(1); // 0: DEBUG, 1: INFO, 2: WARNING, 3: ERROR, 4: NONE
   }
 
   /**
@@ -47,6 +47,16 @@ export class AgoraService {
         mode: 'rtc',
         codec: 'vp8',
       });
+      
+      // Try to enable cloud proxy if direct connection fails (useful for restricted networks)
+      try {
+        // 1: Global Cloud Proxy, 2: Regional Cloud Proxy
+        // Using force UDP proxy might help with "CAN_NOT_GET_GATEWAY_SERVER"
+        this.client.startProxyServer(3); 
+        console.log('🌐 Agora Cloud Proxy enabled');
+      } catch (e) {
+        console.warn('⚠️ Failed to start Agora Cloud Proxy:', e);
+      }
 
       // Register event handlers
       this.registerEventHandlers();
