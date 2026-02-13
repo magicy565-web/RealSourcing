@@ -12,6 +12,9 @@ import { paymentRouter } from "./routers/payment.router";
 import { usageRouter } from "./routers/usage.router";
 import { aiRouter } from "./routers/ai.router";
 import { rtmRouter } from "./routers/rtm.router";
+import { factoryRouter } from "./routers/factory.router";
+import { orderRouter } from "./routers/order.router";
+import { subscriptionEnhancedRouter } from "./routers/subscription_enhanced.router";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -258,6 +261,15 @@ export const appRouter = router({
 
   // RTM Messages
   rtm: rtmRouter,
+
+  // Factory Management (Enhanced)
+  factoryEnhanced: factoryRouter,
+
+  // Order Management
+  order: orderRouter,
+
+  // Subscription Management (Enhanced)
+  subscriptionEnhanced: subscriptionEnhancedRouter,
 
   // Reports
   report: router({

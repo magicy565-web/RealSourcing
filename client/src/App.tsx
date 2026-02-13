@@ -19,6 +19,8 @@ import Pricing from "./pages/Pricing";
 import SubscriptionManagement from "./pages/SubscriptionManagement";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Messages from "./pages/Messages";
+import { Subscription } from "./pages/Subscription";
+import { QuotaDashboard } from "./pages/QuotaDashboard";
 import CommandPalette from "./components/CommandPalette";
 
 function Router() {
@@ -39,6 +41,8 @@ function Router() {
       <Route path="/subscription" component={SubscriptionManagement} />
       <Route path="/payment/success" component={PaymentSuccess} />
       <Route path="/messages" component={Messages} />
+      <Route path="/subscription-plans" component={Subscription} />
+      <Route path="/quota" component={QuotaDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -28,6 +28,7 @@ import {
   Command,
   Flag,
   MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -46,7 +47,8 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
-  { name: "Subscription", href: "/subscription", icon: CreditCard },
+  { name: "Subscription", href: "/subscription-plans", icon: CreditCard },
+  { name: "Quota Usage", href: "/quota", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Help & Support", href: "/help", icon: HelpCircle },
 ];
