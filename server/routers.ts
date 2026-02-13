@@ -10,6 +10,7 @@ import { generateAIReport, type ReportType } from "./lib/ai-report-generator";
 import { subscriptionRouter } from "./routers/subscription.router";
 import { paymentRouter } from "./routers/payment.router";
 import { usageRouter } from "./routers/usage.router";
+import { aiRouter } from "./routers/ai.router";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -250,6 +251,9 @@ export const appRouter = router({
 
   // Usage tracking
   usage: usageRouter,
+
+  // AI Chat
+  ai: aiRouter,
 
   // Reports
   report: router({

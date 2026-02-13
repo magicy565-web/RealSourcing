@@ -15,6 +15,13 @@
       "when": 1770734078118,
       "tag": "0001_worthless_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770963348614,
+      "tag": "0002_lying_green_goblin",
+      "breakpoints": true
     }
   ]
 }

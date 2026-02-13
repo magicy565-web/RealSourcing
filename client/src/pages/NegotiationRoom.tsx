@@ -268,6 +268,10 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
       setScreenSharing(isSharing);
       
       if (isSharing) {
+        setTimeout(() => {
+          agoraService.playLocalVideo("local-video-presentation");
+        }, 500);
+        
         addMessage({
           id: `sys-${Date.now()}`,
           sender: "System",
@@ -311,31 +315,60 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
     setMessages(prev => [...prev, msg]);
   }, []);
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  const chatMutation = trpc.ai.chat.useMutation();
 
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || chatMutation.isPending) return;
+
+    const msgText = inputValue.trim();
     const userMsg: ChatMsg = {
       id: `user-${Date.now()}`,
       sender: "You",
       role: "user",
-      content: inputValue.trim(),
+      content: msgText,
       timestamp: new Date(),
     };
     addMessage(userMsg);
-    const msgText = inputValue.trim();
     setInputValue("");
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(msgText);
+    try {
+      // Get last 5 messages for context
+      const history = messages
+        .filter(m => m.role !== "system")
+        .slice(-5)
+        .map(m => ({
+          role: m.role === "ai" ? "assistant" : m.role === "user" ? "user" : "system",
+          content: m.content
+        })) as any[];
+
+      const result = await chatMutation.mutateAsync({
+        message: msgText,
+        history,
+        context: {
+          webinarTitle: webinar?.title,
+          webinarId: parseInt(webinarId)
+        }
+      });
+
+      if (result.success) {
+        addMessage({
+          id: `ai-${Date.now()}`,
+          sender: "AI Assistant",
+          role: "ai",
+          content: result.content,
+          timestamp: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error("AI Chat Error:", error);
       addMessage({
-        id: `ai-${Date.now()}`,
+        id: `ai-err-${Date.now()}`,
         sender: "AI Assistant",
         role: "ai",
-        content: aiResponse,
+        content: "I'm having trouble connecting. Please try again later.",
         timestamp: new Date(),
       });
-    }, 1200);
+    }
   };
 
   const generateAIResponse = (msg: string): string => {
@@ -577,15 +610,31 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
               ) : (
                 /* Video Grid */
                 <div className="absolute inset-0">
-                  {/* Main stage - show participants or placeholder */}
-                  <div className={cn(
-                    "w-full h-full grid gap-1.5 p-1.5",
-                    remoteUsers.length === 0 ? "grid-cols-1" :
-                    remoteUsers.length === 1 ? "grid-cols-1" :
-                    remoteUsers.length <= 4 ? "grid-cols-2" :
-                    "grid-cols-3"
-                  )}>
-                    {remoteUsers.length === 0 ? (
+                      {/* Main stage - show participants or placeholder */}
+	                  <div className={cn(
+	                    "w-full h-full grid gap-1.5 p-1.5",
+	                    (remoteUsers.length === 0 && !screenSharing) ? "grid-cols-1" :
+	                    (remoteUsers.length === 1 && !screenSharing) ? "grid-cols-1" :
+	                    (remoteUsers.length <= 4 && !screenSharing) ? "grid-cols-2" :
+	                    "grid-cols-3"
+	                  )}>
+                      {/* Presentation / Screen Share Stage */}
+                      {screenSharing && (
+                        <div 
+                          id="local-screen-share-stage" 
+                          className="col-span-full row-span-2 bg-[#0A0A0A] rounded-lg overflow-hidden border-2 border-violet-500/30 relative"
+                        >
+                          <div className="absolute top-4 left-4 z-10">
+                            <Badge className="bg-violet-600 text-white border-none px-2 py-1 flex items-center gap-1.5">
+                              <Monitor className="h-3.5 w-3.5" />
+                              You are presenting
+                            </Badge>
+                          </div>
+                          <div id="local-video-presentation" className="w-full h-full" />
+                        </div>
+                      )}
+
+	                    {remoteUsers.length === 0 && !screenSharing ? (
                       /* No remote users - show participant cards */
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-4">
                         {participants.slice(0, 6).map((p) => (
