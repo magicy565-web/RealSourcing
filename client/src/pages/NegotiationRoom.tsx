@@ -48,8 +48,9 @@ interface Participant {
 
 export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   const [, setLocation] = useLocation();
-  const [webinar, setWebinar] = useState<MockWebinar | null>(null);
+  const { data: webinar, isLoading: loadingWebinar } = trpc.webinar.getById.useQuery({ id: parseInt(params?.id || "1") });
   const [loading, setLoading] = useState(true);
+  const utils = trpc.useUtils();
 
   // Agora state
   const [joined, setJoined] = useState(false);
@@ -82,44 +83,32 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
 
   // ─── Data Fetching ──────────────────────────────────────────────────────
 
+  const { data: timelineData, isLoading: loadingEvents } = trpc.webinar.timeline.useQuery({ webinarId: parseInt(params?.id || "1") });
+  const { data: factoryData } = trpc.webinar.factories.useQuery({ webinarId: parseInt(params?.id || "1") });
+
   useEffect(() => {
-    const w = mockStore.getWebinarById(parseInt(webinarId));
-    if (w) {
-      setWebinar(w);
-      const regs = mockStore.getRegistrations(parseInt(webinarId))
-        .filter(r => r.status === "approved");
-      setRegistrations(regs);
-
-      // Build initial participant list from registrations
-      const initialParticipants: Participant[] = regs.map((r, i) => ({
-        uid: `mock-${r.id}`,
-        name: r.user_name,
-        role: r.role as "factory" | "buyer",
-        company: r.company_name,
-        hasVideo: Math.random() > 0.3,
-        hasAudio: Math.random() > 0.2,
+    if (webinar) {
+      // Build participant list from real factory data
+      const factoryParticipants: Participant[] = (factoryData || []).map((f: any) => ({
+        uid: `factory-${f.id}`,
+        name: f.name,
+        role: "factory",
+        company: f.name,
+        hasVideo: false,
+        hasAudio: false,
       }));
-      setParticipants(initialParticipants);
-
-      // Load timeline events
-      loadTimelineEvents();
+      setParticipants(factoryParticipants);
     }
-    setLoading(false);
-  }, [webinarId]);
-
-  // Load timeline events from backend
-  const loadTimelineEvents = async () => {
-    setLoadingEvents(true);
-    try {
-      const response = await fetch(`/api/trpc/webinar.getTimeline?input=${encodeURIComponent(JSON.stringify({ webinarId: parseInt(webinarId) }))}`);
-      const data = await response.json();
-      setTimelineEvents(data.result?.data || []);
-    } catch (error) {
-      console.error('Failed to load timeline events:', error);
-    } finally {
-      setLoadingEvents(false);
+    if (!loadingWebinar) {
+      setLoading(false);
     }
-  };
+  }, [webinar, factoryData, loadingWebinar]);
+
+  useEffect(() => {
+    if (timelineData) {
+      setTimelineEvents(timelineData);
+    }
+  }, [timelineData]);
 
   // ─── Timer ──────────────────────────────────────────────────────────────
 
@@ -175,16 +164,15 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
     try {
       // Generate channel name from webinar ID
       const channelName = `webinar-${webinarId}`;
-      const uid = Math.floor(Math.random() * 10000);
+      const uid = Math.floor(Math.random() * 1000000);
 
-      // Get Agora token from backend
+      // Get Agora token from backend using trpc utils
       let token: string | undefined = undefined;
       try {
-        const response = await fetch(`/api/trpc/agora.getToken?input=${encodeURIComponent(JSON.stringify({ channelName, uid }))}`);
-        const data = await response.json();
-        token = data.result?.data?.token || undefined;
+        const data = await utils.client.agora.getToken.query({ channelName, uid });
+        token = data.token;
       } catch (error) {
-        console.warn('Failed to get Agora token, joining without token:', error);
+        console.error('Failed to get Agora token:', error);
       }
 
       await agoraService.init({
@@ -222,17 +210,9 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
           timestamp: new Date(),
         });
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to join channel:", error);
-      // Still allow "joining" for demo purposes
-      setJoined(true);
-      addMessage({
-        id: `sys-${Date.now()}`,
-        sender: "System",
-        role: "system",
-        content: "Connected in demo mode (no camera/mic access)",
-        timestamp: new Date(),
-      });
+      alert(`Connection failed: ${error.message || "Please check your network and try again."}`);
     }
   };
 

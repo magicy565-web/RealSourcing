@@ -19,14 +19,39 @@ export function generateRtcToken(channelName: string, uid: number | string) {
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
   try {
-    const token = RtcTokenBuilder.buildTokenWithUid(
-      APP_ID,
-      APP_CERTIFICATE,
-      channelName,
-      Number(uid),
-      role,
-      privilegeExpiredTs
-    );
+    let token: string;
+    if (typeof uid === 'number') {
+      token = RtcTokenBuilder.buildTokenWithUid(
+        APP_ID,
+        APP_CERTIFICATE,
+        channelName,
+        uid,
+        role,
+        privilegeExpiredTs
+      );
+    } else {
+      // If uid is a string, it might be a numeric string or a real string
+      const numericUid = Number(uid);
+      if (!isNaN(numericUid) && numericUid !== 0) {
+        token = RtcTokenBuilder.buildTokenWithUid(
+          APP_ID,
+          APP_CERTIFICATE,
+          channelName,
+          numericUid,
+          role,
+          privilegeExpiredTs
+        );
+      } else {
+        token = RtcTokenBuilder.buildTokenWithAccount(
+          APP_ID,
+          APP_CERTIFICATE,
+          channelName,
+          uid,
+          role,
+          privilegeExpiredTs
+        );
+      }
+    }
     return token;
   } catch (error) {
     console.error('Failed to generate Agora token:', error);
