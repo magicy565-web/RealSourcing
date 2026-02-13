@@ -19,6 +19,7 @@ import {
   FileText,
   Settings,
   HelpCircle,
+  CreditCard,
   ChevronLeft,
   ChevronRight,
   User,
@@ -43,6 +44,7 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
+  { name: "Subscription", href: "/subscription", icon: CreditCard },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Help & Support", href: "/help", icon: HelpCircle },
 ];

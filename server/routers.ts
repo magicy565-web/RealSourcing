@@ -4,6 +4,10 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { generateRtcToken } from "./lib/agora-token";
+import { checkQuota, recordResourceUsage } from "./middleware/quota";
+import { subscriptionRouter } from "./routers/subscription.router";
+import { paymentRouter } from "./routers/payment.router";
+import { usageRouter } from "./routers/usage.router";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -71,6 +75,14 @@ export const appRouter = router({
         factoryIds: z.array(z.number()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Check quota for factory users
+        if (ctx.user.role === "factory") {
+          const quotaCheck = await checkQuota(ctx.user.id, ctx.user.role, "webinar_created");
+          if (!quotaCheck.canProceed) {
+            throw new Error(quotaCheck.reason || "Webinar creation quota exceeded");
+          }
+        }
+
         const { factoryIds, scheduledAt, ...rest } = input;
         const id = await createWebinar({
           ...rest,
@@ -82,6 +94,14 @@ export const appRouter = router({
           for (const factoryId of factoryIds) {
             await addFactoryToWebinar(id, factoryId);
           }
+        }
+
+        // Record usage for factory users
+        if (ctx.user.role === "factory") {
+          await recordResourceUsage(ctx.user.id, "webinar_created", 1, {
+            webinarId: id,
+            title: input.title,
+          });
         }
 
         return { id };
@@ -209,6 +229,15 @@ export const appRouter = router({
         return getFactoryOrders(input.factoryId);
       }),
   }),
+
+  // Subscriptions
+  subscription: subscriptionRouter,
+
+  // Payments
+  payment: paymentRouter,
+
+  // Usage tracking
+  usage: usageRouter,
 
   // Reports
   report: router({

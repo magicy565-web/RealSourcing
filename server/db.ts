@@ -9,6 +9,10 @@ import {
   negotiationEvents,
   orders,
   webinarResources,
+  subscriptionPlans, InsertSubscriptionPlan, SubscriptionPlan,
+  subscriptions, InsertSubscription, Subscription,
+  paymentOrders, InsertPaymentOrder, PaymentOrder,
+  usageRecords, InsertUsageRecord, UsageRecord,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -268,4 +272,131 @@ export async function getDashboardStats(userId: number) {
     closedOrders: orderCount?.count ?? 0,
     activeNegotiations: negotiationCount?.count ?? 0,
   };
+}
+
+// ============ SUBSCRIPTION PLAN QUERIES ============
+
+export async function getSubscriptionPlans() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subscriptionPlans)
+    .where(eq(subscriptionPlans.isActive, 1))
+    .orderBy(subscriptionPlans.displayOrder);
+}
+
+export async function getSubscriptionPlanById(id: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptionPlans)
+    .where(eq(subscriptionPlans.id, id))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createSubscriptionPlan(data: InsertSubscriptionPlan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(subscriptionPlans).values(data);
+  return data.id;
+}
+
+// ============ SUBSCRIPTION QUERIES ============
+
+export async function getUserSubscription(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions)
+    .where(and(
+      eq(subscriptions.userId, userId),
+      eq(subscriptions.status, "active")
+    ))
+    .orderBy(desc(subscriptions.createdAt))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createSubscription(data: InsertSubscription) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(subscriptions).values(data);
+  return result[0].insertId;
+}
+
+export async function updateSubscription(id: number, data: Partial<InsertSubscription>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(subscriptions).set(data).where(eq(subscriptions.id, id));
+}
+
+export async function cancelSubscription(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(subscriptions)
+    .set({ status: "cancelled", cancelledAt: new Date() })
+    .where(and(
+      eq(subscriptions.userId, userId),
+      eq(subscriptions.status, "active")
+    ));
+}
+
+// ============ PAYMENT ORDER QUERIES ============
+
+export async function createPaymentOrder(data: InsertPaymentOrder) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(paymentOrders).values(data);
+  return result[0].insertId;
+}
+
+export async function getPaymentOrderByNo(orderNo: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(paymentOrders)
+    .where(eq(paymentOrders.orderNo, orderNo))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updatePaymentOrder(orderNo: string, data: Partial<InsertPaymentOrder>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(paymentOrders).set(data).where(eq(paymentOrders.orderNo, orderNo));
+}
+
+export async function getUserPaymentOrders(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(paymentOrders)
+    .where(eq(paymentOrders.userId, userId))
+    .orderBy(desc(paymentOrders.createdAt));
+}
+
+// ============ USAGE RECORD QUERIES ============
+
+export async function recordUsage(data: InsertUsageRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(usageRecords).values(data);
+  return result[0].insertId;
+}
+
+export async function getUserUsage(userId: number, resourceType: string, periodStart: Date, periodEnd: Date) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ total: sql<number>`SUM(count)` })
+    .from(usageRecords)
+    .where(and(
+      eq(usageRecords.userId, userId),
+      eq(usageRecords.resourceType, resourceType),
+      sql`${usageRecords.periodStart} >= ${periodStart}`,
+      sql`${usageRecords.periodEnd} <= ${periodEnd}`
+    ));
+  return result[0]?.total ?? 0;
+}
+
+export async function getMonthlyUsage(userId: number, resourceType: string) {
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  return getUserUsage(userId, resourceType, periodStart, periodEnd);
 }

@@ -14,6 +14,9 @@ import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Pricing from "./pages/Pricing";
+import SubscriptionManagement from "./pages/SubscriptionManagement";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import CommandPalette from "./components/CommandPalette";
 
 function Router() {
@@ -29,6 +32,9 @@ function Router() {
       <Route path="/factories/:id" component={FactoryDetail} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/subscription" component={SubscriptionManagement} />
+      <Route path="/payment/success" component={PaymentSuccess} />
       <Route component={NotFound} />
     </Switch>
   );

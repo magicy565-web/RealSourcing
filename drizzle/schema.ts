@@ -6,7 +6,8 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "buyer", "factory"]).default("user").notNull(),
+  subscriptionId: int("subscriptionId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -140,3 +141,78 @@ export const webinarResources = mysqlTable("webinar_resources", {
 });
 
 export type WebinarResource = typeof webinarResources.$inferSelect;
+
+// Subscription Plans table
+export const subscriptionPlans = mysqlTable("subscription_plans", {
+  id: varchar("id", { length: 50 }).primaryKey(), // free_trial, basic, professional, enterprise
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  priceMonthly: decimal("priceMonthly", { precision: 10, scale: 2 }).notNull(),
+  priceYearly: decimal("priceYearly", { precision: 10, scale: 2 }).notNull(),
+  features: json("features").$type<string[]>(),
+  limits: json("limits").$type<{
+    webinarCreatedMonthly: number;
+    productsMax: number;
+    inquiriesMonthly: number;
+  }>(),
+  isActive: int("isActive").default(1).notNull(),
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+
+// Subscriptions table
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  planId: varchar("planId", { length: 50 }).notNull(),
+  status: mysqlEnum("status", ["active", "expired", "cancelled", "pending"]).default("pending").notNull(),
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "yearly"]).notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart").notNull(),
+  currentPeriodEnd: timestamp("currentPeriodEnd").notNull(),
+  autoRenew: int("autoRenew").default(1).notNull(),
+  cancelledAt: timestamp("cancelledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+// Payment Orders table
+export const paymentOrders = mysqlTable("payment_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  orderNo: varchar("orderNo", { length: 64 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  planId: varchar("planId", { length: 50 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "yearly"]).notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "failed", "refunded", "cancelled"]).default("pending").notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  paymentId: varchar("paymentId", { length: 255 }),
+  paidAt: timestamp("paidAt"),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentOrder = typeof paymentOrders.$inferSelect;
+export type InsertPaymentOrder = typeof paymentOrders.$inferInsert;
+
+// Usage Records table
+export const usageRecords = mysqlTable("usage_records", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  resourceType: varchar("resourceType", { length: 50 }).notNull(), // webinar_created, product_uploaded, inquiry_received
+  count: int("count").default(1).notNull(),
+  periodStart: timestamp("periodStart").notNull(),
+  periodEnd: timestamp("periodEnd").notNull(),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UsageRecord = typeof usageRecords.$inferSelect;
+export type InsertUsageRecord = typeof usageRecords.$inferInsert;
