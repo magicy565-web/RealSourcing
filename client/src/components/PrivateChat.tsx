@@ -7,6 +7,7 @@ import {
   destroyRTMClient,
   type RTMMessage,
 } from '../lib/rtm';
+import { trpc } from '@/lib/trpc';
 
 interface PrivateChatProps {
   currentUserId: string;
@@ -28,6 +29,18 @@ export default function PrivateChat({
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const saveMessageMutation = trpc.rtm.saveMessage.useMutation();
+  const markAsReadMutation = trpc.rtm.markAsRead.useMutation();
+  
+  // 加载历史消息
+  const { data: historyMessages } = trpc.rtm.getPrivateMessages.useQuery({
+    userId1: parseInt(currentUserId),
+    userId2: parseInt(targetUserId),
+    limit: 50,
+  }, {
+    enabled: !!currentUserId && !!targetUserId,
+  });
 
   // 初始化 RTM 客户端
   useEffect(() => {
@@ -76,6 +89,29 @@ export default function PrivateChat({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // 加载历史消息到状态
+  useEffect(() => {
+    if (historyMessages && historyMessages.length > 0) {
+      const formattedMessages: RTMMessage[] = historyMessages.map((msg: any) => ({
+        text: msg.content,
+        senderId: msg.senderId.toString(),
+        timestamp: new Date(msg.createdAt).getTime(),
+        messageType: 'text',
+      }));
+      setMessages(formattedMessages);
+    }
+  }, [historyMessages]);
+
+  // 标记消息为已读
+  useEffect(() => {
+    if (currentUserId && targetUserId) {
+      markAsReadMutation.mutate({
+        userId: parseInt(currentUserId),
+        senderId: parseInt(targetUserId),
+      });
+    }
+  }, [currentUserId, targetUserId]);
+
   // 发送消息
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -92,6 +128,15 @@ export default function PrivateChat({
         messageType: 'text',
       };
       setMessages((prev) => [...prev, newMessage]);
+      
+      // 保存到数据库
+      await saveMessageMutation.mutateAsync({
+        senderId: parseInt(currentUserId),
+        receiverId: parseInt(targetUserId),
+        messageType: 'private',
+        contentType: 'text',
+        content: inputMessage,
+      });
 
       // 清空输入框
       setInputMessage('');

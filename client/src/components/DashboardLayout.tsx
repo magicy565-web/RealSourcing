@@ -27,6 +27,7 @@ import {
   Search,
   Command,
   Flag,
+  MessageSquare,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -40,6 +41,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Webinars", href: "/webinars", icon: Video },
   { name: "Factories", href: "/factories", icon: Building2 },
+  { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Reports", href: "/reports", icon: FileText },
 ];
 

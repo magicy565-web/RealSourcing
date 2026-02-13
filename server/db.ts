@@ -13,6 +13,8 @@ import {
   subscriptions, InsertSubscription, Subscription,
   paymentOrders, InsertPaymentOrder, PaymentOrder,
   usageRecords, InsertUsageRecord, UsageRecord,
+  rtmMessages, InsertRtmMessage, RtmMessage,
+  rtmConversations, InsertRtmConversation, RtmConversation,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -399,4 +401,196 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   return getUserUsage(userId, resourceType, periodStart, periodEnd);
+}
+
+// ============ RTM MESSAGE QUERIES ============
+
+/**
+ * 保存 RTM 消息到数据库
+ */
+export async function saveRtmMessage(data: InsertRtmMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(rtmMessages).values(data);
+  return result[0].insertId;
+}
+
+/**
+ * 获取两个用户之间的私聊消息历史
+ */
+export async function getPrivateMessages(userId1: number, userId2: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(rtmMessages)
+    .where(
+      and(
+        eq(rtmMessages.messageType, "private"),
+        sql`(
+          (${rtmMessages.senderId} = ${userId1} AND ${rtmMessages.receiverId} = ${userId2}) OR
+          (${rtmMessages.senderId} = ${userId2} AND ${rtmMessages.receiverId} = ${userId1})
+        )`
+      )
+    )
+    .orderBy(desc(rtmMessages.createdAt))
+    .limit(limit);
+}
+
+/**
+ * 获取频道消息历史
+ */
+export async function getChannelMessages(channelName: string, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(rtmMessages)
+    .where(
+      and(
+        eq(rtmMessages.messageType, "channel"),
+        eq(rtmMessages.channelName, channelName)
+      )
+    )
+    .orderBy(desc(rtmMessages.createdAt))
+    .limit(limit);
+}
+
+/**
+ * 标记消息为已读
+ */
+export async function markMessagesAsRead(userId: number, senderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(rtmMessages)
+    .set({ isRead: 1, readAt: new Date() })
+    .where(
+      and(
+        eq(rtmMessages.receiverId, userId),
+        eq(rtmMessages.senderId, senderId),
+        eq(rtmMessages.isRead, 0)
+      )
+    );
+}
+
+/**
+ * 获取未读消息数量
+ */
+export async function getUnreadMessageCount(userId: number, senderId?: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const conditions = [
+    eq(rtmMessages.receiverId, userId),
+    eq(rtmMessages.isRead, 0)
+  ];
+  
+  if (senderId) {
+    conditions.push(eq(rtmMessages.senderId, senderId));
+  }
+  
+  const result = await db.select({ count: sql<number>`count(*)` })
+    .from(rtmMessages)
+    .where(and(...conditions));
+  
+  return result[0]?.count ?? 0;
+}
+
+// ============ RTM CONVERSATION QUERIES ============
+
+/**
+ * 创建或更新会话
+ */
+export async function upsertConversation(data: InsertRtmConversation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await db.select().from(rtmConversations)
+    .where(
+      and(
+        eq(rtmConversations.userId, data.userId),
+        data.targetUserId 
+          ? eq(rtmConversations.targetUserId, data.targetUserId)
+          : eq(rtmConversations.channelName, data.channelName!)
+      )
+    )
+    .limit(1);
+  
+  if (existing.length > 0) {
+    // 更新现有会话
+    await db.update(rtmConversations)
+      .set({
+        lastMessageId: data.lastMessageId,
+        lastMessageContent: data.lastMessageContent,
+        lastMessageAt: data.lastMessageAt,
+        unreadCount: sql`${rtmConversations.unreadCount} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(rtmConversations.id, existing[0].id));
+    
+    return existing[0].id;
+  } else {
+    // 创建新会话
+    const result = await db.insert(rtmConversations).values(data);
+    return result[0].insertId;
+  }
+}
+
+/**
+ * 获取用户的所有会话列表
+ */
+export async function getUserConversations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(rtmConversations)
+    .where(eq(rtmConversations.userId, userId))
+    .orderBy(
+      desc(rtmConversations.isPinned),
+      desc(rtmConversations.lastMessageAt)
+    );
+}
+
+/**
+ * 清空会话的未读计数
+ */
+export async function clearConversationUnread(userId: number, targetUserId?: number, channelName?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const conditions = [eq(rtmConversations.userId, userId)];
+  
+  if (targetUserId) {
+    conditions.push(eq(rtmConversations.targetUserId, targetUserId));
+  } else if (channelName) {
+    conditions.push(eq(rtmConversations.channelName, channelName));
+  }
+  
+  await db.update(rtmConversations)
+    .set({ unreadCount: 0 })
+    .where(and(...conditions));
+}
+
+/**
+ * 切换会话置顶状态
+ */
+export async function toggleConversationPin(conversationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(rtmConversations)
+    .set({ isPinned: sql`1 - ${rtmConversations.isPinned}` })
+    .where(eq(rtmConversations.id, conversationId));
+}
+
+/**
+ * 切换会话免打扰状态
+ */
+export async function toggleConversationMute(conversationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(rtmConversations)
+    .set({ isMuted: sql`1 - ${rtmConversations.isMuted}` })
+    .where(eq(rtmConversations.id, conversationId));
 }

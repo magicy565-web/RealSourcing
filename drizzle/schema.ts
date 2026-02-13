@@ -216,3 +216,39 @@ export const usageRecords = mysqlTable("usage_records", {
 
 export type UsageRecord = typeof usageRecords.$inferSelect;
 export type InsertUsageRecord = typeof usageRecords.$inferInsert;
+
+// RTM Messages table (消息持久化)
+export const rtmMessages = mysqlTable("rtm_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  senderId: int("senderId").notNull(),
+  receiverId: int("receiverId"),
+  channelName: varchar("channelName", { length: 255 }),
+  messageType: mysqlEnum("messageType", ["private", "channel"]).default("private").notNull(),
+  contentType: mysqlEnum("contentType", ["text", "image", "file"]).default("text").notNull(),
+  content: text("content").notNull(),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  isRead: int("isRead").default(0).notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type RtmMessage = typeof rtmMessages.$inferSelect;
+export type InsertRtmMessage = typeof rtmMessages.$inferInsert;
+
+// RTM Conversations table (会话列表)
+export const rtmConversations = mysqlTable("rtm_conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  targetUserId: int("targetUserId"),
+  channelName: varchar("channelName", { length: 255 }),
+  conversationType: mysqlEnum("conversationType", ["private", "channel"]).default("private").notNull(),
+  lastMessageId: int("lastMessageId"),
+  lastMessageContent: text("lastMessageContent"),
+  lastMessageAt: timestamp("lastMessageAt"),
+  unreadCount: int("unreadCount").default(0).notNull(),
+  isPinned: int("isPinned").default(0).notNull(),
+  isMuted: int("isMuted").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RtmConversation = typeof rtmConversations.$inferSelect;
+export type InsertRtmConversation = typeof rtmConversations.$inferInsert;

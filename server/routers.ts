@@ -11,6 +11,7 @@ import { subscriptionRouter } from "./routers/subscription.router";
 import { paymentRouter } from "./routers/payment.router";
 import { usageRouter } from "./routers/usage.router";
 import { aiRouter } from "./routers/ai.router";
+import { rtmRouter } from "./routers/rtm.router";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -254,6 +255,9 @@ export const appRouter = router({
 
   // AI Chat
   ai: aiRouter,
+
+  // RTM Messages
+  rtm: rtmRouter,
 
   // Reports
   report: router({

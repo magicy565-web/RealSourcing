@@ -18,6 +18,7 @@ import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import SubscriptionManagement from "./pages/SubscriptionManagement";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Messages from "./pages/Messages";
 import CommandPalette from "./components/CommandPalette";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/subscription" component={SubscriptionManagement} />
       <Route path="/payment/success" component={PaymentSuccess} />
+      <Route path="/messages" component={Messages} />
       <Route component={NotFound} />
     </Switch>
   );
