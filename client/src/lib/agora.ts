@@ -4,6 +4,7 @@ import AgoraRTC, {
   IMicrophoneAudioTrack,
   IRemoteVideoTrack,
   IRemoteAudioTrack,
+  ILocalVideoTrack,
 } from 'agora-rtc-sdk-ng';
 
 // Agora App ID (Priority: User provided key -> Environment variable -> Fallback)
@@ -19,6 +20,7 @@ export interface AgoraConfig {
 export interface AgoraTrack {
   videoTrack?: ICameraVideoTrack;
   audioTrack?: IMicrophoneAudioTrack;
+  screenTrack?: ILocalVideoTrack;
 }
 
 export class AgoraService {
@@ -28,6 +30,7 @@ export class AgoraService {
     videoTrack?: IRemoteVideoTrack;
     audioTrack?: IRemoteAudioTrack;
   }> = new Map();
+  private isScreenSharing: boolean = false;
 
   constructor() {
     // Set Agora log level
@@ -55,7 +58,6 @@ export class AgoraService {
       }
 
       // Join channel
-      // In Demo v0.5, if token is not provided, we pass null (assuming App ID mode or token server not yet ready)
       await this.client.join(
         appId,
         config.channel,
@@ -97,11 +99,108 @@ export class AgoraService {
   }
 
   /**
+   * Start screen sharing
+   */
+  async startScreenShare(): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    if (this.isScreenSharing) {
+      console.warn('Already screen sharing');
+      return;
+    }
+
+    try {
+      // Create screen track
+      const screenTrack = await AgoraRTC.createScreenVideoTrack({
+        encoderConfig: '1080p_1',
+      }, 'auto');
+
+      // If camera is currently published, unpublish it
+      if (this.localTracks.videoTrack) {
+        await this.client.unpublish([this.localTracks.videoTrack]);
+      }
+
+      // Publish screen track
+      if (Array.isArray(screenTrack)) {
+        // Screen track with audio
+        await this.client.publish(screenTrack);
+        this.localTracks.screenTrack = screenTrack[0];
+      } else {
+        // Screen track without audio
+        await this.client.publish([screenTrack]);
+        this.localTracks.screenTrack = screenTrack;
+      }
+
+      this.isScreenSharing = true;
+
+      // Listen for screen share stop event
+      this.localTracks.screenTrack.on('track-ended', () => {
+        this.stopScreenShare();
+      });
+
+      console.log('✅ Started screen sharing');
+    } catch (error) {
+      console.error('❌ Failed to start screen sharing:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stop screen sharing
+   */
+  async stopScreenShare(): Promise<void> {
+    if (!this.client || !this.isScreenSharing || !this.localTracks.screenTrack) {
+      return;
+    }
+
+    try {
+      // Unpublish and close screen track
+      await this.client.unpublish([this.localTracks.screenTrack]);
+      this.localTracks.screenTrack.close();
+      this.localTracks.screenTrack = undefined;
+
+      // Re-publish camera track
+      if (this.localTracks.videoTrack) {
+        await this.client.publish([this.localTracks.videoTrack]);
+      }
+
+      this.isScreenSharing = false;
+      console.log('✅ Stopped screen sharing');
+    } catch (error) {
+      console.error('❌ Failed to stop screen sharing:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle screen sharing
+   */
+  async toggleScreenShare(): Promise<boolean> {
+    if (this.isScreenSharing) {
+      await this.stopScreenShare();
+      return false;
+    } else {
+      await this.startScreenShare();
+      return true;
+    }
+  }
+
+  /**
+   * Check if currently screen sharing
+   */
+  isScreenSharingActive(): boolean {
+    return this.isScreenSharing;
+  }
+
+  /**
    * Play local video track in a DOM element
    */
   playLocalVideo(elementId: string): void {
-    if (this.localTracks.videoTrack) {
-      this.localTracks.videoTrack.play(elementId);
+    const track = this.isScreenSharing ? this.localTracks.screenTrack : this.localTracks.videoTrack;
+    if (track) {
+      track.play(elementId);
     }
   }
 
@@ -138,6 +237,11 @@ export class AgoraService {
    */
   async leave(): Promise<void> {
     try {
+      // Stop screen sharing if active
+      if (this.isScreenSharing) {
+        await this.stopScreenShare();
+      }
+
       // Close local tracks
       if (this.localTracks.audioTrack) {
         this.localTracks.audioTrack.close();
@@ -156,6 +260,7 @@ export class AgoraService {
       this.localTracks = {};
       this.remoteUsers.clear();
       this.client = null;
+      this.isScreenSharing = false;
     } catch (error) {
       console.error('❌ Failed to leave channel:', error);
       throw error;
@@ -211,6 +316,16 @@ export class AgoraService {
       console.log('⚠️  Remote user left:', user.uid);
       this.remoteUsers.delete(user.uid);
     });
+
+    // Handle connection state change
+    this.client.on('connection-state-change', (curState, prevState) => {
+      console.log(`Connection state changed: ${prevState} -> ${curState}`);
+    });
+
+    // Handle network quality
+    this.client.on('network-quality', (stats) => {
+      console.log('Network quality:', stats);
+    });
   }
 
   /**
@@ -222,6 +337,13 @@ export class AgoraService {
       hasVideo: !!user.videoTrack,
       hasAudio: !!user.audioTrack,
     }));
+  }
+
+  /**
+   * Get connection state
+   */
+  getConnectionState(): string {
+    return this.client?.connectionState || 'DISCONNECTED';
   }
 }
 

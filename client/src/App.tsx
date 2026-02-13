@@ -13,6 +13,7 @@ import NegotiationRoom from "./pages/NegotiationRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
 import Reports from "./pages/Reports";
+import ReportView from "./pages/ReportView";
 import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import SubscriptionManagement from "./pages/SubscriptionManagement";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/factories" component={Factories} />
       <Route path="/factories/:id" component={FactoryDetail} />
       <Route path="/reports" component={Reports} />
+      <Route path="/reports/:id">{(params) => <ReportView params={params} />}</Route>
       <Route path="/settings" component={Settings} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/subscription" component={SubscriptionManagement} />

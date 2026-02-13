@@ -5,6 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { generateRtcToken } from "./lib/agora-token";
 import { checkQuota, recordResourceUsage } from "./middleware/quota";
+import { triggerWebinarStatusEvent } from "./middleware/auto-events";
+import { generateAIReport, type ReportType } from "./lib/ai-report-generator";
 import { subscriptionRouter } from "./routers/subscription.router";
 import { paymentRouter } from "./routers/payment.router";
 import { usageRouter } from "./routers/usage.router";
@@ -120,6 +122,16 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
+        
+        // Get old status if status is being updated
+        if (data.status) {
+          const oldWebinar = await getWebinarById(id);
+          if (oldWebinar && oldWebinar.status !== data.status) {
+            // Trigger status change event
+            await triggerWebinarStatusEvent(id, oldWebinar.status, data.status);
+          }
+        }
+        
         await updateWebinar(id, data);
         return { success: true };
       }),
@@ -263,6 +275,35 @@ export const appRouter = router({
           createdById: ctx.user.id,
         });
         return { id };
+      }),
+
+    generate: protectedProcedure
+      .input(z.object({
+        webinarId: z.number(),
+        reportType: z.enum(["supplier_evaluation", "profit_analysis", "negotiation_summary"]),
+        additionalContext: z.record(z.string(), z.any()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Generate AI report
+        const aiReport = await generateAIReport({
+          webinarId: input.webinarId,
+          reportType: input.reportType as ReportType,
+          additionalContext: input.additionalContext,
+        });
+
+        // Save report to database
+        const reportId = await createReport({
+          title: aiReport.title,
+          type: input.reportType,
+          webinarId: input.webinarId,
+          createdById: ctx.user.id,
+          aiAnalysis: JSON.stringify(aiReport),
+        });
+
+        return {
+          id: reportId,
+          report: aiReport,
+        };
       }),
   }),
 });

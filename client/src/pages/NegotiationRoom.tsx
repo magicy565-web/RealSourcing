@@ -14,6 +14,8 @@ import {
 import DashboardLayout from "@/components/DashboardLayout";
 import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "@/lib/mock-data";
 import { agoraService } from "@/lib/agora";
+import { trpc } from "@/lib/trpc";
+import NegotiationTimeline from "@/components/NegotiationTimeline";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,10 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState("chat");
 
+  // Timeline state
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
   // Timer
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<any>(null);
@@ -94,9 +100,26 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
         hasAudio: Math.random() > 0.2,
       }));
       setParticipants(initialParticipants);
+
+      // Load timeline events
+      loadTimelineEvents();
     }
     setLoading(false);
   }, [webinarId]);
+
+  // Load timeline events from backend
+  const loadTimelineEvents = async () => {
+    setLoadingEvents(true);
+    try {
+      const response = await fetch(`/api/trpc/webinar.getTimeline?input=${encodeURIComponent(JSON.stringify({ webinarId: parseInt(webinarId) }))}`);
+      const data = await response.json();
+      setTimelineEvents(data.result?.data || []);
+    } catch (error) {
+      console.error('Failed to load timeline events:', error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
 
   // ─── Timer ──────────────────────────────────────────────────────────────
 
@@ -147,13 +170,27 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
   // ─── Agora Actions ──────────────────────────────────────────────────────
 
   const handleJoinChannel = async () => {
-    if (!webinar?.agora_channel_name) return;
+    if (!webinar) return;
 
     try {
+      // Generate channel name from webinar ID
+      const channelName = `webinar-${webinarId}`;
+      const uid = Math.floor(Math.random() * 10000);
+
+      // Get Agora token from backend
+      let token: string | undefined = undefined;
+      try {
+        const response = await fetch(`/api/trpc/agora.getToken?input=${encodeURIComponent(JSON.stringify({ channelName, uid }))}`);
+        const data = await response.json();
+        token = data.result?.data?.token || undefined;
+      } catch (error) {
+        console.warn('Failed to get Agora token, joining without token:', error);
+      }
+
       await agoraService.init({
-        channel: webinar.agora_channel_name,
-        token: webinar.agora_token || null,
-        uid: Math.floor(Math.random() * 10000),
+        channel: channelName,
+        token,
+        uid,
       });
 
       await agoraService.createLocalTracks();
@@ -223,6 +260,40 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
       await agoraService.toggleVideo(!videoEnabled);
     } catch (e) {}
     setVideoEnabled(!videoEnabled);
+  };
+
+  const toggleScreenShare = async () => {
+    try {
+      const isSharing = await agoraService.toggleScreenShare();
+      setScreenSharing(isSharing);
+      
+      if (isSharing) {
+        addMessage({
+          id: `sys-${Date.now()}`,
+          sender: "System",
+          role: "system",
+          content: "You started screen sharing",
+          timestamp: new Date(),
+        });
+      } else {
+        addMessage({
+          id: `sys-${Date.now()}`,
+          sender: "System",
+          role: "system",
+          content: "You stopped screen sharing",
+          timestamp: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to toggle screen share:', error);
+      addMessage({
+        id: `sys-${Date.now()}`,
+        sender: "System",
+        role: "system",
+        content: "Failed to start screen sharing. Please check permissions.",
+        timestamp: new Date(),
+      });
+    }
   };
 
   const toggleFullscreen = () => {
@@ -421,7 +492,7 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setScreenSharing(!screenSharing)}
+                  onClick={toggleScreenShare}
                   className={cn(
                     "h-9 w-9 rounded-lg transition-all",
                     screenSharing
@@ -649,6 +720,16 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                   </Badge>
                 </TabsTrigger>
                 <TabsTrigger
+                  value="timeline"
+                  className="flex-1 font-light text-xs data-[state=active]:bg-transparent data-[state=active]:text-violet-400 data-[state=active]:border-b-2 data-[state=active]:border-violet-500 data-[state=active]:shadow-none rounded-none"
+                >
+                  <Clock className="h-3 w-3 mr-1.5" />
+                  Timeline
+                  <Badge className="ml-1.5 h-4 px-1 text-[9px] bg-[#262626] text-muted-foreground border-none">
+                    {timelineEvents.length}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger
                   value="insights"
                   className="flex-1 font-light text-xs data-[state=active]:bg-transparent data-[state=active]:text-violet-400 data-[state=active]:border-b-2 data-[state=active]:border-violet-500 data-[state=active]:shadow-none rounded-none"
                 >
@@ -760,6 +841,15 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                     </Button>
                   </div>
                 </div>
+              </TabsContent>
+
+              {/* ─── Timeline Tab ────────────────────────────────────────── */}
+              <TabsContent value="timeline" className="flex-1 flex flex-col min-h-0 m-0 p-0">
+                <NegotiationTimeline
+                  webinarId={parseInt(webinarId)}
+                  events={timelineEvents}
+                  onRefresh={loadTimelineEvents}
+                />
               </TabsContent>
 
               {/* ─── Participants Tab ───────────────────────────────────── */}
