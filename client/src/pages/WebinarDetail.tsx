@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { mockStore, type MockWebinar, type MockRegistration } from "@/lib/mock-data";
+import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "@/lib/mock-data";
 import DecisionMatrix from "@/components/tactical/DecisionMatrix";
 
 interface WebinarDetailProps {
@@ -400,12 +400,11 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
                           className="flex items-center justify-between p-4 rounded-lg border border-[#262626] hover:border-[#404040] transition-colors"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={cn(
-                              "h-10 w-10 rounded-lg flex items-center justify-center text-sm font-light",
-                              reg.role === "factory" ? "bg-orange-500/10 text-orange-400" : "bg-cyan-500/10 text-cyan-400"
-                            )}>
-                              {reg.role === "factory" ? <Building2 className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                            </div>
+                            <img
+                              src={getAvatarByRole(reg.role, reg.user_name)}
+                              alt={reg.user_name}
+                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                            />
                             <div>
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-light text-white">{reg.user_name}</p>

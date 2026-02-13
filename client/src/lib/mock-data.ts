@@ -128,6 +128,7 @@ export const mockWebinars: MockWebinar[] = [
     category: "electronics",
     language: "en",
     agora_channel_name: "webinar_hk_show_tour",
+    cover_image: "/global-sources-tour.png",
     max_participants: 200,
     created_by: "admin",
     created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
@@ -144,6 +145,7 @@ export const mockWebinars: MockWebinar[] = [
     category: "electronics",
     language: "zh",
     agora_channel_name: "webinar_led_2026",
+    cover_image: "/led-lighting-solutions.png",
     max_participants: 40,
     created_by: "admin",
     created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
@@ -244,7 +246,7 @@ export const mockFactories: MockFactory[] = [
   },
 ];
 
-// User avatars mapping
+// User avatars mapping (mix of real photos and virtual avatars)
 export const userAvatars: Record<string, string> = {
   "John Smith": "/avatars/john-smith.png",
   "Sarah Chen": "/avatars/sarah-chen.png",
@@ -254,6 +256,19 @@ export const userAvatars: Record<string, string> = {
   "Maria Garcia": "/avatars/maria-garcia.png",
   "Zhang Wei": "/avatars/zhang-wei.png",
   "Emma Wilson": "/avatars/emma-wilson.png",
+};
+
+// Fallback avatar placeholders by role
+export const getAvatarByRole = (role: 'factory' | 'buyer' | 'admin', name?: string): string => {
+  if (name && userAvatars[name]) {
+    return userAvatars[name];
+  }
+  const placeholders = {
+    factory: "/avatar-placeholder-factory.png",
+    buyer: "/avatar-placeholder-buyer.png",
+    admin: "/avatar-placeholder-admin.png",
+  };
+  return placeholders[role];
 };
 
 export const mockRegistrations: MockRegistration[] = [

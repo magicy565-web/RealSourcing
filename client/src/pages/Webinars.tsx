@@ -119,9 +119,27 @@ export default function Webinars() {
               className="bg-[#141414] border-[#262626] hover:border-[#404040] transition-all cursor-pointer group"
               onClick={() => setLocation(`/webinars/${webinar.id}`)}
             >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
+              <CardContent className="p-0">
+                <div className="flex items-start gap-4">
+                  {/* Cover Image */}
+                  {webinar.cover_image && (
+                    <div className="relative w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
+                      <img
+                        src={webinar.cover_image}
+                        alt={webinar.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {webinar.status === "live" && (
+                        <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 text-white px-2 py-0.5 rounded text-xs font-medium">
+                          <Circle className="h-1.5 w-1.5 fill-current animate-pulse" />
+                          LIVE
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 py-5 pr-5">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-light text-white group-hover:text-violet-400 transition-colors truncate">
                         {webinar.title}
@@ -166,8 +184,9 @@ export default function Webinars() {
                       )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 py-5 pr-5" onClick={(e) => e.stopPropagation()}>
                     {webinar.status === "live" && (
                       <Button
                         size="sm"

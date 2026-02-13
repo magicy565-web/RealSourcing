@@ -1,4 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { mockStore } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,8 +19,25 @@ import { toast } from "sonner";
 
 export default function Factories() {
   const [, setLocation] = useLocation();
+  const [factories, setFactories] = useState<any[]>([]);
 
-  const factories = [
+  useEffect(() => {
+    const factoriesData = mockStore.getFactories().map(f => ({
+      id: f.id,
+      name: f.name,
+      location: f.location,
+      score: f.score,
+      category: f.category,
+      webinars: Math.floor(Math.random() * 8) + 2, // Mock data
+      orders: Math.floor(Math.random() * 20) + 5, // Mock data
+      status: f.score >= 90 ? "verified" : f.score >= 80 ? "verified" : "pending",
+      employees: `${f.employee_count}`,
+      logo: f.logo,
+    }));
+    setFactories(factoriesData);
+  }, []);
+
+  const oldFactories = [
     {
       id: 1,
       name: "Shenzhen Electronics Co.",
@@ -118,14 +138,27 @@ export default function Factories() {
           >
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <CardTitle className="text-xl hover:text-primary transition-colors">
-                      {factory.name}
-                    </CardTitle>
-                    {getStatusBadge(factory.status)}
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-start gap-4 flex-1">
+                  {/* Company Logo */}
+                  {factory.logo ? (
+                    <img
+                      src={factory.logo}
+                      alt={factory.name}
+                      className="w-16 h-16 rounded-lg object-cover border border-[#262626] flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-orange-500/10 flex items-center justify-center border border-[#262626] flex-shrink-0">
+                      <Building2 className="h-7 w-7 text-orange-400" />
+                    </div>
+                  )}
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-xl hover:text-primary transition-colors truncate">
+                        {factory.name}
+                      </CardTitle>
+                      {getStatusBadge(factory.status)}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
                       {factory.location}
@@ -134,6 +167,7 @@ export default function Factories() {
                     <span>{factory.category}</span>
                     <span>·</span>
                     <span>{factory.employees} employees</span>
+                    </div>
                   </div>
                 </div>
                 <DropdownMenu>

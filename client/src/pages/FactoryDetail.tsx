@@ -23,8 +23,11 @@ import {
   Award,
 } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
+import { mockStore } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
-const factoryData = {
+const defaultFactoryData = {
   id: 1,
   name: "Shenzhen Electronics Co.",
   location: "Shenzhen, Guangdong, China",
@@ -61,6 +64,30 @@ const factoryData = {
 
 export default function FactoryDetail() {
   const [, setLocation] = useLocation();
+  const [, params] = useRoute("/factories/:id");
+  const [factoryData, setFactoryData] = useState(defaultFactoryData);
+
+  useEffect(() => {
+    if (params?.id) {
+      const factory = mockStore.getFactoryById(parseInt(params.id));
+      if (factory) {
+        setFactoryData({
+          ...defaultFactoryData,
+          id: factory.id,
+          name: factory.name,
+          location: factory.location,
+          category: factory.category,
+          score: factory.score,
+          logo: factory.logo,
+          phone: factory.contact_phone,
+          email: factory.contact_email,
+          employees: `${factory.employee_count}`,
+          established: factory.year_established.toString(),
+          certifications: factory.certifications.split(", "),
+        });
+      }
+    }
+  }, [params?.id]);
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-400";
@@ -84,12 +111,25 @@ export default function FactoryDetail() {
           <Button variant="ghost" size="icon" onClick={() => setLocation("/factories")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{factoryData.name}</h1>
-              <Badge variant="default">Verified</Badge>
-            </div>
-            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+          <div className="flex items-start gap-4 flex-1">
+            {/* Company Logo */}
+            {factoryData.logo ? (
+              <img
+                src={factoryData.logo}
+                alt={factoryData.name}
+                className="w-20 h-20 rounded-xl object-cover border border-[#262626] flex-shrink-0"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-xl bg-orange-500/10 flex items-center justify-center border border-[#262626] flex-shrink-0">
+                <Building2 className="h-9 w-9 text-orange-400" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold tracking-tight truncate">{factoryData.name}</h1>
+                <Badge variant="default">Verified</Badge>
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {factoryData.location}
@@ -98,6 +138,7 @@ export default function FactoryDetail() {
               <span>{factoryData.category}</span>
               <span>·</span>
               <span>Est. {factoryData.established}</span>
+              </div>
             </div>
           </div>
           <Button>Invite to Webinar</Button>

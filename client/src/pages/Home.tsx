@@ -9,7 +9,7 @@ import {
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { mockStore, type MockWebinar, type MockRegistration } from "@/lib/mock-data";
+import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "@/lib/mock-data";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -163,19 +163,35 @@ export default function Home() {
                       return (
                         <div
                           key={webinar.id}
-                          className="flex items-center justify-between p-4 rounded-lg border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group"
+                          className="flex items-center justify-between p-3 rounded-lg border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group"
                           onClick={() => setLocation(`/webinars/${webinar.id}`)}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className={cn(
-                              "h-10 w-10 rounded-lg flex items-center justify-center",
-                              webinar.status === "live" ? "bg-red-500/10" : "bg-violet-500/10"
-                            )}>
-                              <Video className={cn(
-                                "h-5 w-5",
-                                webinar.status === "live" ? "text-red-400" : "text-violet-400"
-                              )} />
-                            </div>
+                          <div className="flex items-center gap-3">
+                            {/* Cover Thumbnail */}
+                            {webinar.cover_image ? (
+                              <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                                <img
+                                  src={webinar.cover_image}
+                                  alt={webinar.title}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                />
+                                {webinar.status === "live" && (
+                                  <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
+                                    <Circle className="h-2 w-2 fill-red-400 text-red-400 animate-pulse" />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className={cn(
+                                "h-16 w-16 rounded-lg flex items-center justify-center flex-shrink-0",
+                                webinar.status === "live" ? "bg-red-500/10" : "bg-violet-500/10"
+                              )}>
+                                <Video className={cn(
+                                  "h-6 w-6",
+                                  webinar.status === "live" ? "text-red-400" : "text-violet-400"
+                                )} />
+                              </div>
+                            )}
                             <div>
                               <p className="text-sm font-light text-white group-hover:text-violet-400 transition-colors">
                                 {webinar.title}
@@ -241,12 +257,17 @@ export default function Home() {
                         const webinar = mockStore.getWebinarById(reg.webinar_id);
                         return (
                           <div key={reg.id} className="p-3 rounded-lg border border-[#262626] space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-light text-white">{reg.user_name}</p>
-                                <p className="text-xs text-muted-foreground font-light">{reg.company_name}</p>
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={getAvatarByRole(reg.role, reg.user_name)}
+                                alt={reg.user_name}
+                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-light text-white truncate">{reg.user_name}</p>
+                                <p className="text-xs text-muted-foreground font-light truncate">{reg.company_name}</p>
                               </div>
-                              <Badge variant="outline" className="text-[10px] border-[#262626] text-muted-foreground">
+                              <Badge variant="outline" className="text-[10px] border-[#262626] text-muted-foreground flex-shrink-0">
                                 {reg.role === "factory" ? "Factory" : "Buyer"}
                               </Badge>
                             </div>

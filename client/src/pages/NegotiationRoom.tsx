@@ -12,7 +12,7 @@ import {
   MoreVertical, Globe, Building2, Shield, Send,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { mockStore, type MockWebinar, type MockRegistration } from "@/lib/mock-data";
+import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "@/lib/mock-data";
 import { agoraService } from "@/lib/agora";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -480,17 +480,12 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                     <div className="flex items-center justify-center gap-4">
                       <div className="flex -space-x-2">
                         {participants.slice(0, 4).map((p, i) => (
-                          <div
+                          <img
                             key={p.uid}
-                            className={cn(
-                              "h-8 w-8 rounded-full border-2 border-[#111111] flex items-center justify-center text-[10px] font-light",
-                              p.role === "factory"
-                                ? "bg-orange-500/20 text-orange-400"
-                                : "bg-cyan-500/20 text-cyan-400"
-                            )}
-                          >
-                            {p.name.charAt(0)}
-                          </div>
+                            src={getAvatarByRole(p.role, p.name)}
+                            alt={p.name}
+                            className="h-8 w-8 rounded-full border-2 border-[#111111] object-cover"
+                          />
                         ))}
                         {participants.length > 4 && (
                           <div className="h-8 w-8 rounded-full border-2 border-[#111111] bg-[#262626] flex items-center justify-center text-[10px] text-muted-foreground">
@@ -527,14 +522,11 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                             key={p.uid}
                             className="bg-[#0A0A0A] rounded-lg border border-[#1A1A1A] flex flex-col items-center justify-center p-6 space-y-3"
                           >
-                            <div className={cn(
-                              "h-16 w-16 rounded-full flex items-center justify-center text-xl font-light",
-                              p.role === "factory"
-                                ? "bg-gradient-to-br from-orange-500/20 to-amber-500/20 text-orange-400"
-                                : "bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-cyan-400"
-                            )}>
-                              {p.name.split(" ").map(n => n[0]).join("")}
-                            </div>
+                            <img
+                              src={getAvatarByRole(p.role, p.name)}
+                              alt={p.name}
+                              className="h-16 w-16 rounded-full object-cover border-2 border-[#1A1A1A]"
+                            />
                             <div className="text-center">
                               <p className="text-sm font-light text-white">{p.name}</p>
                               <p className="text-[10px] text-muted-foreground font-light">{p.company}</p>
@@ -808,9 +800,11 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                       <div className="space-y-1.5">
                         {participants.filter(p => p.role === "factory").map(p => (
                           <div key={p.uid} className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A] hover:border-[#262626] transition-colors">
-                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center text-xs text-orange-400 font-light">
-                              {p.name.split(" ").map(n => n[0]).join("")}
-                            </div>
+                            <img
+                              src={getAvatarByRole(p.role, p.name)}
+                              alt={p.name}
+                              className="h-9 w-9 rounded-full object-cover flex-shrink-0"
+                            />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-light text-white truncate">{p.name}</p>
                               <p className="text-[10px] text-muted-foreground font-light truncate">{p.company}</p>
@@ -842,9 +836,11 @@ export default function NegotiationRoom({ params }: NegotiationRoomProps) {
                       <div className="space-y-1.5">
                         {participants.filter(p => p.role === "buyer").map(p => (
                           <div key={p.uid} className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#1A1A1A] hover:border-[#262626] transition-colors">
-                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-xs text-cyan-400 font-light">
-                              {p.name.split(" ").map(n => n[0]).join("")}
-                            </div>
+                            <img
+                              src={getAvatarByRole(p.role, p.name)}
+                              alt={p.name}
+                              className="h-9 w-9 rounded-full object-cover flex-shrink-0"
+                            />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-light text-white truncate">{p.name}</p>
                               <p className="text-[10px] text-muted-foreground font-light truncate">{p.company}</p>
