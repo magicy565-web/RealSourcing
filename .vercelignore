@@ -36,5 +36,6 @@ vitest.config.ts
 *.swp
 *.swo
 
-# Patches
-patches/
+# Patches (REQUIRED for pnpm install)
+# DO NOT ignore patches directory
+!patches/
