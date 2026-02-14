@@ -24,7 +24,7 @@ import {
   getFactoryReviews,
   createFactoryReview,
   replyToReview,
-  createAuditLog, // Fixed import location implicitly by moving it to db_extended
+  createAuditLog,
 } from "../db_extended";
 import { checkAndTrackUsage } from "../saas-core";
 
@@ -101,9 +101,8 @@ export const factoryRouter = router({
       const { id, ...data } = input;
       await updateFactory(id, data);
 
-      // 记录审计日志
-      await createAuditLog({
-        userId: ctx.user.id,
+      // 记录审计日志 - 对齐 createAuditLog(userId, data)
+      await createAuditLog(ctx.user.id, {
         action: "update_factory",
         entityType: "factory",
         entityId: id,
@@ -227,16 +226,15 @@ export const factoryRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // 检查配额
-      await checkAndTrackUsage(ctx.user.id, "product", 1, {
+      await checkAndTrackUsage(ctx.user.id, "product_uploaded", 1, {
         factoryId: input.factoryId,
         productName: input.name,
       });
       
       const productId = await createFactoryProduct(input);
 
-      // 记录审计日志
-      await createAuditLog({
-        userId: ctx.user.id,
+      // 记录审计日志 - 对齐 createAuditLog(userId, data)
+      await createAuditLog(ctx.user.id, {
         action: "create_product",
         entityType: "product",
         entityId: productId,

@@ -1,19 +1,19 @@
-import { eq, desc, sql, and, like, inArray, or } from "drizzle-orm";
+import { eq, desc, sql, and, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
-  webinars, InsertWebinar, Webinar,
-  factories, InsertFactory, Factory,
+  webinars, InsertWebinar,
+  factories, InsertFactory,
   webinarParticipants,
   reports, InsertReport,
   negotiationEvents,
   orders,
-  subscriptionPlans, InsertSubscriptionPlan, SubscriptionPlan,
-  subscriptions, InsertSubscription, Subscription,
-  paymentOrders, InsertPaymentOrder, PaymentOrder,
-  usageRecords, InsertUsageRecord, UsageRecord,
-  rtmMessages, InsertRtmMessage, RtmMessage,
-  rtmConversations, InsertRtmConversation, RtmConversation,
+  subscriptionPlans, InsertSubscriptionPlan,
+  subscriptions, InsertSubscription,
+  paymentOrders, InsertPaymentOrder,
+  usageRecords, InsertUsageRecord,
+  rtmMessages, InsertRtmMessage,
+  rtmConversations, InsertRtmConversation,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -37,29 +37,21 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
+  if (!db) return;
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
+    const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
 
     const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
+    textFields.forEach(field => {
       const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
+      if (value !== undefined) {
+        const normalized = value ?? null;
+        (values as any)[field] = normalized;
+        updateSet[field] = normalized;
+      }
+    });
 
     if (user.role !== undefined) {
       values.role = user.role;
@@ -80,13 +72,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
+  if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -176,7 +163,7 @@ export async function getWebinarFactories(webinarId: number) {
     factoryId: webinarParticipants.factoryId,
     role: webinarParticipants.role,
     factoryName: factories.name,
-    factoryLocation: factories.location,
+    factoryCity: factories.city,
     factoryScore: factories.overallScore,
   })
     .from(webinarParticipants)
@@ -210,14 +197,20 @@ export async function getReportById(id: number) {
 
 export async function addNegotiationEvent(data: {
   webinarId: number;
-  type: "system" | "factory" | "presentation" | "pricing" | "ai_insight" | "negotiation" | "ai_alert" | "agreement";
-  title: string;
+  type: string;
   description?: string;
   metadata?: Record<string, unknown>;
+  createdById?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(negotiationEvents).values(data);
+  const result = await db.insert(negotiationEvents).values({
+    webinarId: data.webinarId,
+    type: data.type,
+    description: data.description,
+    metadata: data.metadata,
+    createdById: data.createdById
+  });
   return result[0].insertId;
 }
 
@@ -226,7 +219,7 @@ export async function getWebinarTimeline(webinarId: number) {
   if (!db) return [];
   return db.select().from(negotiationEvents)
     .where(eq(negotiationEvents.webinarId, webinarId))
-    .orderBy(negotiationEvents.createdAt);
+    .orderBy(desc(negotiationEvents.timestamp));
 }
 
 // ============ ORDER QUERIES ============
@@ -245,12 +238,12 @@ export async function getDashboardStats(userId: number) {
   const db = await getDb();
   if (!db) return { activeWebinars: 0, totalFactories: 0, closedOrders: 0, activeNegotiations: 0 };
 
-  const [webinarCount] = await db.select({ count: sql<number>`count(*)` }).from(webinars)
+  const [webinarCount] = await db.select({ count: sql<number>\`count(*)\` }).from(webinars)
     .where(eq(webinars.status, "live"));
-  const [factoryCount] = await db.select({ count: sql<number>`count(*)` }).from(factories);
-  const [orderCount] = await db.select({ count: sql<number>`count(*)` }).from(orders)
+  const [factoryCount] = await db.select({ count: sql<number>\`count(*)\` }).from(factories);
+  const [orderCount] = await db.select({ count: sql<number>\`count(*)\` }).from(orders)
     .where(eq(orders.status, "delivered"));
-  const [negotiationCount] = await db.select({ count: sql<number>`count(*)` }).from(webinars)
+  const [negotiationCount] = await db.select({ count: sql<number>\`count(*)\` }).from(webinars)
     .where(eq(webinars.status, "scheduled"));
 
   return {
@@ -334,10 +327,17 @@ export async function createUsageRecord(data: InsertUsageRecord) {
 export async function recordUsage(userId: number, resourceType: string, count: number = 1, metadata?: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
   await db.insert(usageRecords).values({
     userId,
-    resourceType: resourceType as any,
-    count, // Schema uses 'count' not 'amount'
+    resourceType,
+    count,
+    periodStart,
+    periodEnd,
     metadata
   });
 }
@@ -350,12 +350,12 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
   
-  const [result] = await db.select({ count: sql<number>`count(*)` })
+  const [result] = await db.select({ count: sql<number>\`count(*)\` })
     .from(usageRecords)
     .where(and(
       eq(usageRecords.userId, userId),
-      eq(usageRecords.resourceType, resourceType as any),
-      sql`${usageRecords.createdAt} >= ${startOfMonth}`
+      eq(usageRecords.resourceType, resourceType),
+      sql\`\${usageRecords.createdAt} >= \${startOfMonth}\`
     ));
     
   return result?.count ?? 0;
@@ -433,7 +433,7 @@ export async function getUnreadMessageCount(userId: number, senderId?: number) {
   let conditions = [eq(rtmMessages.receiverId, userId), eq(rtmMessages.isRead, 0)];
   if (senderId) conditions.push(eq(rtmMessages.senderId, senderId));
   
-  const [result] = await db.select({ count: sql<number>`count(*)` })
+  const [result] = await db.select({ count: sql<number>\`count(*)\` })
     .from(rtmMessages)
     .where(and(...conditions));
     
