@@ -1,0 +1,40 @@
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+*.log
+.DS_Store
+
+# Node modules (will be installed during build)
+node_modules/
+
+# Build artifacts
+.manus-logs/
+dist/
+.vite/
+
+# Documentation
+*.md
+!README.md
+
+# Scripts (not needed in production)
+scripts/
+
+# Test files
+*.test.ts
+*.test.tsx
+vitest.config.ts
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Patches
+patches/

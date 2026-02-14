@@ -1,8 +1,42 @@
 {
-  "buildCommand": "npm run build",
+  "version": 2,
+  "buildCommand": "pnpm install && pnpm run build",
   "outputDirectory": "dist/public",
-  "installCommand": "npm install --legacy-peer-deps",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index"
+    }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,POST,PUT,DELETE,OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
 }
