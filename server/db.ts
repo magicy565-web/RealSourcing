@@ -152,7 +152,7 @@ export async function updateFactory(id: number, data: Partial<InsertFactory>) {
 export async function addFactoryToWebinar(webinarId: number, factoryId: number, role: 'presenter' | 'participant' = 'participant') {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  await db.insert(webinarParticipants).values({ webinarId, factoryId, role });
+  await db.insert(webinarParticipants).values({ webinarId, factoryId, role, userId: 0 }); // Ensure userId is provided
 }
 
 export async function getWebinarFactories(webinarId: number) {
@@ -495,41 +495,4 @@ export async function toggleConversationPin(id: number) {
       .set({ isPinned: existing[0].isPinned ? 0 : 1, updatedAt: new Date() })
       .where(eq(rtmConversations.id, id));
   }
-}
-
-export async function toggleConversationMute(id: number) {
-  const db = await getDb();
-  if (!db) return;
-  const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
-  if (existing.length > 0) {
-    await db.update(rtmConversations)
-      .set({ isMuted: existing[0].isMuted ? 0 : 1, updatedAt: new Date() })
-      .where(eq(rtmConversations.id, id));
-  }
-}
-
-export async function createPaymentOrder(data: InsertPaymentOrder) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const result = await db.insert(paymentOrders).values(data);
-  return result[0].insertId;
-}
-
-export async function getPaymentOrderByNo(orderNo: string) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(paymentOrders).where(eq(paymentOrders.orderNo, orderNo)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
-export async function updatePaymentOrder(orderNo: string, data: Partial<InsertPaymentOrder>) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  await db.update(paymentOrders).set(data).where(eq(paymentOrders.orderNo, orderNo));
-}
-
-export async function getUserPaymentOrders(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(paymentOrders).where(eq(paymentOrders.userId, userId)).orderBy(desc(paymentOrders.createdAt));
 }
