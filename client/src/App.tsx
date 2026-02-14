@@ -5,6 +5,8 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import LandingPage from "./pages/LandingPage";
+import SignIn from "./pages/SignIn";
 import Webinars from "./pages/Webinars";
 import WebinarCreate from "./pages/CreateWebinar";
 import WebinarDetail from "./pages/WebinarDetail";
@@ -26,6 +28,8 @@ import CommandPalette from "./components/CommandPalette";
 function Router() {
   return (
     <Switch>
+      <Route path="/landing" component={LandingPage} />
+      <Route path="/signin" component={SignIn} />
       <Route path="/" component={Home} />
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
