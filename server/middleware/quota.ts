@@ -53,27 +53,27 @@ export async function checkQuota(
   }
 
   const plan = await getSubscriptionPlanById(subscription.planId);
-  if (!plan || !plan.limits) {
+  if (!plan || !plan.quotaLimits) {
     return { canProceed: false, usage: 0, limit: 0, reason: "Invalid plan." };
   }
 
   const usage = await getMonthlyUsage(userId, resourceType);
 
   let limit = 0;
-  const limits = plan.limits as any;
+  const limits = plan.quotaLimits as any;
   if (resourceType === "webinar_created") {
-    limit = limits.webinarCreatedMonthly;
+    limit = Number(limits.webinarCreatedMonthly || 0);
   } else if (resourceType === "product_uploaded") {
-    limit = limits.productsMax;
+    limit = Number(limits.productsMax || 0);
   } else if (resourceType === "inquiry_received") {
-    limit = limits.inquiriesMonthly;
+    limit = Number(limits.inquiriesMonthly || 0);
   }
 
-  const canProceed = limit === -1 || usage < limit;
+  const canProceed = limit === -1 || Number(usage) < limit;
 
   return {
     canProceed,
-    usage,
+    usage: Number(usage),
     limit: limit === -1 ? Infinity : limit,
     reason: canProceed ? undefined : "Quota exceeded.",
   };
@@ -88,7 +88,7 @@ export async function recordResourceUsage(
   count: number = 1,
   metadata?: Record<string, unknown>
 ): Promise<void> {
-  // Use the parameters expected by db.recordUsage: (userId, resourceType, amount, metadata)
+  // Use the parameters expected by db.recordUsage: (userId, resourceType, count, metadata)
   await recordUsage(userId, resourceType, count, metadata);
 }
 

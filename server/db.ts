@@ -128,7 +128,7 @@ export async function getFactories(search?: string) {
   if (!db) return [];
   if (search) {
     return db.select().from(factories)
-      .where(like(factories.name, `%${search}%`))
+      .where(like(factories.name, '%' + search + '%'))
       .orderBy(desc(factories.overallScore));
   }
   return db.select().from(factories).orderBy(desc(factories.overallScore));
@@ -238,19 +238,16 @@ export async function getDashboardStats(userId: number) {
   const db = await getDb();
   if (!db) return { activeWebinars: 0, totalFactories: 0, closedOrders: 0, activeNegotiations: 0 };
 
-  const [webinarCount] = await db.select({ count: sql<number>'count(*)' }).from(webinars)
-    .where(eq(webinars.status, 'live'));
-  const [factoryCount] = await db.select({ count: sql<number>'count(*)' }).from(factories);
-  const [orderCount] = await db.select({ count: sql<number>'count(*)' }).from(orders)
-    .where(eq(orders.status, 'delivered'));
-  const [negotiationCount] = await db.select({ count: sql<number>'count(*)' }).from(webinars)
-    .where(eq(webinars.status, 'scheduled'));
+  const webinarCountRes = await db.select({ count: sql`count(*)` }).from(webinars).where(eq(webinars.status, 'live'));
+  const factoryCountRes = await db.select({ count: sql`count(*)` }).from(factories);
+  const orderCountRes = await db.select({ count: sql`count(*)` }).from(orders).where(eq(orders.status, 'delivered'));
+  const negotiationCountRes = await db.select({ count: sql`count(*)` }).from(webinars).where(eq(webinars.status, 'scheduled'));
 
   return {
-    activeWebinars: webinarCount?.count ?? 0,
-    totalFactories: factoryCount?.count ?? 0,
-    closedOrders: orderCount?.count ?? 0,
-    activeNegotiations: negotiationCount?.count ?? 0,
+    activeWebinars: Number(webinarCountRes[0]?.count ?? 0),
+    totalFactories: Number(factoryCountRes[0]?.count ?? 0),
+    closedOrders: Number(orderCountRes[0]?.count ?? 0),
+    activeNegotiations: Number(negotiationCountRes[0]?.count ?? 0),
   };
 }
 
@@ -344,7 +341,7 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
   
-  const [result] = await db.select({ count: sql<number>'sum(count)' })
+  const result = await db.select({ total: sql`sum(count)` })
     .from(usageRecords)
     .where(and(
       eq(usageRecords.userId, userId),
@@ -352,7 +349,7 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
       sql`createdAt >= ${startOfMonth}`
     ));
     
-  return result?.count ?? 0;
+  return Number(result[0]?.total ?? 0);
 }
 
 export function getDefaultQuotaLimits() {
@@ -427,11 +424,11 @@ export async function getUnreadMessageCount(userId: number, senderId?: number) {
   let conditions = [eq(rtmMessages.receiverId, userId), eq(rtmMessages.isRead, 0)];
   if (senderId) conditions.push(eq(rtmMessages.senderId, senderId));
   
-  const [result] = await db.select({ count: sql<number>'count(*)' })
+  const result = await db.select({ count: sql`count(*)` })
     .from(rtmMessages)
     .where(and(...conditions));
     
-  return result?.count ?? 0;
+  return Number(result[0]?.count ?? 0);
 }
 
 export async function upsertConversation(data: InsertRtmConversation) {
@@ -448,8 +445,8 @@ export async function upsertConversation(data: InsertRtmConversation) {
   const existing = await db.select().from(rtmConversations).where(condition).limit(1);
   
   if (existing.length > 0) {
-    const currentUnread = existing[0].unreadCount ?? 0;
-    const increment = data.unreadCount ?? 0;
+    const currentUnread = Number(existing[0].unreadCount ?? 0);
+    const increment = Number(data.unreadCount ?? 0);
     
     await db.update(rtmConversations)
       .set({

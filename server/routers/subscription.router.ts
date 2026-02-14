@@ -50,9 +50,9 @@ export const subscriptionRouter = router({
       subscription,
       plan,
       usage: {
-        webinarCreated: webinarUsage,
-        productUploaded: productUsage,
-        inquiryReceived: inquiryUsage,
+        webinarCreated: Number(webinarUsage),
+        productUploaded: Number(productUsage),
+        inquiryReceived: Number(inquiryUsage),
       },
     };
   }),
@@ -78,7 +78,7 @@ export const subscriptionRouter = router({
       planId: "free_trial",
       status: "active",
       billingCycle: "monthly",
-      amount: "0", // Added missing amount property
+      amount: "0",
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
       autoRenew: 0,
@@ -144,7 +144,7 @@ export const subscriptionRouter = router({
 
       // Get plan limits
       const plan = await getSubscriptionPlanById(subscription.planId);
-      if (!plan || !plan.limits) {
+      if (!plan || !plan.quotaLimits) {
         return { canProceed: false, usage: 0, limit: 0, reason: "Invalid plan" };
       }
 
@@ -153,19 +153,20 @@ export const subscriptionRouter = router({
 
       // Determine limit based on resource type
       let limit = 0;
+      const limits = plan.quotaLimits as any;
       if (input.resourceType === "webinar_created") {
-        limit = plan.limits.webinarCreatedMonthly;
+        limit = Number(limits.webinarCreatedMonthly || 0);
       } else if (input.resourceType === "product_uploaded") {
-        limit = plan.limits.productsMax;
+        limit = Number(limits.productsMax || 0);
       } else if (input.resourceType === "inquiry_received") {
-        limit = plan.limits.inquiriesMonthly;
+        limit = Number(limits.inquiriesMonthly || 0);
       }
 
-      const canProceed = limit === -1 || usage < limit; // -1 means unlimited
+      const canProceed = limit === -1 || Number(usage) < limit;
 
       return {
         canProceed,
-        usage,
+        usage: Number(usage),
         limit: limit === -1 ? Infinity : limit,
       };
     }),
