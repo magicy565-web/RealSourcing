@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { generateRtcToken } from "./lib/agora-token";
+
 import { checkQuota, recordResourceUsage } from "./middleware/quota";
 import { triggerWebinarStatusEvent } from "./middleware/auto-events";
 import { generateAIReport, type ReportType } from "./lib/ai-report-generator";
@@ -19,6 +19,7 @@ import { rtmRouter } from "./routers/rtm.router";
 import { factoryRouter } from "./routers/factory.router";
 import { orderRouter } from "./routers/order.router";
 import { subscriptionEnhancedRouter } from "./routers/subscription_enhanced.router";
+import { agoraRouter } from "./routers/agora.router";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -66,18 +67,8 @@ export const appRouter = router({
     }),
   }),
 
-  // Agora Token Generation
-  agora: router({
-    getToken: publicProcedure
-      .input(z.object({
-        channelName: z.string(),
-        uid: z.union([z.number(), z.string()])
-      }))
-      .query(async ({ input }) => {
-        const token = generateRtcToken(input.channelName, input.uid);
-        return { token };
-      }),
-  }),
+  // Agora Services (RTC, RTM, Whiteboard, Recording, Transcription)
+  agora: agoraRouter,
 
   // Dashboard
   dashboard: router({
