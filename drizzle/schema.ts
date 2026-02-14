@@ -1,4 +1,5 @@
 import { mysqlTable, int, varchar, text, timestamp, mysqlEnum, json, decimal, bigint, tinyint, date, unique, index } from "drizzle-orm/mysql-core";
+import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 
 // ============================================================================
 // 1. 用户与身份域 (Identity & Access)
@@ -30,8 +31,8 @@ export const users = mysqlTable("users", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
+export type User = InferSelectModel<typeof users>;
+export type InsertUser = InferInsertModel<typeof users>;
 
 export const userProfiles = mysqlTable("user_profiles", {
   id: int("id").autoincrement().primaryKey(),
@@ -49,8 +50,8 @@ export const userProfiles = mysqlTable("user_profiles", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type UserProfile = typeof userProfiles.$inferSelect;
-export type InsertUserProfile = typeof userProfiles.$inferInsert;
+export type UserProfile = InferSelectModel<typeof userProfiles>;
+export type InsertUserProfile = InferInsertModel<typeof userProfiles>;
 
 // ============================================================================
 // 2. 工厂域 (Factory)
@@ -106,8 +107,8 @@ export const factories = mysqlTable("factories", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type Factory = typeof factories.$inferSelect;
-export type InsertFactory = typeof factories.$inferInsert;
+export type Factory = InferSelectModel<typeof factories>;
+export type InsertFactory = InferInsertModel<typeof factories>;
 
 export const factoryCertifications = mysqlTable("factory_certifications", {
   id: int("id").autoincrement().primaryKey(),
@@ -130,8 +131,8 @@ export const factoryCertifications = mysqlTable("factory_certifications", {
   statusIdx: index("idx_status").on(table.status),
 }));
 
-export type FactoryCertification = typeof factoryCertifications.$inferSelect;
-export type InsertFactoryCertification = typeof factoryCertifications.$inferInsert;
+export type FactoryCertification = InferSelectModel<typeof factoryCertifications>;
+export type InsertFactoryCertification = InferInsertModel<typeof factoryCertifications>;
 
 export const factoryProducts = mysqlTable("factory_products", {
   id: int("id").autoincrement().primaryKey(),
@@ -165,8 +166,8 @@ export const factoryProducts = mysqlTable("factory_products", {
   displayOrderIdx: index("idx_displayOrder").on(table.displayOrder),
 }));
 
-export type FactoryProduct = typeof factoryProducts.$inferSelect;
-export type InsertFactoryProduct = typeof factoryProducts.$inferInsert;
+export type FactoryProduct = InferSelectModel<typeof factoryProducts>;
+export type InsertFactoryProduct = InferInsertModel<typeof factoryProducts>;
 
 // ============================================================================
 // 3. 采购会议域 (Webinar)
@@ -209,8 +210,8 @@ export const webinars = mysqlTable("webinars", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type Webinar = typeof webinars.$inferSelect;
-export type InsertWebinar = typeof webinars.$inferInsert;
+export type Webinar = InferSelectModel<typeof webinars>;
+export type InsertWebinar = InferInsertModel<typeof webinars>;
 
 export const webinarParticipants = mysqlTable("webinar_participants", {
   id: int("id").autoincrement().primaryKey(),
@@ -238,8 +239,8 @@ export const webinarParticipants = mysqlTable("webinar_participants", {
   webinarUserUnique: unique("unique_webinar_user").on(table.webinarId, table.userId),
 }));
 
-export type WebinarParticipant = typeof webinarParticipants.$inferSelect;
-export type InsertWebinarParticipant = typeof webinarParticipants.$inferInsert;
+export type WebinarParticipant = InferSelectModel<typeof webinarParticipants>;
+export type InsertWebinarParticipant = InferInsertModel<typeof webinarParticipants>;
 
 // ============================================================================
 // 4. 询价报价域 (RFQ & Quotation)
@@ -276,8 +277,8 @@ export const rfqs = mysqlTable("rfqs", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type RFQ = typeof rfqs.$inferSelect;
-export type InsertRFQ = typeof rfqs.$inferInsert;
+export type RFQ = InferSelectModel<typeof rfqs>;
+export type InsertRFQ = InferInsertModel<typeof rfqs>;
 
 export const quotations = mysqlTable("quotations", {
   id: int("id").autoincrement().primaryKey(),
@@ -311,8 +312,8 @@ export const quotations = mysqlTable("quotations", {
   submittedAtIdx: index("idx_submittedAt").on(table.submittedAt),
 }));
 
-export type Quotation = typeof quotations.$inferSelect;
-export type InsertQuotation = typeof quotations.$inferInsert;
+export type Quotation = InferSelectModel<typeof quotations>;
+export type InsertQuotation = InferInsertModel<typeof quotations>;
 
 // ============================================================================
 // 5. 订单域 (Order)
@@ -351,8 +352,8 @@ export const orders = mysqlTable("orders", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type Order = typeof orders.$inferSelect;
-export type InsertOrder = typeof orders.$inferInsert;
+export type Order = InferSelectModel<typeof orders>;
+export type InsertOrder = InferInsertModel<typeof orders>;
 
 export const orderItems = mysqlTable("order_items", {
   id: int("id").autoincrement().primaryKey(),
@@ -374,11 +375,11 @@ export const orderItems = mysqlTable("order_items", {
   productIdIdx: index("idx_productId").on(table.productId),
 }));
 
-export type OrderItem = typeof orderItems.$inferSelect;
-export type InsertOrderItem = typeof orderItems.$inferInsert;
+export type OrderItem = InferSelectModel<typeof orderItems>;
+export type InsertOrderItem = InferInsertModel<typeof orderItems>;
 
 // ============================================================================
-// 6. 消息通信域 (Messaging) - 已在之前实现
+// 6. 消息通信域 (Messaging)
 // ============================================================================
 
 export const rtmMessages = mysqlTable("rtm_messages", {
@@ -400,8 +401,8 @@ export const rtmMessages = mysqlTable("rtm_messages", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type RTMMessage = typeof rtmMessages.$inferSelect;
-export type InsertRTMMessage = typeof rtmMessages.$inferInsert;
+export type RtmMessage = InferSelectModel<typeof rtmMessages>;
+export type InsertRtmMessage = InferInsertModel<typeof rtmMessages>;
 
 export const rtmConversations = mysqlTable("rtm_conversations", {
   id: int("id").autoincrement().primaryKey(),
@@ -425,8 +426,8 @@ export const rtmConversations = mysqlTable("rtm_conversations", {
   uniqueConversation: unique("unique_conversation").on(table.userId, table.targetUserId, table.channelName),
 }));
 
-export type RTMConversation = typeof rtmConversations.$inferSelect;
-export type InsertRTMConversation = typeof rtmConversations.$inferInsert;
+export type RtmConversation = InferSelectModel<typeof rtmConversations>;
+export type InsertRtmConversation = InferInsertModel<typeof rtmConversations>;
 
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
@@ -445,15 +446,15 @@ export const notifications = mysqlTable("notifications", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
+export type Notification = InferSelectModel<typeof notifications>;
+export type InsertNotification = InferInsertModel<typeof notifications>;
 
 // ============================================================================
 // 7. SaaS 商业化域 (Subscription & Billing)
 // ============================================================================
 
 export const subscriptionPlans = mysqlTable("subscription_plans", {
-  id: varchar("id", { length: 50 }).primaryKey(), // free_trial, basic, pro, enterprise
+  id: varchar("id", { length: 50 }).primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   nameEn: varchar("nameEn", { length: 100 }),
   description: text("description"),
@@ -475,8 +476,8 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
   displayOrderIdx: index("idx_displayOrder").on(table.displayOrder),
 }));
 
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+export type SubscriptionPlan = InferSelectModel<typeof subscriptionPlans>;
+export type InsertSubscriptionPlan = InferInsertModel<typeof subscriptionPlans>;
 
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
@@ -504,8 +505,8 @@ export const subscriptions = mysqlTable("subscriptions", {
   currentPeriodEndIdx: index("idx_currentPeriodEnd").on(table.currentPeriodEnd),
 }));
 
-export type Subscription = typeof subscriptions.$inferSelect;
-export type InsertSubscription = typeof subscriptions.$inferInsert;
+export type Subscription = InferSelectModel<typeof subscriptions>;
+export type InsertSubscription = InferInsertModel<typeof subscriptions>;
 
 export const paymentOrders = mysqlTable("payment_orders", {
   id: int("id").autoincrement().primaryKey(),
@@ -535,8 +536,8 @@ export const paymentOrders = mysqlTable("payment_orders", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type PaymentOrder = typeof paymentOrders.$inferSelect;
-export type InsertPaymentOrder = typeof paymentOrders.$inferInsert;
+export type PaymentOrder = InferSelectModel<typeof paymentOrders>;
+export type InsertPaymentOrder = InferInsertModel<typeof paymentOrders>;
 
 export const invoices = mysqlTable("invoices", {
   id: int("id").autoincrement().primaryKey(),
@@ -567,8 +568,8 @@ export const invoices = mysqlTable("invoices", {
   issuedAtIdx: index("idx_issuedAt").on(table.issuedAt),
 }));
 
-export type Invoice = typeof invoices.$inferSelect;
-export type InsertInvoice = typeof invoices.$inferInsert;
+export type Invoice = InferSelectModel<typeof invoices>;
+export type InsertInvoice = InferInsertModel<typeof invoices>;
 
 export const usageRecords = mysqlTable("usage_records", {
   id: int("id").autoincrement().primaryKey(),
@@ -586,8 +587,8 @@ export const usageRecords = mysqlTable("usage_records", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type UsageRecord = typeof usageRecords.$inferSelect;
-export type InsertUsageRecord = typeof usageRecords.$inferInsert;
+export type UsageRecord = InferSelectModel<typeof usageRecords>;
+export type InsertUsageRecord = InferInsertModel<typeof usageRecords>;
 
 // ============================================================================
 // 8. 评价评分域 (Rating & Review)
@@ -626,8 +627,8 @@ export const factoryReviews = mysqlTable("factory_reviews", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type FactoryReview = typeof factoryReviews.$inferSelect;
-export type InsertFactoryReview = typeof factoryReviews.$inferInsert;
+export type FactoryReview = InferSelectModel<typeof factoryReviews>;
+export type InsertFactoryReview = InferInsertModel<typeof factoryReviews>;
 
 // ============================================================================
 // 9. 系统管理域 (System)
@@ -651,8 +652,8 @@ export const auditLogs = mysqlTable("audit_logs", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type AuditLog = typeof auditLogs.$inferSelect;
-export type InsertAuditLog = typeof auditLogs.$inferInsert;
+export type AuditLog = InferSelectModel<typeof auditLogs>;
+export type InsertAuditLog = InferInsertModel<typeof auditLogs>;
 
 export const systemSettings = mysqlTable("system_settings", {
   id: int("id").autoincrement().primaryKey(),
@@ -670,11 +671,11 @@ export const systemSettings = mysqlTable("system_settings", {
   categoryKeyUnique: unique("unique_category_key").on(table.category, table.key),
 }));
 
-export type SystemSetting = typeof systemSettings.$inferSelect;
-export type InsertSystemSetting = typeof systemSettings.$inferInsert;
+export type SystemSetting = InferSelectModel<typeof systemSettings>;
+export type InsertSystemSetting = InferInsertModel<typeof systemSettings>;
 
 // ============================================================================
-// 10. 报告域 (Reports) - 保留现有表
+// 10. 报告域 (Reports)
 // ============================================================================
 
 export const reports = mysqlTable("reports", {
@@ -696,8 +697,8 @@ export const reports = mysqlTable("reports", {
   createdAtIdx: index("idx_createdAt").on(table.createdAt),
 }));
 
-export type Report = typeof reports.$inferSelect;
-export type InsertReport = typeof reports.$inferInsert;
+export type Report = InferSelectModel<typeof reports>;
+export type InsertReport = InferInsertModel<typeof reports>;
 
 export const negotiationEvents = mysqlTable("negotiation_events", {
   id: int("id").autoincrement().primaryKey(),
@@ -713,4 +714,5 @@ export const negotiationEvents = mysqlTable("negotiation_events", {
   timestampIdx: index("idx_timestamp").on(table.timestamp),
 }));
 
-export type NegotiationEvent = typeof negotiationEvents.$inferSelect;
+export type NegotiationEvent = InferSelectModel<typeof negotiationEvents>;
+export type InsertNegotiationEvent = InferInsertModel<typeof negotiationEvents>;

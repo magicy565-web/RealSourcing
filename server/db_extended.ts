@@ -7,36 +7,36 @@ import { eq, desc, sql, and, like, inArray, gte, lte, between } from "drizzle-or
 import { getDb } from "./db";
 import {
   // 用户域
-  userProfiles, InsertUserProfile,
+  userProfiles, type InsertUserProfile,
   
   // 工厂域
   factories,
-  factoryCertifications, InsertFactoryCertification,
-  factoryProducts, InsertFactoryProduct,
+  factoryCertifications, type InsertFactoryCertification,
+  factoryProducts, type InsertFactoryProduct,
   
   // 会议域
-  webinarParticipants, InsertWebinarParticipant,
+  webinarParticipants, type InsertWebinarParticipant,
   
   // 询价报价域
-  rfqs, InsertRFQ,
-  quotations, InsertQuotation,
+  rfqs, type InsertRFQ,
+  quotations, type InsertQuotation,
   
   // 订单域
-  orders, InsertOrder,
-  orderItems, InsertOrderItem,
+  orders, type InsertOrder,
+  orderItems, type InsertOrderItem,
   
   // 通知域
-  notifications, InsertNotification,
+  notifications, type InsertNotification,
   
   // 发票域
-  invoices, InsertInvoice,
+  invoices, type InsertInvoice,
   
   // 评价域
-  factoryReviews, InsertFactoryReview,
+  factoryReviews, type InsertFactoryReview,
   
   // 系统域
-  auditLogs, InsertAuditLog,
-  systemSettings, InsertSystemSetting,
+  auditLogs, type InsertAuditLog,
+  systemSettings, type InsertSystemSetting,
 } from "../drizzle/schema";
 
 // ============================================================================
@@ -125,7 +125,7 @@ export async function getFactoryProductById(id: number) {
 }
 
 export async function createFactoryProduct(data: InsertFactoryProduct) {
-  const db = await db();
+  const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(factoryProducts).values(data);
   return result[0].insertId;
