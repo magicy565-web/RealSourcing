@@ -6,6 +6,7 @@
  */
 
 import "dotenv/config";
+import path from "path";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "../server/_core/oauth";
@@ -67,6 +68,11 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development"
   });
+});
+
+// Health check endpoint
+app.get("/api/ping", (req, res) => {
+  res.send("pong");
 });
 
 // Export for Vercel Serverless

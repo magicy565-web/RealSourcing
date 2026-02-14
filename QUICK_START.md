@@ -17,7 +17,7 @@
 **Framework Preset**: `Other`
 
 **Build & Development Settings**:
-- **Build Command**: `pnpm install && pnpm run build`
+- **Build Command**: `pnpm run build`
 - **Output Directory**: `dist/public`
 - **Install Command**: `pnpm install --frozen-lockfile`
 
