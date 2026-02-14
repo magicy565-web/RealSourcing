@@ -318,12 +318,6 @@ export async function cancelSubscription(userId: number) {
 
 // ============ USAGE RECORD QUERIES ============
 
-export async function createUsageRecord(data: InsertUsageRecord) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.insert(usageRecords).values(data);
-}
-
 export async function recordUsage(userId: number, resourceType: string, count: number = 1, metadata?: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -350,7 +344,7 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
   
-  const [result] = await db.select({ count: sql<number>\`count(*)\` })
+  const [result] = await db.select({ count: sql<number>\`sum(count)\` })
     .from(usageRecords)
     .where(and(
       eq(usageRecords.userId, userId),
