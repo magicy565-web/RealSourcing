@@ -1,16 +1,41 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from "wouter";
 import { GlassCard } from '../components/GlassCard';
-import { Factory, Github, Mail } from 'lucide-react';
+import { Factory, Github, Mail, Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function SignIn() {
+  const [, setLocation] = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: (data) => {
+      toast.success("Successfully signed in");
+      setLocation("/");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to sign in");
+      setIsLoading(false);
+    }
+  });
+
   const handleGitHubLogin = () => {
-    // Redirect to GitHub OAuth
     window.location.href = '/api/auth/github';
   };
 
   const handleGoogleLogin = () => {
-    // Redirect to Google OAuth (if implemented)
     window.location.href = '/api/auth/google';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    
+    setIsLoading(true);
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -114,7 +139,7 @@ export default function SignIn() {
             </div>
 
             {/* Email Login Form */}
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-xs font-medium text-gray-300 mb-2">
                   Email Address
@@ -122,6 +147,8 @@ export default function SignIn() {
                 <input
                   type="email"
                   id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="
                     w-full px-4 py-3 rounded-xl text-sm
                     bg-white/5 border border-white/10
@@ -130,6 +157,7 @@ export default function SignIn() {
                     placeholder-gray-500
                   "
                   placeholder="you@company.com"
+                  required
                 />
               </div>
 
@@ -140,6 +168,8 @@ export default function SignIn() {
                 <input
                   type="password"
                   id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="
                     w-full px-4 py-3 rounded-xl text-sm
                     bg-white/5 border border-white/10
@@ -148,6 +178,7 @@ export default function SignIn() {
                     placeholder-gray-500
                   "
                   placeholder="••••••••"
+                  required
                 />
               </div>
 
@@ -166,35 +197,28 @@ export default function SignIn() {
 
               <button
                 type="submit"
+                disabled={isLoading}
                 className="
                   w-full py-3 rounded-xl text-sm font-medium
                   bg-gradient-to-r from-purple-500 to-cyan-500
                   transition-all duration-300
                   hover:scale-102 hover:shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:-translate-y-0.5
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center
                 "
               >
-                Sign In
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </button>
             </form>
           </div>
-
-          {/* Sign Up Link */}
-          <div className="mt-6 text-center text-xs text-gray-400">
-            Don't have an account?{' '}
-            <Link href="/signup">
-              <a className="text-purple-400 hover:text-purple-300 font-medium transition-colors">
-                Sign up for free
-              </a>
-            </Link>
-          </div>
         </GlassCard>
-
-        {/* Footer Links */}
-        <div className="mt-8 text-center text-xs text-gray-400 space-x-4">
-          <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-          <span>•</span>
-          <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-        </div>
       </div>
     </div>
   );

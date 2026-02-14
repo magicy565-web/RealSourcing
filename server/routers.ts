@@ -1,5 +1,9 @@
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
+import { getSessionCookieOptions, setAuthCookie } from "./_core/cookies";
+import { hashPassword, verifyPassword } from "./_core/password";
+import { signToken } from "./_core/auth";
+import { getUserByOpenId, upsertUser } from "./db";
+import { eq } from "drizzle-orm";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -29,6 +33,32 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { email, password } = input;
+        
+        // Find user by email (using openId as email for simplicity)
+        const user = await getUserByOpenId(email);
+        
+        if (!user || !user.passwordHash) {
+          throw new Error('Invalid email or password');
+        }
+        
+        // Verify password
+        if (!verifyPassword(password, user.passwordHash)) {
+          throw new Error('Invalid email or password');
+        }
+        
+        // Generate token and set cookie
+        const token = signToken({ userId: user.id, role: user.role });
+        setAuthCookie(ctx.res as any, token);
+        
+        return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req as any);
       (ctx.res as any).clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

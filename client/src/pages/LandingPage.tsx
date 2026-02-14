@@ -19,6 +19,13 @@ import {
   Building,
   Award,
   Languages,
+  MessageSquare,
+  BarChart3,
+  CheckCircle2,
+  ChevronRight,
+  Menu,
+  X,
+  Zap
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -35,16 +42,17 @@ export default function LandingPage() {
         getStarted: '立即开始',
       },
       hero: {
+        tag: "AI 智能匹配 + 视频实时谈判",
         title: '告别阿里国际站的红海竞争',
         subtitle: '直连海外真实买家',
-        description: 'AI 智能匹配 + 视频实时谈判，让你的工厂订单翻倍',
+        description: '不再是被动等待询盘。通过 AI 精准匹配全球采购商，用视频直播和 1 对 1 谈判直接锁定订单，让你的工厂业绩翻倍。',
         cta: '立即注册，免费试用 30 天',
         demo: '观看产品演示',
-        stats: [
-          { title: '已对接工厂', value: '500+', icon: <Factory size={20} /> },
-          { title: '海外买家', value: '2,000+', icon: <Globe size={20} /> },
-          { title: '平均成交周期', value: '18 天', icon: <Clock size={20} /> },
-        ],
+        stats: {
+          factories: "已对接工厂",
+          buyers: "海外买家",
+          meetings: "视频谈判"
+        }
       },
       challenges: {
         title: '传统外贸获客的三大困境',
@@ -73,44 +81,19 @@ export default function LandingPage() {
             icon: <Brain size={32} />,
             title: 'AI 精准推荐海外买家',
             description: '根据你的产品品类、产能、价格区间，AI 自动匹配全球真实采购商，不再被动等待。',
-            mockup: '/mockups/ai-matching.png',
+            image: '/screenshots/factories_full.webp',
           },
           {
             icon: <Video size={32} />,
-            title: '面对面视频谈判，建立信任',
-            description: '不再是冰冷的邮件往来，通过视频直接展示产品、工厂实力，快速建立信任，提高成交率。',
-            mockup: '/mockups/video-negotiation.png',
+            title: '视频 Webinar 实时获客',
+            description: '举办在线新品发布会或行业研讨会，一次性吸引数百名买家，实时互动建立信任。',
+            image: '/screenshots/webinars_full.webp',
           },
           {
             icon: <TrendingUp size={32} />,
-            title: '全流程透明跟进',
-            description: '每个商机状态一目了然，AI 提醒跟进时机，不错过任何一个潜在订单。',
-            mockup: '/mockups/order-tracking.png',
-          },
-        ],
-      },
-      howItWorks: {
-        title: '4 步开启海外订单',
-        steps: [
-          {
-            number: '01',
-            title: '注册并完善工厂信息',
-            description: '上传产品目录、认证资质、产能信息',
-          },
-          {
-            number: '02',
-            title: 'AI 智能匹配买家',
-            description: '系统自动推荐匹配度高的海外采购商',
-          },
-          {
-            number: '03',
-            title: '发起视频谈判邀请',
-            description: '一键发送视频会议邀请，展示产品和工厂',
-          },
-          {
-            number: '04',
-            title: '达成交易并跟进订单',
-            description: '在线签约、支付、物流跟踪，全流程透明',
+            title: '1 对 1 视频深度谈判',
+            description: '内置实时翻译功能，与买家面对面确认细节，将成交周期从数月缩短至数周。',
+            image: '/screenshots/real_dashboard_full.webp',
           },
         ],
       },
@@ -118,46 +101,15 @@ export default function LandingPage() {
         title: '真实工厂的成功故事',
         items: [
           {
-            company: '顾家家居',
-            location: '浙江',
-            industry: '家具制造',
-            results: [
-              '3 个月对接 50+ 海外家具采购商',
-              '新增订单金额：$2.1M',
-              '平均响应时间：从 3 天降至 2 小时',
-            ],
-            testimonial: '通过 RealSourcing 的视频谈判功能，我们直接向美国买家展示了工厂的生产线和质量管控流程，成交率提升了 40%。不再需要在阿里国际站上和同行打价格战。',
-            person: '张经理',
-            role: '外贸部总监',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+            company: '顾家家居 (KUKA)',
+            quote: 'RealSourcing 的视频谈判功能帮我们解决了跨国沟通的信任难题，3 个月内我们成功对接了 50 多位高质量海外买家。',
+            stat: '订单转化率提升 45%'
           },
           {
-            company: '喜临门',
-            location: '浙江',
-            industry: '床垫制造',
-            results: [
-              '通过 AI 匹配，精准对接欧洲高端酒店采购商',
-              '单笔订单金额：$800K',
-              '成交周期：从 2 个月缩短至 18 天',
-            ],
-            testimonial: '以前在中国制造网上投放广告，询盘质量很差，大部分是中间商。RealSourcing 推荐的都是真实的终端买家，而且通过视频能直接判断对方的采购实力。',
-            person: '李总',
-            role: '国际业务部',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-          },
-        ],
-      },
-      comparison: {
-        title: 'RealSourcing vs 传统 B2B 平台',
-        headers: ['功能', 'RealSourcing', '阿里国际站', '中国制造网'],
-        rows: [
-          ['获客方式', 'AI 主动推荐精准买家', '被动展示，等待询盘', '被动展示，等待询盘'],
-          ['沟通方式', '视频面对面谈判', '邮件/聊天工具', '邮件/聊天工具'],
-          ['买家质量', '真实终端采购商', '混杂中间商', '混杂中间商'],
-          ['成交周期', '平均 18 天', '1-3 个月', '1-3 个月'],
-          ['年费', '¥9,999 起', '¥29,800 起', '¥19,800 起'],
-          ['抽佣', '成交订单 2%', '无', '无'],
-          ['竞争程度', '精准匹配，低竞争', '红海竞争', '中等竞争'],
+            company: '喜临门 (Sleemon)',
+            quote: '不再需要漫长的邮件等待，AI 匹配非常精准。我们通过一场 Webinar 就拿到了 5 个欧洲客户的意向订单。',
+            stat: '获客成本降低 60%'
+          }
         ],
       },
       pricing: {
@@ -165,54 +117,25 @@ export default function LandingPage() {
         subtitle: 'SaaS 会员 + 成交抽佣混合模式',
         plans: [
           {
-            name: '基础版',
+            name: '标准版',
             price: '¥9,999',
             period: '/年',
-            commission: '+ 3% 抽佣',
-            description: '适合小型工厂（10-50 人）',
-            features: [
-              '10 个视频谈判名额/月',
-              'AI 基础匹配',
-              '5 个买家推荐/月',
-              '邮件支持',
-            ],
+            features: ["AI 智能匹配 (50次/月)", "基础视频谈判室", "标准询盘管理", "5GB 存储空间"]
           },
           {
             name: '专业版',
-            price: '¥29,999',
+            price: '¥29,800',
             period: '/年',
-            commission: '+ 2% 抽佣',
-            description: '适合中型工厂（50-200 人）',
-            features: [
-              '无限视频谈判',
-              'AI 高级匹配',
-              '20 个买家推荐/月',
-              '优先客服支持',
-              '自定义品牌展示',
-            ],
-            popular: true,
+            features: ["无限 AI 智能匹配", "高清视频 Webinar (不限次)", "高级商机管理系统", "成交订单抽佣 1.5%", "优先技术支持"],
+            popular: true
           },
           {
             name: '企业版',
             price: '定制',
             period: '',
-            commission: '+ 1.5% 抽佣',
-            description: '适合大型工厂/产业园区',
-            features: [
-              '专属客户经理',
-              'AI 定制化训练',
-              '无限买家推荐',
-              '7x24 电话支持',
-              'API 接口集成',
-            ],
-          },
+            features: ["私有化部署选项", "产业园区专属方案", "深度定制化 AI 模型", "成交订单抽佣 1.0%", "专属大客户经理"]
+          }
         ],
-      },
-      cta: {
-        title: '准备好开启海外订单了吗？',
-        subtitle: '加入 500+ 中国工厂，用现代化方式开发海外客户',
-        button: '立即注册，免费试用 30 天',
-        demo: '预约产品演示',
       },
       footer: {
         product: {
@@ -243,16 +166,17 @@ export default function LandingPage() {
         getStarted: 'Get Started',
       },
       hero: {
-        title: 'Beyond Alibaba:',
+        tag: "AI Matching + Video Negotiation",
+        title: 'Beyond Alibaba Red Ocean',
         subtitle: 'Connect Directly with Global Buyers',
-        description: 'AI-Powered Matching + Live Video Negotiations to Double Your Orders',
+        description: 'Stop waiting for inquiries. Use AI to match with global buyers precisely, and lock in orders through live webinars and 1-on-1 video negotiations.',
         cta: 'Start Free 30-Day Trial',
         demo: 'Watch Product Demo',
-        stats: [
-          { title: 'Factories', value: '500+', icon: <Factory size={20} /> },
-          { title: 'Global Buyers', value: '2,000+', icon: <Globe size={20} /> },
-          { title: 'Avg. Deal Cycle', value: '18 Days', icon: <Clock size={20} /> },
-        ],
+        stats: {
+          factories: "Factories",
+          buyers: "Global Buyers",
+          meetings: "Video Meetings"
+        }
       },
       challenges: {
         title: '3 Major Challenges in Traditional B2B Sourcing',
@@ -279,93 +203,37 @@ export default function LandingPage() {
         items: [
           {
             icon: <Brain size={32} />,
-            title: 'AI-Powered Buyer Matching',
-            description: 'Based on your product category, capacity, and price range, AI automatically matches global real buyers. No more passive waiting.',
-            mockup: '/mockups/ai-matching.png',
+            title: 'AI Precision Matching',
+            description: 'Proactively recommends the most compatible buyers based on your capacity and category.',
+            image: '/screenshots/factories_full.webp',
           },
           {
             icon: <Video size={32} />,
-            title: 'Face-to-Face Video Negotiations',
-            description: 'No more cold emails. Showcase products and factory capabilities via video, quickly build trust, increase conversion.',
-            mockup: '/mockups/video-negotiation.png',
+            title: 'Video Webinar Acquisition',
+            description: 'Host online product launches or seminars to attract hundreds of buyers at once with real-time interaction.',
+            image: '/screenshots/webinars_full.webp',
           },
           {
             icon: <TrendingUp size={32} />,
-            title: 'End-to-End Transparent Tracking',
-            description: 'Every opportunity status at a glance, AI reminds you of follow-up timing, never miss a potential order.',
-            mockup: '/mockups/order-tracking.png',
-          },
-        ],
-      },
-      howItWorks: {
-        title: '4 Steps to Global Orders',
-        steps: [
-          {
-            number: '01',
-            title: 'Register & Complete Profile',
-            description: 'Upload product catalog, certifications, capacity info',
-          },
-          {
-            number: '02',
-            title: 'AI Matches Buyers',
-            description: 'System automatically recommends high-match global buyers',
-          },
-          {
-            number: '03',
-            title: 'Initiate Video Negotiation',
-            description: 'One-click video meeting invite, showcase products and factory',
-          },
-          {
-            number: '04',
-            title: 'Close Deal & Track Order',
-            description: 'Online contract, payment, logistics tracking, fully transparent',
+            title: '1-on-1 Deep Negotiation',
+            description: 'Built-in real-time translation. Confirm details face-to-face and shorten closing cycles from months to weeks.',
+            image: '/screenshots/real_dashboard_full.webp',
           },
         ],
       },
       cases: {
-        title: 'Real Success Stories from Factories',
+        title: 'Success Stories',
         items: [
           {
             company: 'KUKA Home',
-            location: 'Zhejiang',
-            industry: 'Furniture Manufacturing',
-            results: [
-              'Connected with 50+ overseas furniture buyers in 3 months',
-              'New orders: $2.1M',
-              'Avg. response time: From 3 days to 2 hours',
-            ],
-            testimonial: 'Through RealSourcing\'s video negotiation feature, we directly showcased our production line and quality control to US buyers. Conversion rate increased by 40%. No more price wars on Alibaba.',
-            person: 'Manager Zhang',
-            role: 'Foreign Trade Director',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+            quote: 'RealSourcing\'s video negotiation solved our trust issues. We connected with 50+ high-quality buyers in 3 months.',
+            stat: '+45% Conversion Rate'
           },
           {
-            company: 'SLEEMON',
-            location: 'Zhejiang',
-            industry: 'Mattress Manufacturing',
-            results: [
-              'Precisely matched with European high-end hotel buyers via AI',
-              'Single order: $800K',
-              'Deal cycle: From 2 months to 18 days',
-            ],
-            testimonial: 'Previously on Made-in-China, inquiry quality was poor, mostly middlemen. RealSourcing recommends real end buyers, and video allows us to directly assess their purchasing power.',
-            person: 'General Manager Li',
-            role: 'International Business Dept.',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-          },
-        ],
-      },
-      comparison: {
-        title: 'RealSourcing vs Traditional B2B Platforms',
-        headers: ['Feature', 'RealSourcing', 'Alibaba.com', 'Made-in-China'],
-        rows: [
-          ['Acquisition', 'AI Proactive Matching', 'Passive Showcase', 'Passive Showcase'],
-          ['Communication', 'Video Face-to-Face', 'Email/Chat', 'Email/Chat'],
-          ['Buyer Quality', 'Real End Buyers', 'Mixed Middlemen', 'Mixed Middlemen'],
-          ['Deal Cycle', 'Avg. 18 Days', '1-3 Months', '1-3 Months'],
-          ['Annual Fee', '$1,499+', '$4,499+', '$2,999+'],
-          ['Commission', '2% on Deals', 'None', 'None'],
-          ['Competition', 'Low (Precise Match)', 'High (Red Ocean)', 'Medium'],
+            company: 'Sleemon',
+            quote: 'No more waiting for emails. AI matching is incredibly precise. We got 5 European orders from just one webinar.',
+            stat: '-60% Acquisition Cost'
+          }
         ],
       },
       pricing: {
@@ -376,51 +244,22 @@ export default function LandingPage() {
             name: 'Starter',
             price: '$1,499',
             period: '/year',
-            commission: '+ 3% commission',
-            description: 'For Small Factories (10-50 employees)',
-            features: [
-              '10 video negotiations/month',
-              'Basic AI matching',
-              '5 buyer recommendations/month',
-              'Email support',
-            ],
+            features: ["AI Matching (50/mo)", "Basic Video Rooms", "Standard CRM", "5GB Storage"]
           },
           {
             name: 'Professional',
-            price: '$4,499',
+            price: '$4,299',
             period: '/year',
-            commission: '+ 2% commission',
-            description: 'For Medium Factories (50-200 employees)',
-            features: [
-              'Unlimited video negotiations',
-              'Advanced AI matching',
-              '20 buyer recommendations/month',
-              'Priority support',
-              'Custom brand showcase',
-            ],
+            features: ["Unlimited AI Matching", "HD Video Webinars", "Advanced Pipeline Management", "1.5% Commission", "Priority Support"],
             popular: true,
           },
           {
             name: 'Enterprise',
             price: 'Custom',
             period: '',
-            commission: '+ 1.5% commission',
-            description: 'For Large Factories/Industrial Parks',
-            features: [
-              'Dedicated account manager',
-              'Custom AI training',
-              'Unlimited buyer recommendations',
-              '24/7 phone support',
-              'API integration',
-            ],
+            features: ["Private Deployment", "Industrial Park Solutions", "Custom AI Models", "1.0% Commission", "Dedicated Account Manager"]
           },
         ],
-      },
-      cta: {
-        title: 'Ready to Unlock Global Orders?',
-        subtitle: 'Join 500+ Chinese factories using modern methods to acquire overseas clients',
-        button: 'Start Free 30-Day Trial',
-        demo: 'Schedule a Demo',
       },
       footer: {
         product: {
@@ -446,123 +285,156 @@ export default function LandingPage() {
   const t = content[lang];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-[#0A0C10] text-white selection:bg-blue-500/30">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-[#0a0a0f]/80 backdrop-blur-xl z-50 border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Factory className="text-purple-400" size={32} />
-              <span className="text-2xl font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>RealSourcing</span>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A0C10]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Zap className="w-6 h-6 text-white" fill="white" />
             </div>
-            
-            <div className="hidden md:flex items-center space-x-10">
-              <a href="#features" className="text-gray-300 hover:text-white transition-colors text-sm">{t.nav.features}</a>
-              <a href="#pricing" className="text-gray-300 hover:text-white transition-colors text-sm">{t.nav.pricing}</a>
-              <a href="#cases" className="text-gray-300 hover:text-white transition-colors text-sm">{t.nav.cases}</a>
-              <a href="#about" className="text-gray-300 hover:text-white transition-colors text-sm">{t.nav.about}</a>
-            </div>
+            <span className="text-xl font-bold tracking-tight">RealSourcing</span>
+          </div>
 
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-                className="px-3 py-2 text-gray-300 hover:text-white transition-colors text-sm flex items-center space-x-1"
-              >
-                <Languages size={16} />
-                <span>{lang === 'zh' ? 'EN' : '中'}</span>
-              </button>
-              <Link href="/signin">
-                <a className="px-4 py-2 text-gray-300 hover:text-white transition-colors text-sm">
-                  {t.nav.signin}
-                </a>
-              </Link>
-              <Link href="/signin">
-                <a className="px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl transition-all hover:shadow-[0_4px_20px_rgba(139,92,246,0.4)] hover:-translate-y-0.5 flex items-center space-x-2 text-sm font-medium">
-                  <span>{t.nav.getStarted}</span>
-                  <ArrowRight size={16} />
-                </a>
-              </Link>
-            </div>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t.nav.features}</a>
+            <a href="#pricing" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t.nav.pricing}</a>
+            <a href="#cases" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t.nav.cases}</a>
+            <a href="#about" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t.nav.about}</a>
+          </div>
+
+          <div className="hidden md:flex items-center gap-4">
+            <button 
+              onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+            >
+              <Globe className="w-4 h-4" />
+              {lang === 'zh' ? 'EN' : '中文'}
+            </button>
+            <Link href="/signin" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">{t.nav.signin}</Link>
+            <button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+              {t.nav.getStarted}
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-40 pb-32 px-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-normal mb-6 text-white leading-tight">
-            {t.hero.title}
-            <br />
-            {t.hero.subtitle}
+      <section className="relative pt-40 pb-32 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-full pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 blur-[120px] rounded-full" />
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-semibold mb-8">
+            <Zap className="w-4 h-4" fill="currentColor" />
+            {t.hero.tag}
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-serif mb-6 leading-[1.1] tracking-tight">
+            {t.hero.title} <br />
+            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
+              {t.hero.subtitle}
+            </span>
           </h1>
-          <p className="text-lg text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
             {t.hero.description}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-            <Link href="/signin">
-              <a className="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-base font-medium transition-all hover:shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:-translate-y-1 flex items-center justify-center space-x-2">
-                <span>{t.hero.cta}</span>
-                <ArrowRight size={18} />
-              </a>
-            </Link>
-            <button className="px-8 py-4 border-2 border-white/20 hover:border-white/40 rounded-xl text-base font-medium transition-all hover:-translate-y-1 flex items-center justify-center space-x-2">
-              <Play size={18} />
-              <span>{t.hero.demo}</span>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-24">
+            <button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 px-10 py-4 rounded-full text-lg font-bold transition-all shadow-xl shadow-blue-500/25 flex items-center justify-center gap-3">
+              {t.hero.cta}
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <button className="w-full sm:w-auto bg-white/5 hover:bg-white/10 border border-white/10 px-10 py-4 rounded-full text-lg font-bold transition-all flex items-center justify-center gap-3">
+              <Play className="w-5 h-5 fill-white" />
+              {t.hero.demo}
             </button>
           </div>
 
-          {/* 3D Product Showcase */}
-          <Product3DShowcase
-            imageSrc="/mockups/dashboard.png"
-            alt="RealSourcing Dashboard"
-            floatingCards={t.hero.stats.map((stat, index) => ({
-              title: stat.title,
-              value: stat.value,
-              icon: stat.icon,
-              position: index === 0 ? { top: '15%', left: '5%' } : index === 1 ? { top: '35%', right: '5%' } : { bottom: '15%', left: '8%' },
-            }))}
-          />
+          {/* Main Product Showcase */}
+          <div className="relative max-w-5xl mx-auto">
+            <Product3DShowcase image="/screenshots/real_dashboard_full.webp" />
+            
+            {/* Floating Stats */}
+            <div className="absolute -top-12 -left-12 hidden lg:block animate-float">
+              <GlassCard className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-2xl font-bold">500+</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{t.hero.stats.factories}</div>
+                  </div>
+                </div>
+              </GlassCard>
+            </div>
+
+            <div className="absolute -bottom-12 -right-12 hidden lg:block animate-float" style={{ animationDelay: '-2s' }}>
+              <GlassCard className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                    <Globe className="w-6 h-6 text-cyan-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-2xl font-bold">2,000+</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{t.hero.stats.buyers}</div>
+                  </div>
+                </div>
+              </GlassCard>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Challenges Section */}
-      <section className="py-32 px-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-normal text-center mb-20">
-            {t.challenges.title}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {t.challenges.items.map((item, index) => (
-              <GlassCard key={index}>
-                <div className="text-red-400 mb-4">{item.icon}</div>
-                <h3 className="text-xl font-medium mb-3 text-white" style={{ fontFamily: 'Inter, sans-serif' }}>{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
-              </GlassCard>
+      {/* Pain Points */}
+      <section className="py-32 bg-white/[0.02]">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl md:text-5xl font-serif text-center mb-20">{t.challenges.title}</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {t.challenges.items.map((item, i) => (
+              <div key={i} className="group p-8 rounded-3xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-all duration-500">
+                <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <X className="w-7 h-7 text-red-400" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">{item.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{item.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Solutions Section */}
-      <section id="features" className="py-32 px-8">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-normal text-center mb-20">
-            {t.solutions.title}
-          </h2>
-          <div className="space-y-32">
-            {t.solutions.items.map((item, index) => (
-              <div key={index} className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-12`}>
-                <div className="flex-1">
-                  <div className="text-purple-400 mb-6">{item.icon}</div>
-                  <h3 className="text-3xl font-medium mb-4 text-white" style={{ fontFamily: 'Inter, sans-serif' }}>{item.title}</h3>
-                  <p className="text-gray-400 text-lg leading-relaxed">{item.description}</p>
+      {/* Solutions / Features with Real Screenshots */}
+      <section id="features" className="py-32">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl md:text-5xl font-serif text-center mb-24">{t.solutions.title}</h2>
+          
+          <div className="space-y-40">
+            {t.solutions.items.map((item, i) => (
+              <div key={i} className={`flex flex-col lg:flex-row items-center gap-20 ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
+                <div className="flex-1 space-y-8">
+                  <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center">
+                    {i === 0 ? <Zap className="w-8 h-8 text-blue-400" /> : i === 1 ? <Video className="w-8 h-8 text-blue-400" /> : <TrendingUp className="w-8 h-8 text-blue-400" />}
+                  </div>
+                  <h3 className="text-4xl font-serif">{item.title}</h3>
+                  <p className="text-xl text-gray-400 leading-relaxed font-light">
+                    {item.description}
+                  </p>
                 </div>
-                <div className="flex-1">
-                  <Product3DShowcase
-                    imageSrc={item.mockup}
-                    alt={item.title}
-                    floatingCards={[]}
-                  />
+                <div className="flex-1 w-full">
+                  <div className="relative group">
+                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-[2.5rem] opacity-20 blur-2xl group-hover:opacity-30 transition-opacity" />
+                    <img 
+                      src={item.image} 
+                      alt={item.title}
+                      className="relative rounded-[2rem] border border-white/10 shadow-2xl transition-transform duration-700 group-hover:scale-[1.02]"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
@@ -570,62 +442,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-32 px-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-normal text-center mb-20">
-            {t.howItWorks.title}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {t.howItWorks.steps.map((step, index) => (
-              <div key={index} className="relative">
-                <div className="text-6xl font-bold text-purple-500/20 mb-4">{step.number}</div>
-                <h3 className="text-xl font-medium mb-3 text-white" style={{ fontFamily: 'Inter, sans-serif' }}>{step.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{step.description}</p>
-                {index < t.howItWorks.steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 -right-4 text-purple-500/30">
-                    <ArrowRight size={24} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Cases Section */}
-      <section id="cases" className="py-32 px-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-normal text-center mb-20">
-            {t.cases.title}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {t.cases.items.map((item, index) => (
-              <GlassCard key={index}>
-                <div className="flex items-start space-x-4 mb-6">
-                  <img src={item.avatar} alt={item.person} className="w-16 h-16 rounded-full" />
-                  <div>
-                    <h3 className="text-xl font-semibold text-white mb-1">{item.company}</h3>
-                    <p className="text-sm text-gray-400">{item.location} · {item.industry}</p>
-                  </div>
+      {/* Case Studies */}
+      <section id="cases" className="py-32 bg-blue-600/5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl md:text-5xl font-serif text-center mb-20">{t.cases.title}</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            {t.cases.items.map((item, i) => (
+              <GlassCard key={i} className="p-10 relative group overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <MessageSquare className="w-32 h-32" />
                 </div>
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-purple-400 mb-3">{lang === 'zh' ? '成果' : 'Results'}:</h4>
-                  <ul className="space-y-2">
-                    {item.results.map((result, i) => (
-                      <li key={i} className="flex items-start space-x-2">
-                        <CheckCircle size={16} className="text-green-400 flex-shrink-0 mt-1" />
-                        <span className="text-gray-300 text-sm">{result}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <blockquote className="border-l-2 border-purple-500 pl-4 mb-4">
-                  <p className="text-gray-300 text-sm italic leading-relaxed">{item.testimonial}</p>
-                </blockquote>
-                <div className="text-right">
-                  <p className="text-white font-medium text-sm">{item.person}</p>
-                  <p className="text-gray-400 text-xs">{item.role}</p>
+                <div className="text-blue-400 font-bold mb-4 tracking-widest uppercase text-sm">{item.company}</div>
+                <p className="text-2xl font-serif mb-8 leading-relaxed italic">"{item.quote}"</p>
+                <div className="flex items-center gap-2 text-cyan-400 font-bold text-lg">
+                  <BarChart3 className="w-6 h-6" />
+                  {item.stat}
                 </div>
               </GlassCard>
             ))}
@@ -633,175 +465,96 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Comparison Section */}
-      <section className="py-32 px-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-normal text-center mb-20">
-            {t.comparison.title}
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/10">
-                  {t.comparison.headers.map((header, index) => (
-                    <th key={index} className={`px-6 py-4 text-left text-sm font-semibold ${index === 0 ? 'text-gray-400' : index === 1 ? 'text-purple-400' : 'text-gray-500'}`}>
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {t.comparison.rows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-b border-white/5">
-                    {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} className={`px-6 py-4 text-sm ${cellIndex === 0 ? 'font-medium text-white' : cellIndex === 1 ? 'text-purple-300' : 'text-gray-400'}`}>
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-32 px-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-normal text-center mb-4">
-            {t.pricing.title}
-          </h2>
-          <p className="text-lg text-gray-400 text-center mb-20 leading-relaxed">
-            {t.pricing.subtitle}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {t.pricing.plans.map((plan, index) => (
-              <GlassCard
-                key={index}
-                className={plan.popular ? 'border-purple-500/50 shadow-[0_0_50px_rgba(139,92,246,0.3)]' : ''}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full text-xs font-semibold">
-                    {lang === 'zh' ? '最受欢迎' : 'Most Popular'}
+      {/* Pricing */}
+      <section id="pricing" className="py-32">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl md:text-5xl font-serif text-center mb-20">{t.pricing.title}</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {t.pricing.plans.map((item, i) => (
+              <div key={i} className={`relative p-10 rounded-[2.5rem] border ${item.popular ? 'bg-blue-600/10 border-blue-500/30 shadow-2xl shadow-blue-500/10' : 'bg-white/[0.02] border-white/10'} flex flex-col`}>
+                {item.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
+                    Most Popular
                   </div>
                 )}
-                <h3 className="text-xl font-medium mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>{plan.name}</h3>
-                <p className="text-gray-400 mb-6 text-sm">{plan.description}</p>
-                <div className="mb-2">
-                  <span className="text-4xl font-semibold">{plan.price}</span>
-                  <span className="text-gray-400 text-sm">{plan.period}</span>
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-4">{item.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-5xl font-bold">{item.price}</span>
+                    <span className="text-gray-400">{item.period}</span>
+                  </div>
                 </div>
-                <p className="text-purple-400 text-xs mb-8">{plan.commission}</p>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center space-x-3">
-                      <CheckCircle size={18} className="text-purple-400 flex-shrink-0" />
-                      <span className="text-gray-300 text-sm">{feature}</span>
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {item.features.map((f, j) => (
+                    <li key={j} className="flex items-start gap-3 text-gray-400 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
+                      {f}
                     </li>
                   ))}
                 </ul>
-                <Link href="/signin">
-                  <a className={`block w-full py-3 rounded-xl text-center font-medium transition-all hover:-translate-y-0.5 text-sm ${
-                    plan.popular
-                      ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:shadow-[0_4px_20px_rgba(139,92,246,0.4)]'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}>
-                    {lang === 'zh' ? '立即开始' : 'Get Started'}
-                  </a>
-                </Link>
-              </GlassCard>
+                <button className={`w-full py-4 rounded-2xl font-bold transition-all ${item.popular ? 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20' : 'bg-white/5 hover:bg-white/10 border border-white/10'}`}>
+                  {lang === 'zh' ? '立即开启' : 'Choose Plan'}
+                </button>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-32 px-8">
-        <div className="max-w-4xl mx-auto">
-          <GlassCard className="text-center" hover={false}>
-            <h2 className="text-4xl md:text-5xl font-normal mb-4">
-              {t.cta.title}
-            </h2>
-            <p className="text-lg text-gray-400 mb-10 leading-relaxed">
-              {t.cta.subtitle}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signin">
-                <a className="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-base font-medium transition-all hover:shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:-translate-y-1 flex items-center justify-center space-x-2">
-                  <span>{t.cta.button}</span>
-                  <ArrowRight size={18} />
-                </a>
-              </Link>
-              <button className="px-8 py-4 border-2 border-white/20 hover:border-white/40 rounded-xl text-base font-medium transition-all hover:-translate-y-1">
-                {t.cta.demo}
-              </button>
-            </div>
-          </GlassCard>
+      {/* Final CTA */}
+      <section className="py-32 relative overflow-hidden">
+        <div className="absolute inset-0 bg-blue-600/20 blur-[150px] rounded-full -translate-y-1/2" />
+        <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
+          <h2 className="text-5xl md:text-6xl font-serif mb-8 leading-tight">
+            {lang === 'zh' ? '准备好开启海外订单了吗？' : 'Ready to Grow Your Export Business?'}
+          </h2>
+          <p className="text-xl text-gray-400 mb-12 font-light">
+            {lang === 'zh' ? '加入 500+ 领先工厂，用最现代化的方式连接全球买家。' : 'Join 500+ leading factories and connect with global buyers the modern way.'}
+          </p>
+          <button className="bg-white text-black hover:bg-gray-200 px-12 py-5 rounded-full text-xl font-bold transition-all shadow-2xl flex items-center justify-center gap-3 mx-auto group">
+            {lang === 'zh' ? '立即免费试用' : 'Start Your Free Trial'}
+            <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-16 px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            <div>
-              <h4 className="text-white font-semibold mb-4 text-sm">{t.footer.product.title}</h4>
-              <ul className="space-y-2">
-                {t.footer.product.links.map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">{link}</a>
-                  </li>
-                ))}
-              </ul>
+      <footer className="py-20 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
+          <div className="col-span-2">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" fill="white" />
+              </div>
+              <span className="text-lg font-bold">RealSourcing</span>
             </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4 text-sm">{t.footer.company.title}</h4>
-              <ul className="space-y-2">
-                {t.footer.company.links.map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">{link}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4 text-sm">{t.footer.resources.title}</h4>
-              <ul className="space-y-2">
-                {t.footer.resources.links.map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">{link}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4 text-sm">{t.footer.legal.title}</h4>
-              <ul className="space-y-2">
-                {t.footer.legal.links.map((link, index) => (
-                  <li key={index}>
-                    <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">{link}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="text-gray-500 max-w-sm leading-relaxed">
+              {lang === 'zh' ? 'RealSourcing 是全球领先的 AI 驱动型外贸获客平台，通过视频谈判和智能匹配，帮助中国工厂高效对接全球买家。' : 'RealSourcing is the world\'s leading AI-powered export acquisition platform, helping factories connect with global buyers through video negotiation and smart matching.'}
+            </p>
           </div>
-          <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <Factory className="text-purple-400" size={24} />
-              <span className="text-gray-400 text-sm">© 2026 RealSourcing. All rights reserved.</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-              </a>
-            </div>
+          <div>
+            <h4 className="font-bold mb-6">{t.footer.product.title}</h4>
+            <ul className="space-y-4 text-gray-500 text-sm">
+              {t.footer.product.links.map((link, i) => (
+                <li key={i}><a href="#" className="hover:text-white transition-colors">{link}</a></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-6">{t.footer.company.title}</h4>
+            <ul className="space-y-4 text-gray-500 text-sm">
+              {t.footer.company.links.map((link, i) => (
+                <li key={i}><a href="#" className="hover:text-white transition-colors">{link}</a></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-6 mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-xs uppercase tracking-widest">
+          <div>© 2026 RealSourcing. All rights reserved.</div>
+          <div className="flex gap-8">
+            <a href="#" className="hover:text-white transition-colors">Twitter</a>
+            <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
+            <a href="#" className="hover:text-white transition-colors">Facebook</a>
           </div>
         </div>
       </footer>
