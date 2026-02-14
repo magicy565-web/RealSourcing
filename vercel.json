@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "pnpm install && pnpm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "pnpm install",
   "rewrites": [
     {
       "source": "/api/:path*",
