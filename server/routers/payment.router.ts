@@ -11,8 +11,8 @@ import {
 } from "../db";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
-import { createAlipayOrder, verifyAlipayNotify } from "../lib/alipay";
-import { createWechatPayOrder, verifyWechatPayNotify } from "../lib/wechatpay";
+import { createAlipayOrder } from "../lib/alipay";
+import { createWechatPayOrder } from "../lib/wechatpay";
 
 export const paymentRouter = router({
   // Create a payment order
@@ -84,7 +84,7 @@ export const paymentRouter = router({
       }
 
       return {
-        orderId,
+        orderId: orderId as any,
         orderNo,
         amount,
         planId: input.planId,
@@ -167,8 +167,8 @@ export const paymentRouter = router({
           userId: order.userId,
           planId: order.planId,
           status: "active",
-          billingCycle: order.billingCycle || "monthly", // Fixed null to undefined/default
-          amount: order.amount, // Added missing amount
+          billingCycle: (order.billingCycle || "monthly") as any,
+          amount: order.amount || "0",
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
           autoRenew: 1,
@@ -212,8 +212,8 @@ export const paymentRouter = router({
         userId: order.userId,
         planId: order.planId,
         status: "active",
-        billingCycle: order.billingCycle || "monthly", // Fixed null to undefined/default
-        amount: order.amount, // Added missing amount
+        billingCycle: (order.billingCycle || "monthly") as any,
+        amount: order.amount || "0",
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
         autoRenew: 1,

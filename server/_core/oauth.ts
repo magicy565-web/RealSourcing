@@ -1,12 +1,10 @@
-import { ENV } from './env';
 import { getUserByOpenId, upsertUser } from '../db';
 import { signToken } from './auth';
 import { setAuthCookie } from './cookies';
 
-export function setupOAuth(app: any) {
+export function registerOAuthRoutes(app: any) {
   // GitHub OAuth Callback
   app.get('/api/auth/github/callback', async (req: any, res: any) => {
-    // 使用 process.env 直接访问 GitHub 配置，因为 ENV 对象中未定义
     const githubClientId = process.env.GITHUB_CLIENT_ID || '';
     const githubClientSecret = process.env.GITHUB_CLIENT_SECRET || '';
     const frontendUrl = process.env.FRONTEND_URL || '/';
@@ -42,6 +40,7 @@ export function setupOAuth(app: any) {
       const userResponse = await fetch('https://api.github.com/user', {
         headers: {
           Authorization: `token ${accessToken}`,
+          'User-Agent': 'RealSourcing-App'
         },
       });
 
@@ -65,7 +64,7 @@ export function setupOAuth(app: any) {
       }
 
       // 4. Sign token and set cookie
-      const token = signToken({ userId: user.id, role: user.role });
+      const token = await signToken({ userId: user.id, role: user.role });
       setAuthCookie(res, token);
 
       // 5. Redirect back to frontend
@@ -76,3 +75,6 @@ export function setupOAuth(app: any) {
     }
   });
 }
+
+// 保持旧函数名兼容性（如果其他地方用到）
+export const setupOAuth = registerOAuthRoutes;

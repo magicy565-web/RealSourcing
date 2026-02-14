@@ -4,7 +4,7 @@
  * This module handles payment notifications from Alipay and WeChat Pay.
  */
 
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import { verifyAlipayNotify } from "./lib/alipay";
 import { verifyWechatPayNotify, decryptWechatPayResource } from "./lib/wechatpay";
 import {
@@ -21,7 +21,7 @@ const webhooksRouter = Router();
  * 
  * POST /api/webhooks/alipay
  */
-webhooksRouter.post("/alipay", async (req: Request, res: Response) => {
+webhooksRouter.post("/alipay", async (req: any, res: any) => {
   try {
     const params = req.body;
 
@@ -50,7 +50,7 @@ webhooksRouter.post("/alipay", async (req: Request, res: Response) => {
     // Handle payment status
     if (trade_status === "TRADE_SUCCESS" || trade_status === "TRADE_FINISHED") {
       // Update payment order
-      await updatePaymentOrder(out_trade_no, {
+      await updatePaymentOrder(order.id, {
         status: "paid",
         paymentId: trade_no,
         paidAt: new Date(),
@@ -90,7 +90,7 @@ webhooksRouter.post("/alipay", async (req: Request, res: Response) => {
       }
     } else if (trade_status === "TRADE_CLOSED") {
       // Payment failed or cancelled
-      await updatePaymentOrder(out_trade_no, {
+      await updatePaymentOrder(order.id, {
         status: "failed",
         paymentId: trade_no,
         metadata: params,
@@ -112,9 +112,9 @@ webhooksRouter.post("/alipay", async (req: Request, res: Response) => {
  * 
  * POST /api/webhooks/wechatpay
  */
-webhooksRouter.post("/wechatpay", async (req: Request, res: Response) => {
+webhooksRouter.post("/wechatpay", async (req: any, res: any) => {
   try {
-    const { id, create_time, event_type, resource_type, resource } = req.body;
+    const { resource } = req.body;
 
     // Verify signature
     const timestamp = req.headers["wechatpay-timestamp"] as string;
@@ -161,7 +161,7 @@ webhooksRouter.post("/wechatpay", async (req: Request, res: Response) => {
     // Handle payment status
     if (trade_state === "SUCCESS") {
       // Update payment order
-      await updatePaymentOrder(out_trade_no, {
+      await updatePaymentOrder(order.id, {
         status: "paid",
         paymentId: transaction_id,
         paidAt: new Date(),
@@ -201,7 +201,7 @@ webhooksRouter.post("/wechatpay", async (req: Request, res: Response) => {
       }
     } else if (trade_state === "CLOSED" || trade_state === "REVOKED") {
       // Payment failed or cancelled
-      await updatePaymentOrder(out_trade_no, {
+      await updatePaymentOrder(order.id, {
         status: "failed",
         paymentId: transaction_id,
         metadata: paymentData,

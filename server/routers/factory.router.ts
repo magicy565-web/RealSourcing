@@ -105,8 +105,8 @@ export const factoryRouter = router({
       await createAuditLog(ctx.user.id, {
         action: "update_factory",
         entityType: "factory",
-        entityId: id.toString(),
-        metadata: data,
+        entityId: id as any,
+        metadata: data as any,
       });
 
       return { success: true };
@@ -237,7 +237,7 @@ export const factoryRouter = router({
       await createAuditLog(ctx.user.id, {
         action: "create_product",
         entityType: "product",
-        entityId: productId.toString(),
+        entityId: productId as any,
         metadata: { name: input.name },
       });
 

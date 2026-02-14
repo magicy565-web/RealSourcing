@@ -17,3 +17,18 @@ export function getSessionCookieOptions(
     domain: undefined,
   };
 }
+
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+
+/**
+ * 设置认证 Cookie
+ */
+export function setAuthCookie(res: any, token: string) {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: ONE_YEAR_MS,
+    path: "/",
+  });
+}
