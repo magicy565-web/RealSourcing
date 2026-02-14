@@ -53,14 +53,14 @@ export async function checkQuota(
   }
 
   const plan = await getSubscriptionPlanById(subscription.planId);
-  if (!plan || !plan.quotaLimits) {
+  if (!plan || !plan.limits) {
     return { canProceed: false, usage: 0, limit: 0, reason: "Invalid plan." };
   }
 
   const usage = await getMonthlyUsage(userId, resourceType);
 
   let limit = 0;
-  const limits = plan.quotaLimits as any;
+  const limits = plan.limits as any;
   if (resourceType === "webinar_created") {
     limit = Number(limits.webinarCreatedMonthly || 0);
   } else if (resourceType === "product_uploaded") {

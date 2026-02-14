@@ -15,11 +15,28 @@ import { eq, and, desc, sql } from "drizzle-orm";
 
 /**
  * 创建审计日志
+ * 对齐 Router 调用方式: createAuditLog(userId, { action, entityType, entityId, metadata })
  */
-export async function createAuditLog(data: InsertAuditLog) {
+export async function createAuditLog(userId: number | null, data: {
+  action: string;
+  entityType?: string;
+  entityId?: number;
+  metadata?: Record<string, unknown>;
+}) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.insert(auditLogs).values(data);
+  if (!db) return;
+
+  try {
+    await db.insert(auditLogs).values({
+      userId,
+      action: data.action,
+      entityType: data.entityType,
+      entityId: data.entityId,
+      metadata: data.metadata,
+    });
+  } catch (error) {
+    console.error('[Database] Failed to create audit log:', error);
+  }
 }
 
 /**
@@ -65,7 +82,14 @@ export async function createOrder(data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(orders).values(data);
+  const orderData = {
+    ...data,
+    orderNumber: data.orderNumber || 'ORD' + Date.now(),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+  
+  const result = await db.insert(orders).values(orderData);
   return result[0].insertId;
 }
 
@@ -102,7 +126,14 @@ export async function createQuotation(data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(quotations).values(data);
+  const quoteData = {
+    ...data,
+    quotationNumber: data.quotationNumber || 'QT' + Date.now(),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+  
+  const result = await db.insert(quotations).values(quoteData);
   return result[0].insertId;
 }
 

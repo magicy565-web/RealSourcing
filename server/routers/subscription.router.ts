@@ -144,7 +144,7 @@ export const subscriptionRouter = router({
 
       // Get plan limits
       const plan = await getSubscriptionPlanById(subscription.planId);
-      if (!plan || !plan.quotaLimits) {
+      if (!plan || !plan.limits) {
         return { canProceed: false, usage: 0, limit: 0, reason: "Invalid plan" };
       }
 
@@ -153,7 +153,7 @@ export const subscriptionRouter = router({
 
       // Determine limit based on resource type
       let limit = 0;
-      const limits = plan.quotaLimits as any;
+      const limits = plan.limits as any;
       if (input.resourceType === "webinar_created") {
         limit = Number(limits.webinarCreatedMonthly || 0);
       } else if (input.resourceType === "product_uploaded") {
