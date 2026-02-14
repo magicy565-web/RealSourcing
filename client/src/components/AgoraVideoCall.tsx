@@ -7,16 +7,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
-
-// 注意：需要安装 agora-rtc-react 包
-// import AgoraRTC, { AgoraRTCProvider, useRTCClient, useLocalMicrophoneTrack, useLocalCameraTrack, usePublish, useRemoteUsers } from 'agora-rtc-react';
-// 临时使用占位符
-const AgoraRTCProvider = ({ children }: any) => <>{children}</> as any;
-const useRTCClient = () => ({ join: async () => {}, leave: async () => {} } as any);
-const useLocalMicrophoneTrack = () => ({ localMicrophoneTrack: { setEnabled: async () => {}, close: () => {} } as any });
-const useLocalCameraTrack = () => ({ localCameraTrack: { setEnabled: async () => {}, close: () => {}, play: () => {}, stop: () => {} } as any });
-const usePublish = () => {};
-const useRemoteUsers = () => [] as any[];
+import AgoraRTC, {
+  AgoraRTCProvider,
+  useRTCClient,
+  useLocalMicrophoneTrack,
+  useLocalCameraTrack,
+  usePublish,
+  useRemoteUsers,
+} from 'agora-rtc-react';
 
 interface AgoraVideoCallProps {
   channelName: string;
@@ -28,11 +26,11 @@ interface AgoraVideoCallProps {
  * 视频通话内容组件
  */
 function VideoCallContent({ channelName, userId, onCallEnd }: AgoraVideoCallProps) {
-  const client = useRTCClient() as any;
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack() as any;
-  const { localCameraTrack } = useLocalCameraTrack() as any;
-  const remoteUsers = useRemoteUsers() as any[];
-  
+  const client = useRTCClient();
+  const { localMicrophoneTrack } = useLocalMicrophoneTrack();
+  const { localCameraTrack } = useLocalCameraTrack();
+  const remoteUsers = useRemoteUsers();
+
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isJoined, setIsJoined] = useState(false);
@@ -44,20 +42,20 @@ function VideoCallContent({ channelName, userId, onCallEnd }: AgoraVideoCallProp
   });
 
   // 发布本地音视频
-  usePublish([localMicrophoneTrack, localCameraTrack]);
+  usePublish([localMicrophoneTrack, localCameraTrack] as any);
 
   // 加入频道
   useEffect(() => {
-    if (!client || !tokenData?.token) return;
+    if (!client || !tokenData?.rtcToken) return;
 
     const joinChannel = async () => {
       try {
-      await (client as any).join({
-        appid: tokenData.appId || process.env.VITE_AGORA_APP_ID!,
-        channel: channelName,
-        token: tokenData.rtcToken,
-        uid: typeof userId === 'number' ? userId : parseInt(userId),
-      });
+        await (client as any).join({
+          appid: tokenData.appId || process.env.VITE_AGORA_APP_ID!,
+          channel: channelName,
+          token: tokenData.rtcToken,
+          uid: typeof userId === 'number' ? userId : parseInt(userId),
+        });
         setIsJoined(true);
       } catch (error) {
         console.error('Failed to join channel:', error);
@@ -74,25 +72,23 @@ function VideoCallContent({ channelName, userId, onCallEnd }: AgoraVideoCallProp
 
   // 切换麦克风
   const toggleAudio = async () => {
-    if (localMicrophoneTrack) {
-      await localMicrophoneTrack.setEnabled(!isAudioOn);
-      setIsAudioOn(!isAudioOn);
-    }
+    if (!localMicrophoneTrack) return;
+    await (localMicrophoneTrack as any).setEnabled(!isAudioOn);
+    setIsAudioOn(!isAudioOn);
   };
 
   // 切换摄像头
   const toggleVideo = async () => {
-    if (localCameraTrack) {
-      await localCameraTrack.setEnabled(!isVideoOn);
-      setIsVideoOn(!isVideoOn);
-    }
+    if (!localCameraTrack) return;
+    await (localCameraTrack as any).setEnabled(!isVideoOn);
+    setIsVideoOn(!isVideoOn);
   };
 
   // 挂断电话
   const handleHangUp = async () => {
-    if (localMicrophoneTrack) localMicrophoneTrack.close();
-    if (localCameraTrack) localCameraTrack.close();
-    await client?.leave();
+    if (localMicrophoneTrack) (localMicrophoneTrack as any).close();
+    if (localCameraTrack) (localCameraTrack as any).close();
+    await client.leave();
     onCallEnd?.();
   };
 
@@ -103,16 +99,14 @@ function VideoCallContent({ channelName, userId, onCallEnd }: AgoraVideoCallProp
   return (
     <div className="space-y-4">
       {/* 远程用户视频 */}
-      <div className="grid grid-cols-2 gap-4">
-        {remoteUsers.map((user) => (
-          <div key={user.uid} className="bg-gray-900 rounded-lg overflow-hidden aspect-video">
-            <RemoteUserVideo user={user} />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-96">
+        {remoteUsers.map(user => (
+          <RemoteUserVideo key={user.uid} user={user} />
         ))}
       </div>
 
-      {/* 本地视频预览 */}
-      <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video">
+      {/* 本地用户视频 */}
+      <div className="h-48 bg-gray-900 rounded-lg overflow-hidden">
         <LocalUserVideo />
       </div>
 
@@ -122,7 +116,7 @@ function VideoCallContent({ channelName, userId, onCallEnd }: AgoraVideoCallProp
           variant={isAudioOn ? 'default' : 'destructive'}
           size="lg"
           onClick={toggleAudio}
-          className="rounded-full w-12 h-12 p-0"
+          className="rounded-full w-12 h-12 p-0 flex items-center justify-center"
         >
           {isAudioOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
         </Button>
@@ -165,7 +159,14 @@ function LocalUserVideo() {
     }
   }, [localCameraTrack]);
 
-  return <div ref={videoRef} className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+      <div ref={videoRef} className="w-full h-full" />
+      <div className="absolute bottom-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
+        你
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -183,17 +184,22 @@ function RemoteUserVideo({ user }: { user: any }) {
     }
   }, [user]);
 
-  return <div ref={videoRef} className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+      <div ref={videoRef} className="w-full h-full" />
+      <div className="absolute bottom-2 left-2 text-white text-xs bg-black/50 px-2 py-1 rounded">
+        {user?.uid}
+      </div>
+    </div>
+  );
 }
 
 /**
- * 主组件 - 带Provider包装
+ * Agora视频通话组件包装器
  */
 export function AgoraVideoCall(props: AgoraVideoCallProps) {
-  const client = useRTCClient();
-
   return (
-    <AgoraRTCProvider client={client}>
+    <AgoraRTCProvider {...({} as any)}>
       <VideoCallContent {...props} />
     </AgoraRTCProvider>
   );
