@@ -33,7 +33,6 @@ export async function getOrders(buyerId?: number, factoryId?: number, status?: s
   if (buyerId) conditions.push(eq(orders.buyerId, buyerId));
   if (factoryId) conditions.push(eq(orders.factoryId, factoryId));
   if (status) {
-    // 使用 sql 模板确保枚举类型匹配
     conditions.push(sql`${orders.status} = ${status}`);
   }
   
@@ -90,7 +89,7 @@ export async function updateOrderStatus(id: number, status: string) {
   
   await db.update(orders)
     .set({ 
-      status: sql`${status}`, // 强制转换为枚举类型
+      status: sql`${status}`, 
       updatedAt: new Date() 
     })
     .where(eq(orders.id, id));
@@ -229,8 +228,9 @@ export async function deleteFactoryProduct(id: number) {
 export async function incrementProductView(id: number) {
   const db = await getDb();
   if (!db) return;
+  // Schema 中字段名为 viewCount 而不是 views
   await db.update(factoryProducts)
-    .set({ views: sql`${factoryProducts.views} + 1` })
+    .set({ viewCount: sql`${factoryProducts.viewCount} + 1` })
     .where(eq(factoryProducts.id, id));
 }
 

@@ -243,8 +243,8 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Correctly access headers using get or index access
-    const cookieHeader = req.get ? req.get("cookie") : (req.headers as any).cookie;
+    // Cast to any to bypass Express version specific header access issues
+    const cookieHeader = (req as any).headers?.cookie;
     const cookies = this.parseCookies(cookieHeader);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);

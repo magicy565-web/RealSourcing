@@ -1,4 +1,4 @@
-import { eq, desc, sql, and, like, inArray } from "drizzle-orm";
+import { eq, desc, sql, and, like, inArray, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -331,6 +331,17 @@ export async function createUsageRecord(data: InsertUsageRecord) {
   await db.insert(usageRecords).values(data);
 }
 
+export async function recordUsage(userId: number, resourceType: string, amount: number = 1, metadata?: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(usageRecords).values({
+    userId,
+    resourceType: resourceType as any,
+    amount,
+    metadata
+  });
+}
+
 export async function getMonthlyUsage(userId: number, resourceType: string) {
   const db = await getDb();
   if (!db) return 0;
@@ -343,7 +354,7 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
     .from(usageRecords)
     .where(and(
       eq(usageRecords.userId, userId),
-      eq(usageRecords.resourceType, resourceType),
+      eq(usageRecords.resourceType, resourceType as any),
       sql`${usageRecords.createdAt} >= ${startOfMonth}`
     ));
     
