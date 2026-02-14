@@ -331,13 +331,13 @@ export async function createUsageRecord(data: InsertUsageRecord) {
   await db.insert(usageRecords).values(data);
 }
 
-export async function recordUsage(userId: number, resourceType: string, amount: number = 1, metadata?: any) {
+export async function recordUsage(userId: number, resourceType: string, count: number = 1, metadata?: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.insert(usageRecords).values({
     userId,
     resourceType: resourceType as any,
-    amount,
+    count, // Schema uses 'count' not 'amount'
     metadata
   });
 }
@@ -454,12 +454,15 @@ export async function upsertConversation(data: InsertRtmConversation) {
   const existing = await db.select().from(rtmConversations).where(condition).limit(1);
   
   if (existing.length > 0) {
+    const currentUnread = existing[0].unreadCount ?? 0;
+    const increment = data.unreadCount ?? 0;
+    
     await db.update(rtmConversations)
       .set({
         lastMessageId: data.lastMessageId,
         lastMessageContent: data.lastMessageContent,
         lastMessageAt: data.lastMessageAt,
-        unreadCount: data.unreadCount !== undefined ? (existing[0].unreadCount || 0) + data.unreadCount : existing[0].unreadCount,
+        unreadCount: currentUnread + increment,
         updatedAt: new Date()
       })
       .where(condition);
