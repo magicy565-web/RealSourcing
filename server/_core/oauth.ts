@@ -6,6 +6,11 @@ import { setAuthCookie } from './cookies';
 export function setupOAuth(app: any) {
   // GitHub OAuth Callback
   app.get('/api/auth/github/callback', async (req: any, res: any) => {
+    // 使用 process.env 直接访问 GitHub 配置，因为 ENV 对象中未定义
+    const githubClientId = process.env.GITHUB_CLIENT_ID || '';
+    const githubClientSecret = process.env.GITHUB_CLIENT_SECRET || '';
+    const frontendUrl = process.env.FRONTEND_URL || '/';
+
     const { code } = req.query;
     if (!code) {
       return res.status(400).send('Missing code');
@@ -20,8 +25,8 @@ export function setupOAuth(app: any) {
           Accept: 'application/json',
         },
         body: JSON.stringify({
-          client_id: ENV.githubClientId,
-          client_secret: ENV.githubClientSecret,
+          client_id: githubClientId,
+          client_secret: githubClientSecret,
           code,
         }),
       });
@@ -64,7 +69,7 @@ export function setupOAuth(app: any) {
       setAuthCookie(res, token);
 
       // 5. Redirect back to frontend
-      res.redirect(ENV.frontendUrl || '/');
+      res.redirect(frontendUrl);
     } catch (error) {
       console.error('OAuth Error:', error);
       res.status(500).send('Authentication failed');

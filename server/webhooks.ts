@@ -4,7 +4,7 @@
  * This module handles payment notifications from Alipay and WeChat Pay.
  */
 
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { verifyAlipayNotify } from "./lib/alipay";
 import { verifyWechatPayNotify, decryptWechatPayResource } from "./lib/wechatpay";
 import {
@@ -21,7 +21,7 @@ const webhooksRouter = Router();
  * 
  * POST /api/webhooks/alipay
  */
-webhooksRouter.post("/alipay", async (req, res) => {
+webhooksRouter.post("/alipay", async (req: Request, res: Response) => {
   try {
     const params = req.body;
 
@@ -63,7 +63,7 @@ webhooksRouter.post("/alipay", async (req, res) => {
 
       if (order.billingCycle === "monthly") {
         periodEnd.setMonth(periodEnd.getMonth() + 1);
-      } else {
+      } else if (order.billingCycle === "yearly") {
         periodEnd.setFullYear(periodEnd.getFullYear() + 1);
       }
 
@@ -79,10 +79,11 @@ webhooksRouter.post("/alipay", async (req, res) => {
           userId: order.userId,
           planId: order.planId,
           status: "active",
-          billingCycle: order.billingCycle,
+          billingCycle: (order.billingCycle || "monthly") as any,
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
           autoRenew: 1,
+          amount: order.amount || "0"
         });
 
         console.log(`[Alipay Webhook] Subscription activated for user ${order.userId}`);
@@ -111,7 +112,7 @@ webhooksRouter.post("/alipay", async (req, res) => {
  * 
  * POST /api/webhooks/wechatpay
  */
-webhooksRouter.post("/wechatpay", async (req, res) => {
+webhooksRouter.post("/wechatpay", async (req: Request, res: Response) => {
   try {
     const { id, create_time, event_type, resource_type, resource } = req.body;
 
@@ -173,7 +174,7 @@ webhooksRouter.post("/wechatpay", async (req, res) => {
 
       if (order.billingCycle === "monthly") {
         periodEnd.setMonth(periodEnd.getMonth() + 1);
-      } else {
+      } else if (order.billingCycle === "yearly") {
         periodEnd.setFullYear(periodEnd.getFullYear() + 1);
       }
 
@@ -189,10 +190,11 @@ webhooksRouter.post("/wechatpay", async (req, res) => {
           userId: order.userId,
           planId: order.planId,
           status: "active",
-          billingCycle: order.billingCycle,
+          billingCycle: (order.billingCycle || "monthly") as any,
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
           autoRenew: 1,
+          amount: order.amount || "0"
         });
 
         console.log(`[WeChat Pay Webhook] Subscription activated for user ${order.userId}`);
