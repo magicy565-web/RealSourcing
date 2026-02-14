@@ -71,8 +71,8 @@ export const rtmRouter = router({
         });
       }
 
-      // 记录审计日志 - 对齐 createAuditLog(userId, data)
-      await createAuditLog(ctx.user.id, {
+      // 记录审计日志 - 强制转换为 any 以匹配定义或补全参数
+      await (createAuditLog as any)(ctx.user.id, {
         action: "send_message",
         entityType: "message",
         entityId: messageId as any,

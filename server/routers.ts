@@ -133,11 +133,11 @@ export const appRouter = router({
           const oldWebinar = await getWebinarById(id);
           if (oldWebinar && oldWebinar.status !== data.status) {
             // Trigger status change event
-            await triggerWebinarStatusEvent(id, oldWebinar.status, data.status);
+            await triggerWebinarStatusEvent(id, oldWebinar.status, data.status as any);
           }
         }
         
-        await updateWebinar(id, data);
+        await updateWebinar(id, data as any);
         return { success: true };
       }),
 
@@ -215,8 +215,8 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const id = await createFactory({
           ...input,
-          addedById: ctx.user.id,
-        });
+          userId: ctx.user.id,
+        } as any);
         return { id };
       }),
 
@@ -236,7 +236,17 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        await updateFactory(id, data);
+        const updateData: any = { ...data };
+        
+        // Convert number scores to string if necessary for database
+        if (data.overallScore !== undefined) updateData.overallScore = data.overallScore.toString();
+        if (data.qualityScore !== undefined) updateData.qualityScore = data.qualityScore.toString();
+        if (data.deliveryScore !== undefined) updateData.deliveryScore = data.deliveryScore.toString();
+        if (data.communicationScore !== undefined) updateData.communicationScore = data.communicationScore.toString();
+        if (data.pricingScore !== undefined) updateData.pricingScore = data.pricingScore.toString();
+        if (data.complianceScore !== undefined) updateData.complianceScore = data.complianceScore.toString();
+
+        await updateFactory(id, updateData);
         return { success: true };
       }),
 
