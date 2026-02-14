@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Google Fonts - Serif for headings */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -118,6 +121,13 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -182,12 +192,17 @@
       transform: translateY(0px);
     }
     50% {
-      transform: translateY(-20px);
+      transform: translateY(-12px);
     }
   }
 
   .animate-float {
-    animation: float 4s ease-in-out infinite;
+    animation: float 5s ease-in-out infinite;
+  }
+
+  /* 缩放工具类 */
+  .scale-102 {
+    transform: scale(1.02);
   }
 
   /* 3D 变换工具类 */

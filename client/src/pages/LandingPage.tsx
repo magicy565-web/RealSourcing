@@ -19,32 +19,32 @@ import {
 export default function LandingPage() {
   const features = [
     {
-      icon: <Video size={32} />,
+      icon: <Video size={28} />,
       title: 'Live Video Negotiations',
       description: 'Real-time face-to-face meetings with factory representatives through our integrated video platform.',
     },
     {
-      icon: <Brain size={32} />,
+      icon: <Brain size={28} />,
       title: 'AI-Powered Analytics',
       description: 'Get instant insights on pricing, quality, and delivery timelines with our advanced AI engine.',
     },
     {
-      icon: <Shield size={32} />,
+      icon: <Shield size={28} />,
       title: 'Factory Verification',
       description: 'Access verified certifications, compliance records, and authentic reviews from other buyers.',
     },
     {
-      icon: <DollarSign size={32} />,
+      icon: <DollarSign size={28} />,
       title: 'Transparent Pricing',
       description: 'Compare quotes side-by-side with AI-generated recommendations for the best value.',
     },
     {
-      icon: <Package size={32} />,
+      icon: <Package size={28} />,
       title: 'Order Tracking',
       description: 'Monitor production status and logistics in real-time from order to delivery.',
     },
     {
-      icon: <Lock size={32} />,
+      icon: <Lock size={28} />,
       title: 'Secure Payments',
       description: 'Integrated payment gateway with escrow protection for safe transactions.',
     },
@@ -93,31 +93,31 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a1a2e] to-[#0a0a0f] text-white">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-slate-900/50 backdrop-blur-xl z-50 border-b border-white/5">
-        <div className="container mx-auto px-4 py-4">
+      <nav className="fixed top-0 w-full bg-[#0a0a0f]/80 backdrop-blur-xl z-50 border-b border-white/5">
+        <div className="max-w-6xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Factory className="text-cyan-400" size={32} />
-              <span className="text-2xl font-bold">RealSourcing</span>
+              <Factory className="text-purple-400" size={32} />
+              <span className="text-2xl font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>RealSourcing</span>
             </div>
             
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
-              <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
-              <a href="#testimonials" className="text-gray-300 hover:text-white transition-colors">Testimonials</a>
-              <a href="#about" className="text-gray-300 hover:text-white transition-colors">About</a>
+            <div className="hidden md:flex items-center space-x-10">
+              <a href="#features" className="text-gray-300 hover:text-white transition-colors text-sm">Features</a>
+              <a href="#pricing" className="text-gray-300 hover:text-white transition-colors text-sm">Pricing</a>
+              <a href="#testimonials" className="text-gray-300 hover:text-white transition-colors text-sm">Testimonials</a>
+              <a href="#about" className="text-gray-300 hover:text-white transition-colors text-sm">About</a>
             </div>
 
             <div className="flex items-center space-x-4">
               <Link href="/signin">
-                <a className="px-4 py-2 text-gray-300 hover:text-white transition-colors">
+                <a className="px-4 py-2 text-gray-300 hover:text-white transition-colors text-sm">
                   Sign In
                 </a>
               </Link>
               <Link href="/signin">
-                <a className="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-all hover:scale-105 flex items-center space-x-2">
+                <a className="px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl transition-all hover:shadow-[0_4px_20px_rgba(139,92,246,0.4)] hover:-translate-y-0.5 flex items-center space-x-2 text-sm font-medium">
                   <span>Get Started</span>
                   <ArrowRight size={16} />
                 </a>
@@ -128,26 +128,26 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="container mx-auto text-center">
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-cyan-100 to-white bg-clip-text text-transparent">
+      <section className="pt-40 pb-32 px-8">
+        <div className="max-w-6xl mx-auto text-center">
+          <h1 className="text-5xl md:text-6xl font-normal mb-6 text-white leading-tight">
             Connect with Verified Factories,
             <br />
             Close Deals Faster
           </h1>
-          <p className="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             RealSourcing combines live video negotiations, AI-powered insights, 
             and transparent factory verification to transform B2B sourcing.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
             <Link href="/signin">
-              <a className="px-8 py-4 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-lg font-semibold transition-all hover:scale-105 flex items-center justify-center space-x-2 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+              <a className="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-base font-medium transition-all hover:shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:-translate-y-1 flex items-center justify-center space-x-2">
                 <span>Start Free Trial</span>
-                <ArrowRight size={20} />
+                <ArrowRight size={18} />
               </a>
             </Link>
-            <button className="px-8 py-4 border-2 border-white/20 hover:border-white/40 rounded-lg text-lg font-semibold transition-all hover:scale-105 flex items-center justify-center space-x-2">
-              <Play size={20} />
+            <button className="px-8 py-4 border-2 border-white/20 hover:border-white/40 rounded-xl text-base font-medium transition-all hover:-translate-y-1 flex items-center justify-center space-x-2">
+              <Play size={18} />
               <span>Watch Demo</span>
             </button>
           </div>
@@ -158,22 +158,22 @@ export default function LandingPage() {
             alt="RealSourcing Dashboard"
             floatingCards={[
               {
-                title: 'Verified Factories',
+                title: 'Verified',
                 value: '500+',
-                icon: <Factory size={24} />,
-                position: { top: '20%', left: '5%' },
+                icon: <Factory size={20} />,
+                position: { top: '15%', left: '5%' },
               },
               {
-                title: 'Faster Negotiation',
+                title: 'Success',
                 value: '95%',
-                icon: <TrendingUp size={24} />,
-                position: { top: '40%', right: '5%' },
+                icon: <TrendingUp size={20} />,
+                position: { top: '35%', right: '5%' },
               },
               {
-                title: 'Avg. Close Time',
+                title: 'Close Time',
                 value: '3 Days',
-                icon: <Clock size={24} />,
-                position: { bottom: '20%', left: '10%' },
+                icon: <Clock size={20} />,
+                position: { bottom: '15%', left: '8%' },
               },
             ]}
           />
@@ -181,12 +181,12 @@ export default function LandingPage() {
       </section>
 
       {/* Logo Wall */}
-      <section className="py-16 px-4 border-y border-white/5">
-        <div className="container mx-auto">
-          <p className="text-center text-gray-400 mb-8">Trusted by Leading Buyers Worldwide</p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-50">
+      <section className="py-20 px-8 border-y border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-center text-gray-500 mb-10 text-sm">Trusted by Leading Buyers Worldwide</p>
+          <div className="flex flex-wrap justify-center items-center gap-16 opacity-40">
             {['TechCorp', 'GlobalTrade', 'MegaMart', 'InnovateCo', 'SupplyChain Pro', 'BuyerHub'].map((company) => (
-              <div key={company} className="text-2xl font-bold text-gray-600">
+              <div key={company} className="text-xl font-semibold text-gray-600" style={{ fontFamily: 'Inter, sans-serif' }}>
                 {company}
               </div>
             ))}
@@ -195,20 +195,20 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4">
-        <div className="container mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
+      <section id="features" className="py-32 px-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-normal text-center mb-4">
             Everything You Need to Source Smarter
           </h2>
-          <p className="text-xl text-gray-400 text-center mb-16">
+          <p className="text-lg text-gray-400 text-center mb-20 leading-relaxed">
             Streamline your procurement process with our comprehensive platform
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <GlassCard key={index}>
-                <div className="text-cyan-400 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-400">{feature.description}</p>
+                <div className="text-purple-400 mb-4">{feature.icon}</div>
+                <h3 className="text-lg font-medium mb-3 text-white" style={{ fontFamily: 'Inter, sans-serif' }}>{feature.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
               </GlassCard>
             ))}
           </div>
@@ -216,43 +216,43 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4">
-        <div className="container mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">
+      <section id="pricing" className="py-32 px-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-normal text-center mb-4">
             Transparent Pricing, No Hidden Fees
           </h2>
-          <p className="text-xl text-gray-400 text-center mb-16">
+          <p className="text-lg text-gray-400 text-center mb-20 leading-relaxed">
             Choose the plan that fits your business needs
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {pricingPlans.map((plan, index) => (
               <GlassCard
                 key={index}
-                className={plan.popular ? 'border-cyan-500/50 shadow-[0_0_50px_rgba(6,182,212,0.3)]' : ''}
+                className={plan.popular ? 'border-purple-500/50 shadow-[0_0_50px_rgba(139,92,246,0.3)]' : ''}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-cyan-500 rounded-full text-sm font-semibold">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full text-xs font-semibold">
                     Most Popular
                   </div>
                 )}
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <p className="text-gray-400 mb-4">{plan.description}</p>
-                <div className="mb-6">
-                  <span className="text-5xl font-bold">{plan.price}</span>
-                  <span className="text-gray-400">{plan.period}</span>
+                <h3 className="text-xl font-medium mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>{plan.name}</h3>
+                <p className="text-gray-400 mb-6 text-sm">{plan.description}</p>
+                <div className="mb-8">
+                  <span className="text-4xl font-semibold">{plan.price}</span>
+                  <span className="text-gray-400 text-sm">{plan.period}</span>
                 </div>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center space-x-2">
-                      <CheckCircle size={20} className="text-cyan-400 flex-shrink-0" />
-                      <span className="text-gray-300">{feature}</span>
+                    <li key={i} className="flex items-center space-x-3">
+                      <CheckCircle size={18} className="text-purple-400 flex-shrink-0" />
+                      <span className="text-gray-300 text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <Link href="/signin">
-                  <a className={`block w-full py-3 rounded-lg text-center font-semibold transition-all hover:scale-105 ${
+                  <a className={`block w-full py-3 rounded-xl text-center font-medium transition-all hover:-translate-y-0.5 text-sm ${
                     plan.popular
-                      ? 'bg-cyan-500 hover:bg-cyan-600'
+                      ? 'bg-gradient-to-r from-purple-500 to-cyan-500 hover:shadow-[0_4px_20px_rgba(139,92,246,0.4)]'
                       : 'bg-white/10 hover:bg-white/20'
                   }`}>
                     Get Started
@@ -265,23 +265,23 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
-          <GlassCard className="text-center max-w-4xl mx-auto" hover={false}>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+      <section className="py-32 px-8">
+        <div className="max-w-4xl mx-auto">
+          <GlassCard className="text-center" hover={false}>
+            <h2 className="text-4xl md:text-5xl font-normal mb-4">
               Ready to Transform Your Sourcing?
             </h2>
-            <p className="text-xl text-gray-400 mb-8">
+            <p className="text-lg text-gray-400 mb-10 leading-relaxed">
               Join 500+ companies already sourcing smarter with RealSourcing
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signin">
-                <a className="px-8 py-4 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-lg font-semibold transition-all hover:scale-105 flex items-center justify-center space-x-2">
+                <a className="px-8 py-4 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-xl text-base font-medium transition-all hover:shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:-translate-y-1 flex items-center justify-center space-x-2">
                   <span>Start Free Trial</span>
-                  <ArrowRight size={20} />
+                  <ArrowRight size={18} />
                 </a>
               </Link>
-              <button className="px-8 py-4 border-2 border-white/20 hover:border-white/40 rounded-lg text-lg font-semibold transition-all hover:scale-105">
+              <button className="px-8 py-4 border-2 border-white/20 hover:border-white/40 rounded-xl text-base font-medium transition-all hover:-translate-y-1">
                 Schedule a Demo
               </button>
             </div>
@@ -290,20 +290,20 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <footer className="border-t border-white/5 py-16 px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <Factory className="text-cyan-400" size={28} />
-                <span className="text-xl font-bold">RealSourcing</span>
+                <Factory className="text-purple-400" size={28} />
+                <span className="text-lg font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>RealSourcing</span>
               </div>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-sm leading-relaxed">
                 Transform your B2B sourcing with AI-powered insights and verified factory connections.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
+              <h4 className="font-medium mb-4 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Product</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
@@ -311,7 +311,7 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
+              <h4 className="font-medium mb-4 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Company</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="#about" className="hover:text-white transition-colors">About</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
@@ -319,7 +319,7 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
+              <h4 className="font-medium mb-4 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Resources</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
