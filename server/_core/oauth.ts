@@ -1,53 +1,73 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import type { Express, Request, Response } from "express";
-import * as db from "../db";
-import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
+import { ENV } from './env';
+import { getUserByOpenId, upsertUser } from '../db';
+import { signToken } from './auth';
+import { setAuthCookie } from './cookies';
 
-function getQueryParam(req: Request, key: string): string | undefined {
-  const value = req.query[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-export function registerOAuthRoutes(app: Express) {
-  app.get("/api/oauth/callback", async (req: Request, res: Response) => {
-    const code = getQueryParam(req, "code");
-    const state = getQueryParam(req, "state");
-
-    if (!code || !state) {
-      (res as any).status(400).json({ error: "code and state are required" });
-      return;
+export function setupOAuth(app: any) {
+  // GitHub OAuth Callback
+  app.get('/api/auth/github/callback', async (req: any, res: any) => {
+    const { code } = req.query;
+    if (!code) {
+      return res.status(400).send('Missing code');
     }
 
     try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+      // 1. Exchange code for access token
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: ENV.githubClientId,
+          client_secret: ENV.githubClientSecret,
+          code,
+        }),
+      });
 
-      if (!userInfo.openId) {
-        (res as any).status(400).json({ error: "openId missing from user info" });
-        return;
+      const tokenData: any = await tokenResponse.json();
+      const accessToken = tokenData.access_token;
+
+      if (!accessToken) {
+        return res.status(401).send('Failed to get access token');
       }
 
-      await db.upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        // Removed lastSignedIn as it's not in the schema
+      // 2. Get user info from GitHub
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          Authorization: `token ${accessToken}`,
+        },
       });
 
-      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-        name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS,
-      });
+      const githubUser: any = await userResponse.json();
+      const openId = `github:${githubUser.id}`;
 
-      const cookieOptions = getSessionCookieOptions(req);
-      (res as any).cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      // 3. Upsert user in database
+      let user = await getUserByOpenId(openId);
+      const userData = {
+        openId,
+        name: githubUser.name || githubUser.login,
+        email: githubUser.email,
+        loginMethod: 'github' as const,
+      };
 
-      (res as any).redirect(302, "/");
+      await upsertUser(userData);
+      user = await getUserByOpenId(openId);
+
+      if (!user) {
+        return res.status(500).send('Failed to create user');
+      }
+
+      // 4. Sign token and set cookie
+      const token = signToken({ userId: user.id, role: user.role });
+      setAuthCookie(res, token);
+
+      // 5. Redirect back to frontend
+      res.redirect(ENV.frontendUrl || '/');
     } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      (res as any).status(500).json({ error: "OAuth callback failed" });
+      console.error('OAuth Error:', error);
+      res.status(500).send('Authentication failed');
     }
   });
 }
