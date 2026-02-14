@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import { trpc } from "../lib/trpc";
-import { DashboardLayout } from "../components/DashboardLayout";
+import DashboardLayout from "../components/DashboardLayout";
 
 export function Subscription() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);

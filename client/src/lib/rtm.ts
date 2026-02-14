@@ -1,4 +1,4 @@
-import AgoraRTM from 'agora-rtm';
+import AgoraRTM from 'agora-rtm-sdk';
 
 type RTM = InstanceType<typeof AgoraRTM.RTM>;
 

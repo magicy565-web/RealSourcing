@@ -3,8 +3,8 @@
  */
 
 import { trpc } from "../lib/trpc";
-import { DashboardLayout } from "../components/DashboardLayout";
-import { Link } from "react-router-dom";
+import DashboardLayout from "../components/DashboardLayout";
+import { Link } from "wouter";
 
 export function QuotaDashboard() {
   const { data: dashboard, isLoading } = trpc.subscriptionEnhanced.getDashboard.useQuery();
