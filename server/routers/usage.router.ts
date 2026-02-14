@@ -17,27 +17,15 @@ export const usageRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const now = new Date();
-      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const periodEnd = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59
+      // Use the parameters expected by db.recordUsage: (userId, resourceType, amount, metadata)
+      await recordUsage(
+        ctx.user.id,
+        input.resourceType,
+        input.count,
+        input.metadata
       );
 
-      const usageId = await recordUsage({
-        userId: ctx.user.id,
-        resourceType: input.resourceType,
-        count: input.count,
-        periodStart,
-        periodEnd,
-        metadata: input.metadata,
-      });
-
-      return { usageId };
+      return { success: true };
     }),
 
   // Get monthly usage statistics
