@@ -11,7 +11,7 @@ import {
   auditLogs,
   type InsertAuditLog
 } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 /**
  * 创建审计日志
@@ -32,7 +32,10 @@ export async function getOrders(buyerId?: number, factoryId?: number, status?: s
   let conditions = [];
   if (buyerId) conditions.push(eq(orders.buyerId, buyerId));
   if (factoryId) conditions.push(eq(orders.factoryId, factoryId));
-  if (status) conditions.push(eq(orders.status, status));
+  if (status) {
+    // 使用 sql 模板确保枚举类型匹配
+    conditions.push(sql`${orders.status} = ${status}`);
+  }
   
   return await db.select()
     .from(orders)
@@ -85,7 +88,12 @@ export async function updateOrderStatus(id: number, status: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(orders).set({ status, updatedAt: new Date() }).where(eq(orders.id, id));
+  await db.update(orders)
+    .set({ 
+      status: sql`${status}`, // 强制转换为枚举类型
+      updatedAt: new Date() 
+    })
+    .where(eq(orders.id, id));
 }
 
 /**
@@ -171,7 +179,9 @@ export async function getFactoryProducts(factoryId: number, status?: string) {
   const db = await getDb();
   if (!db) return [];
   let conditions = [eq(factoryProducts.factoryId, factoryId)];
-  if (status) conditions.push(eq(factoryProducts.status, status));
+  if (status) {
+    conditions.push(sql`${factoryProducts.status} = ${status}`);
+  }
   return await db.select().from(factoryProducts).where(and(...conditions)).orderBy(desc(factoryProducts.createdAt));
 }
 
@@ -219,7 +229,9 @@ export async function deleteFactoryProduct(id: number) {
 export async function incrementProductView(id: number) {
   const db = await getDb();
   if (!db) return;
-  // Implementation simplified
+  await db.update(factoryProducts)
+    .set({ views: sql`${factoryProducts.views} + 1` })
+    .where(eq(factoryProducts.id, id));
 }
 
 /**
@@ -229,7 +241,9 @@ export async function getFactoryReviews(factoryId: number, status?: string) {
   const db = await getDb();
   if (!db) return [];
   let conditions = [eq(factoryReviews.factoryId, factoryId)];
-  if (status) conditions.push(eq(factoryReviews.status, status));
+  if (status) {
+    conditions.push(sql`${factoryReviews.status} = ${status}`);
+  }
   return await db.select().from(factoryReviews).where(and(...conditions)).orderBy(desc(factoryReviews.createdAt));
 }
 
