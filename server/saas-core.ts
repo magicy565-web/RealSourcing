@@ -75,7 +75,8 @@ export async function initializeUserSubscription(userId: number) {
   
   // 创建试用订阅
   const now = new Date();
-  const trialEnd = new Date(now.getTime() + freeTrialPlan.trialDays * 24 * 60 * 60 * 1000);
+  const trialDays = freeTrialPlan.trialDays ?? 0;
+  const trialEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
   
   const subscriptionId = await createSubscription({
     userId,
@@ -259,11 +260,11 @@ export async function getUserQuotaLimits(userId: number): Promise<QuotaLimits> {
   if (!subscription) {
     // 没有订阅，返回免费试用限制
     const freeTrialPlan = await getSubscriptionPlanById("free_trial");
-    return (freeTrialPlan?.limits as QuotaLimits) || getDefaultQuotaLimits();
+    return (freeTrialPlan?.limits as unknown as QuotaLimits) || getDefaultQuotaLimits();
   }
   
   const plan = await getSubscriptionPlanById(subscription.planId);
-  return (plan?.limits as QuotaLimits) || getDefaultQuotaLimits();
+  return (plan?.limits as unknown as QuotaLimits) || getDefaultQuotaLimits();
 }
 
 /**

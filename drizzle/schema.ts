@@ -50,6 +50,7 @@ export const userProfiles = mysqlTable("user_profiles", {
 });
 
 export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = typeof userProfiles.$inferInsert;
 
 // ============================================================================
 // 2. 工厂域 (Factory)
@@ -130,6 +131,7 @@ export const factoryCertifications = mysqlTable("factory_certifications", {
 }));
 
 export type FactoryCertification = typeof factoryCertifications.$inferSelect;
+export type InsertFactoryCertification = typeof factoryCertifications.$inferInsert;
 
 export const factoryProducts = mysqlTable("factory_products", {
   id: int("id").autoincrement().primaryKey(),
@@ -237,6 +239,7 @@ export const webinarParticipants = mysqlTable("webinar_participants", {
 }));
 
 export type WebinarParticipant = typeof webinarParticipants.$inferSelect;
+export type InsertWebinarParticipant = typeof webinarParticipants.$inferInsert;
 
 // ============================================================================
 // 4. 询价报价域 (RFQ & Quotation)
@@ -372,6 +375,7 @@ export const orderItems = mysqlTable("order_items", {
 }));
 
 export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = typeof orderItems.$inferInsert;
 
 // ============================================================================
 // 6. 消息通信域 (Messaging) - 已在之前实现
@@ -397,6 +401,7 @@ export const rtmMessages = mysqlTable("rtm_messages", {
 }));
 
 export type RTMMessage = typeof rtmMessages.$inferSelect;
+export type InsertRTMMessage = typeof rtmMessages.$inferInsert;
 
 export const rtmConversations = mysqlTable("rtm_conversations", {
   id: int("id").autoincrement().primaryKey(),
@@ -421,6 +426,7 @@ export const rtmConversations = mysqlTable("rtm_conversations", {
 }));
 
 export type RTMConversation = typeof rtmConversations.$inferSelect;
+export type InsertRTMConversation = typeof rtmConversations.$inferInsert;
 
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
@@ -440,6 +446,7 @@ export const notifications = mysqlTable("notifications", {
 }));
 
 export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
 
 // ============================================================================
 // 7. SaaS 商业化域 (Subscription & Billing)
@@ -580,6 +587,7 @@ export const usageRecords = mysqlTable("usage_records", {
 }));
 
 export type UsageRecord = typeof usageRecords.$inferSelect;
+export type InsertUsageRecord = typeof usageRecords.$inferInsert;
 
 // ============================================================================
 // 8. 评价评分域 (Rating & Review)
@@ -644,6 +652,7 @@ export const auditLogs = mysqlTable("audit_logs", {
 }));
 
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
 
 export const systemSettings = mysqlTable("system_settings", {
   id: int("id").autoincrement().primaryKey(),
@@ -662,6 +671,7 @@ export const systemSettings = mysqlTable("system_settings", {
 }));
 
 export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = typeof systemSettings.$inferInsert;
 
 // ============================================================================
 // 10. 报告域 (Reports) - 保留现有表

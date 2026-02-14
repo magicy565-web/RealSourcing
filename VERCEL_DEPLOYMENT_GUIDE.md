@@ -83,29 +83,31 @@
 
 ### 2. 数据库准备
 
-#### 2.1 阿里云 MySQL 配置
+#### 2.1 阿里云 ECS MySQL 配置
 
-确保已经创建并配置好阿里云 RDS MySQL 实例：
+由于你使用的是阿里云 ECS 云服务器自建 MySQL，请确保：
 
-```bash
-# 数据库连接信息示例
-Host: rm-xxxxx.mysql.rds.aliyuncs.com
-Port: 3306
-Database: realsourcing
-Username: your_username
-Password: your_password
-```
+1. **MySQL 监听配置**：
+   - 编辑 `/etc/mysql/mysql.conf.d/mysqld.cnf` (或类似路径)
+   - 将 `bind-address` 设置为 `0.0.0.0` 以允许远程连接。
+   - 重启 MySQL 服务：`sudo systemctl restart mysql`
 
-#### 2.2 数据库白名单配置
+2. **用户权限**：
+   - 确保你的 MySQL 用户允许从远程 IP 登录：
+     ```sql
+     CREATE USER 'your_user'@'%' IDENTIFIED BY 'your_password';
+     GRANT ALL PRIVILEGES ON realsourcing.* TO 'your_user'@'%';
+     FLUSH PRIVILEGES;
+     ```
 
-在阿里云 RDS 控制台中，将以下 IP 地址段添加到白名单：
+#### 2.2 ECS 安全组配置
 
-```
-0.0.0.0/0  # Vercel Serverless Functions（动态 IP）
-```
+在阿里云 ECS 控制台中，你需要配置安全组规则：
 
-**注意**：为了安全，建议使用 Vercel 的固定 IP 范围或配置 VPN。
-
+1. **入方向规则**：
+   - **协议类型**：TCP
+   - **端口范围**：3306
+   - **授权对象**：`0.0.0.0/0` (或者 Vercel 的 IP 段)**注意**：为了安全，建议使用 Vercel 的固定 IP 范围或配置 VPN。如果你的 ECS 有公网 IP，请确保 `DATABASE_URL` 使用该公网 IP。
 #### 2.3 执行数据库迁移
 
 在本地环境执行数据库初始化：

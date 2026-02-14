@@ -591,3 +591,23 @@ export async function toggleConversationMute(conversationId: number) {
     .set({ isMuted: sql`1 - ${rtmConversations.isMuted}` })
     .where(eq(rtmConversations.id, conversationId));
 }
+
+/**
+ * 获取默认配额限制
+ */
+export function getDefaultQuotaLimits() {
+  return {
+    webinarCreatedMonthly: 1,
+    productsMax: 5,
+    inquiriesMonthly: 5,
+    storageGB: 1,
+    videoRecordingHours: 1,
+    aiReportsMonthly: 1,
+    webinarDurationMinutes: 30,
+    priorityListing: false,
+    verifiedBadge: false,
+    multiFactoryManagement: false,
+    apiAccess: false,
+    dedicatedSupport: false,
+  };
+}

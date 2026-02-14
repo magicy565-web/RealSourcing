@@ -156,6 +156,7 @@ export const orderRouter = router({
       const quotationId = await createQuotation({
         ...input,
         userId: ctx.user.id,
+        quotationNumber: `QT${Date.now()}`,
         unitPrice: input.unitPrice.toString(),
         totalPrice: input.totalPrice.toString(),
         validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
@@ -239,6 +240,7 @@ export const orderRouter = router({
       const orderId = await createOrder({
         ...input,
         buyerId: ctx.user.id,
+        orderNumber: `ORD${Date.now()}`,
         totalAmount: input.totalAmount.toString(),
         targetDeliveryDate: input.targetDeliveryDate ? new Date(input.targetDeliveryDate) : undefined,
       });

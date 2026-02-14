@@ -10,6 +10,7 @@ import {
   userProfiles, InsertUserProfile,
   
   // 工厂域
+  factories,
   factoryCertifications, InsertFactoryCertification,
   factoryProducts, InsertFactoryProduct,
   
@@ -124,7 +125,7 @@ export async function getFactoryProductById(id: number) {
 }
 
 export async function createFactoryProduct(data: InsertFactoryProduct) {
-  const db = await getDb();
+  const db = await db();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(factoryProducts).values(data);
   return result[0].insertId;
@@ -360,12 +361,6 @@ export async function createOrder(data: InsertOrder) {
   }
   
   const result = await db.insert(orders).values(data);
-  
-  // 更新工厂订单数量
-  await db.update(factories)
-    .set({ orderCount: sql`${factories.orderCount} + 1` })
-    .where(eq(factories.id, data.factoryId));
-  
   return result[0].insertId;
 }
 
@@ -375,23 +370,15 @@ export async function updateOrder(id: number, data: Partial<InsertOrder>) {
   await db.update(orders).set(data).where(eq(orders.id, id));
 }
 
-export async function updateOrderStatus(
-  id: number,
-  status: "draft" | "pending" | "confirmed" | "production" | "shipped" | "delivered" | "cancelled"
-) {
+export async function updateOrderStatus(id: number, status: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const updateData: any = { status };
-  if (status === "confirmed") {
-    updateData.confirmedAt = new Date();
-  } else if (status === "shipped") {
-    updateData.shippedAt = new Date();
-  } else if (status === "delivered") {
-    updateData.deliveredAt = new Date();
-  } else if (status === "cancelled") {
-    updateData.cancelledAt = new Date();
-  }
+  if (status === "confirmed") updateData.confirmedAt = new Date();
+  if (status === "shipped") updateData.shippedAt = new Date();
+  if (status === "delivered") updateData.deliveredAt = new Date();
+  if (status === "cancelled") updateData.cancelledAt = new Date();
   
   await db.update(orders).set(updateData).where(eq(orders.id, id));
 }
@@ -405,7 +392,7 @@ export async function getOrderItems(orderId: number) {
   if (!db) return [];
   return db.select().from(orderItems)
     .where(eq(orderItems.orderId, orderId))
-    .orderBy(orderItems.id);
+    .orderBy(orderItems.createdAt);
 }
 
 export async function createOrderItem(data: InsertOrderItem) {
@@ -431,25 +418,18 @@ export async function deleteOrderItem(id: number) {
 // 通知域 (Notification)
 // ============================================================================
 
-export async function getUserNotifications(userId: number, limit: number = 50) {
+export async function getUserNotifications(userId: number, unreadOnly = false) {
   const db = await getDb();
   if (!db) return [];
+  
+  const conditions = [eq(notifications.userId, userId)];
+  if (unreadOnly) {
+    conditions.push(eq(notifications.isRead, 0));
+  }
+  
   return db.select().from(notifications)
-    .where(eq(notifications.userId, userId))
-    .orderBy(desc(notifications.createdAt))
-    .limit(limit);
-}
-
-export async function getUnreadNotificationCount(userId: number) {
-  const db = await getDb();
-  if (!db) return 0;
-  const result = await db.select({ count: sql<number>`count(*)` })
-    .from(notifications)
-    .where(and(
-      eq(notifications.userId, userId),
-      eq(notifications.isRead, 0)
-    ));
-  return result[0]?.count ?? 0;
+    .where(and(...conditions))
+    .orderBy(desc(notifications.createdAt));
 }
 
 export async function createNotification(data: InsertNotification) {
@@ -467,17 +447,6 @@ export async function markNotificationAsRead(id: number) {
     .where(eq(notifications.id, id));
 }
 
-export async function markAllNotificationsAsRead(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(notifications)
-    .set({ isRead: 1, readAt: new Date() })
-    .where(and(
-      eq(notifications.userId, userId),
-      eq(notifications.isRead, 0)
-    ));
-}
-
 // ============================================================================
 // 发票域 (Invoice)
 // ============================================================================
@@ -488,15 +457,6 @@ export async function getUserInvoices(userId: number) {
   return db.select().from(invoices)
     .where(eq(invoices.userId, userId))
     .orderBy(desc(invoices.createdAt));
-}
-
-export async function getInvoiceById(id: number) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(invoices)
-    .where(eq(invoices.id, id))
-    .limit(1);
-  return result.length > 0 ? result[0] : undefined;
 }
 
 export async function createInvoice(data: InsertInvoice) {
@@ -537,122 +497,80 @@ export async function getFactoryReviews(factoryId: number, status?: string) {
     .orderBy(desc(factoryReviews.createdAt));
 }
 
-export async function getReviewById(id: number) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(factoryReviews)
-    .where(eq(factoryReviews.id, id))
-    .limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
 export async function createFactoryReview(data: InsertFactoryReview) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
   const result = await db.insert(factoryReviews).values(data);
   
-  // 更新工厂评分和评价数量
-  await updateFactoryScores(data.factoryId);
+  // 更新工厂评分
+  await updateFactoryRating(data.factoryId);
   
   return result[0].insertId;
 }
 
-export async function updateFactoryReview(id: number, data: Partial<InsertFactoryReview>) {
+async function updateFactoryRating(factoryId: number) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(factoryReviews).set(data).where(eq(factoryReviews.id, id));
-}
-
-export async function replyToReview(id: number, replyContent: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(factoryReviews)
-    .set({ replyContent, repliedAt: new Date() })
-    .where(eq(factoryReviews.id, id));
-}
-
-/**
- * 更新工厂的评分（基于所有已发布的评价）
- */
-async function updateFactoryScores(factoryId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return;
   
   const reviews = await db.select().from(factoryReviews)
     .where(and(
       eq(factoryReviews.factoryId, factoryId),
       eq(factoryReviews.status, "published")
     ));
-  
+    
   if (reviews.length === 0) return;
   
-  const scores = {
-    overall: 0,
-    quality: 0,
-    delivery: 0,
-    communication: 0,
-    pricing: 0,
-    compliance: 0,
-  };
-  
-  reviews.forEach(review => {
-    scores.overall += parseFloat(review.overallScore?.toString() || "0");
-    scores.quality += parseFloat(review.qualityScore?.toString() || "0");
-    scores.delivery += parseFloat(review.deliveryScore?.toString() || "0");
-    scores.communication += parseFloat(review.communicationScore?.toString() || "0");
-    scores.pricing += parseFloat(review.pricingScore?.toString() || "0");
-    scores.compliance += parseFloat(review.complianceScore?.toString() || "0");
-  });
-  
   const count = reviews.length;
+  const avg = (field: keyof typeof reviews[0]) => {
+    const sum = reviews.reduce((acc, r) => acc + Number(r[field] || 0), 0);
+    return (sum / count).toFixed(2);
+  };
   
   await db.update(factories)
     .set({
-      overallScore: (scores.overall / count).toFixed(2),
-      qualityScore: (scores.quality / count).toFixed(2),
-      deliveryScore: (scores.delivery / count).toFixed(2),
-      communicationScore: (scores.communication / count).toFixed(2),
-      pricingScore: (scores.pricing / count).toFixed(2),
-      complianceScore: (scores.compliance / count).toFixed(2),
+      overallScore: avg("overallScore"),
+      qualityScore: avg("qualityScore"),
+      deliveryScore: avg("deliveryScore"),
+      communicationScore: avg("communicationScore"),
+      pricingScore: avg("pricingScore"),
+      complianceScore: avg("complianceScore"),
       reviewCount: count,
     })
     .where(eq(factories.id, factoryId));
 }
 
 // ============================================================================
-// 审计日志域 (Audit Log)
+// 系统审计域 (Audit Log)
 // ============================================================================
 
 export async function createAuditLog(data: InsertAuditLog) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(auditLogs).values(data);
-  return result[0].insertId;
+  return Number(result[0].insertId);
 }
 
 export async function getAuditLogs(
   userId?: number,
-  action?: string,
   entityType?: string,
-  limit: number = 100
+  entityId?: number
 ) {
   const db = await getDb();
   if (!db) return [];
   
   const conditions = [];
   if (userId) conditions.push(eq(auditLogs.userId, userId));
-  if (action) conditions.push(eq(auditLogs.action, action));
   if (entityType) conditions.push(eq(auditLogs.entityType, entityType));
+  if (entityId) conditions.push(eq(auditLogs.entityId, entityId));
   
   return db.select().from(auditLogs)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(auditLogs.createdAt))
-    .limit(limit);
+    .limit(100);
 }
 
 // ============================================================================
-// 系统设置域 (System Settings)
+// 系统设置域 (System Setting)
 // ============================================================================
 
 export async function getSystemSettings(category?: string) {
@@ -661,22 +579,23 @@ export async function getSystemSettings(category?: string) {
   
   if (category) {
     return db.select().from(systemSettings)
-      .where(eq(systemSettings.category, category))
-      .orderBy(systemSettings.key);
+      .where(eq(systemSettings.category, category));
   }
   
-  return db.select().from(systemSettings).orderBy(systemSettings.category, systemSettings.key);
+  return db.select().from(systemSettings);
 }
 
 export async function getSystemSetting(category: string, key: string) {
   const db = await getDb();
   if (!db) return undefined;
+  
   const result = await db.select().from(systemSettings)
     .where(and(
       eq(systemSettings.category, category),
       eq(systemSettings.key, key)
     ))
     .limit(1);
+    
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -688,14 +607,8 @@ export async function upsertSystemSetting(data: InsertSystemSetting) {
   if (existing) {
     await db.update(systemSettings)
       .set(data)
-      .where(and(
-        eq(systemSettings.category, data.category),
-        eq(systemSettings.key, data.key)
-      ));
+      .where(eq(systemSettings.id, existing.id));
   } else {
     await db.insert(systemSettings).values(data);
   }
 }
-
-// 导入 factories 表
-import { factories } from "../drizzle/schema";
