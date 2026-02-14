@@ -55,17 +55,17 @@ export default function LandingPage() {
           {
             title: 'AI 精准推荐海外买家',
             description: '根据你的产品品类、产能、价格区间，AI 自动匹配全球真实采购商，不再被动等待。',
-            mockup: '/mockups/ai-matching.png',
+            mockup: '/mockups/factories_3d_art.png',
           },
           {
             title: '面对面视频谈判，建立信任',
             description: '不再是冰冷的邮件往来，通过视频直接展示产品、工厂实力，快速建立信任，提高成交率。',
-            mockup: '/mockups/video-negotiation.png',
+            mockup: '/mockups/webinars_3d_art.png',
           },
           {
             title: '全流程透明跟进',
             description: '每个商机状态一目了然，AI 提醒跟进时机，不错过任何一个潜在订单。',
-            mockup: '/mockups/order-tracking.png',
+            mockup: '/mockups/dashboard_3d_art.png',
           },
         ],
       },
@@ -177,17 +177,17 @@ export default function LandingPage() {
           {
             title: 'AI-Powered Buyer Recommendations',
             description: 'Automatically match with real global buyers based on your product category, capacity, and price range.',
-            mockup: '/mockups/ai-matching.png',
+            mockup: '/mockups/factories_3d_art.png',
           },
           {
             title: 'Face-to-Face Video Negotiation',
             description: 'No more cold emails. Showcase your products and factory directly via video to build trust and close deals faster.',
-            mockup: '/mockups/video-negotiation.png',
+            mockup: '/mockups/webinars_3d_art.png',
           },
           {
             title: 'Full Transparency & Tracking',
             description: 'Monitor every opportunity at a glance. AI reminds you when to follow up, so you never miss a potential order.',
-            mockup: '/mockups/order-tracking.png',
+            mockup: '/mockups/dashboard_3d_art.png',
           },
         ],
       },
