@@ -30,11 +30,10 @@ import CommandPalette from "./components/CommandPalette";
 function Router() {
   return (
     <Switch>
-      <Route path="/landing" component={LandingPage} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/signin" component={SignIn} />
-      <Route path="/" component={Home} />
+      <Route path="/" component={LandingPage} />
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
       <Route path="/webinars/:id/room" component={NegotiationRoom} />
