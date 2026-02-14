@@ -11,8 +11,8 @@ import {
   clearConversationUnread,
   toggleConversationPin,
   toggleConversationMute,
-  createAuditLog,
 } from "../db";
+import { createAuditLog } from "../db_extended"; // Fixed import path
 
 export const rtmRouter = router({
   /**
@@ -30,7 +30,7 @@ export const rtmRouter = router({
         metadata: z.record(z.unknown()).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => { // Added ctx here
       const messageId = await saveRtmMessage(input);
       
       // 如果是私聊消息，更新会话列表
@@ -70,7 +70,7 @@ export const rtmRouter = router({
           unreadCount: 0,
         });
       }
-      
+
       // 记录审计日志
       await createAuditLog({
         userId: ctx.user.id,
@@ -79,7 +79,7 @@ export const rtmRouter = router({
         entityId: messageId,
         metadata: { channelName: input.channelName },
       });
-
+      
       return { messageId };
     }),
 

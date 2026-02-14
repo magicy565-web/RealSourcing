@@ -9,7 +9,6 @@ import {
   getFactoryById,
   createFactory,
   updateFactory,
-  createAuditLog,
 } from "../db";
 import {
   getFactoryCertifications,
@@ -25,6 +24,7 @@ import {
   getFactoryReviews,
   createFactoryReview,
   replyToReview,
+  createAuditLog, // Fixed import location implicitly by moving it to db_extended
 } from "../db_extended";
 import { checkAndTrackUsage } from "../saas-core";
 

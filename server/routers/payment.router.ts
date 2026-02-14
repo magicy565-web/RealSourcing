@@ -167,7 +167,8 @@ export const paymentRouter = router({
           userId: order.userId,
           planId: order.planId,
           status: "active",
-          billingCycle: order.billingCycle,
+          billingCycle: order.billingCycle || "monthly", // Fixed null to undefined/default
+          amount: order.amount, // Added missing amount
           currentPeriodStart: now,
           currentPeriodEnd: periodEnd,
           autoRenew: 1,
@@ -211,7 +212,8 @@ export const paymentRouter = router({
         userId: order.userId,
         planId: order.planId,
         status: "active",
-        billingCycle: order.billingCycle,
+        billingCycle: order.billingCycle || "monthly", // Fixed null to undefined/default
+        amount: order.amount, // Added missing amount
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
         autoRenew: 1,

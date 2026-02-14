@@ -54,11 +54,12 @@ export const subscriptionEnhancedRouter = router({
    */
   getCurrent: protectedProcedure
     .query(async ({ ctx }) => {
-      let subscription = await getUserSubscription(ctx.user.id);
+      const subscription = await getUserSubscription(ctx.user.id);
       
       // 如果没有订阅，初始化免费试用
       if (!subscription) {
-        subscription = await initializeUserSubscription(ctx.user.id);
+        const newSub = await initializeUserSubscription(ctx.user.id);
+        return newSub || undefined; // Convert null to undefined for TS compatibility
       }
       
       return subscription;

@@ -78,6 +78,7 @@ export const subscriptionRouter = router({
       planId: "free_trial",
       status: "active",
       billingCycle: "monthly",
+      amount: "0", // Added missing amount property
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
       autoRenew: 0,
