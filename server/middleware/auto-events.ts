@@ -84,3 +84,21 @@ export const autoEventMiddleware = {
     );
   }
 };
+
+/**
+ * 触发网络研讨会状态变更事件
+ */
+export const triggerWebinarStatusEvent = async (
+  webinarId: number,
+  oldStatus: string,
+  newStatus: string
+) => {
+  await trackWebinarEvent(
+    webinarId,
+    'status_changed',
+    'Status Changed',
+    'Webinar status changed from ' + oldStatus + ' to ' + newStatus + '.',
+    0,
+    { oldStatus, newStatus }
+  );
+};
