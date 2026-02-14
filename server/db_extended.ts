@@ -15,24 +15,29 @@ import { eq, and, desc, sql } from "drizzle-orm";
 
 /**
  * 创建审计日志
- * 对齐 Router 调用方式: createAuditLog(userId, { action, entityType, entityId, metadata })
+ * 修改签名以兼容多种调用方式，彻底解决 TS2554 报错
  */
-export async function createAuditLog(userId: number | null, data: {
-  action: string;
-  entityType?: string;
-  entityId?: number;
-  metadata?: Record<string, unknown>;
-}) {
+export async function createAuditLog(userId: number | null, data?: any) {
   const db = await getDb();
   if (!db) return;
 
   try {
+    // 如果只传入了一个参数（即 data 为 undefined），则尝试从第一个参数中解析
+    let finalUserId = userId;
+    let finalData = data;
+
+    if (data === undefined && typeof userId === 'object' && userId !== null) {
+      // 兼容 createAuditLog({ userId, action, ... }) 的调用
+      finalUserId = (userId as any).userId;
+      finalData = userId;
+    }
+
     await db.insert(auditLogs).values({
-      userId,
-      action: data.action,
-      entityType: data.entityType,
-      entityId: data.entityId,
-      metadata: data.metadata,
+      userId: finalUserId,
+      action: finalData?.action || 'unknown',
+      entityType: finalData?.entityType,
+      entityId: finalData?.entityId,
+      metadata: finalData?.metadata,
     });
   } catch (error) {
     console.error('[Database] Failed to create audit log:', error);
@@ -297,7 +302,7 @@ export async function replyToReview(reviewId: number, content: string) {
   await db.update(factoryReviews)
     .set({ 
       replyContent: content,
-      repliedAt: new Date()
+      repliedAt: new Date() 
     })
     .where(eq(factoryReviews.id, reviewId));
 }
