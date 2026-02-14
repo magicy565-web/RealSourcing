@@ -1,5 +1,7 @@
 import { 
   getDb, 
+} from "./db";
+import {
   orders, 
   orderItems, 
   quotations, 
@@ -8,8 +10,8 @@ import {
   factoryProducts,
   auditLogs,
   type InsertAuditLog
-} from "./db";
-import { eq, and, or, desc } from "drizzle-orm";
+} from "../drizzle/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 /**
  * 创建审计日志
@@ -217,8 +219,7 @@ export async function deleteFactoryProduct(id: number) {
 export async function incrementProductView(id: number) {
   const db = await getDb();
   if (!db) return;
-  // 注意：Drizzle 对 SQL 原生自增的支持
-  // 这里简化处理
+  // Implementation simplified
 }
 
 /**

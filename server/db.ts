@@ -61,24 +61,12 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
     textFields.forEach(assignNullable);
 
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
       values.role = 'admin';
       updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
     }
 
     await db.insert(users).values(values).onDuplicateKeyUpdate({
@@ -331,14 +319,189 @@ export async function cancelSubscription(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(subscriptions)
-    .set({ status: "cancelled", cancelledAt: new Date() })
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(eq(subscriptions.userId, userId));
+}
+
+// ============ USAGE RECORD QUERIES ============
+
+export async function createUsageRecord(data: InsertUsageRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(usageRecords).values(data);
+}
+
+export async function getMonthlyUsage(userId: number, resourceType: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  
+  const [result] = await db.select({ count: sql<number>`count(*)` })
+    .from(usageRecords)
     .where(and(
-      eq(subscriptions.userId, userId),
-      eq(subscriptions.status, "active")
+      eq(usageRecords.userId, userId),
+      eq(usageRecords.resourceType, resourceType),
+      sql`${usageRecords.createdAt} >= ${startOfMonth}`
+    ));
+    
+  return result?.count ?? 0;
+}
+
+export function getDefaultQuotaLimits() {
+  return {
+    webinarCreatedMonthly: 2,
+    productsMax: 10,
+    inquiriesMonthly: 50,
+    storageGB: 1,
+    videoRecordingHours: 0,
+    aiReportsMonthly: 1,
+    webinarDurationMinutes: 60,
+    priorityListing: false,
+    verifiedBadge: false,
+    multiFactoryManagement: false,
+    apiAccess: false,
+    dedicatedSupport: false,
+  };
+}
+
+// ============ RTM QUERIES ============
+
+export async function saveRtmMessage(data: InsertRtmMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(rtmMessages).values(data);
+  return result[0].insertId;
+}
+
+export async function getPrivateMessages(userId1: number, userId2: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rtmMessages)
+    .where(and(
+      eq(rtmMessages.messageType, "private"),
+      or(
+        and(eq(rtmMessages.senderId, userId1), eq(rtmMessages.receiverId, userId2)),
+        and(eq(rtmMessages.senderId, userId2), eq(rtmMessages.receiverId, userId1))
+      )
+    ))
+    .orderBy(desc(rtmMessages.createdAt))
+    .limit(limit);
+}
+
+export async function getChannelMessages(channelName: string, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rtmMessages)
+    .where(and(
+      eq(rtmMessages.messageType, "channel"),
+      eq(rtmMessages.channelName, channelName)
+    ))
+    .orderBy(desc(rtmMessages.createdAt))
+    .limit(limit);
+}
+
+export async function markMessagesAsRead(userId: number, senderId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(rtmMessages)
+    .set({ isRead: 1 })
+    .where(and(
+      eq(rtmMessages.receiverId, userId),
+      eq(rtmMessages.senderId, senderId),
+      eq(rtmMessages.isRead, 0)
     ));
 }
 
-// ============ PAYMENT ORDER QUERIES ============
+export async function getUnreadMessageCount(userId: number, senderId?: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  let conditions = [eq(rtmMessages.receiverId, userId), eq(rtmMessages.isRead, 0)];
+  if (senderId) conditions.push(eq(rtmMessages.senderId, senderId));
+  
+  const [result] = await db.select({ count: sql<number>`count(*)` })
+    .from(rtmMessages)
+    .where(and(...conditions));
+    
+  return result?.count ?? 0;
+}
+
+export async function upsertConversation(data: InsertRtmConversation) {
+  const db = await getDb();
+  if (!db) return;
+  
+  let condition = and(eq(rtmConversations.userId, data.userId));
+  if (data.targetUserId) {
+    condition = and(condition, eq(rtmConversations.targetUserId, data.targetUserId));
+  } else if (data.channelName) {
+    condition = and(condition, eq(rtmConversations.channelName, data.channelName));
+  }
+  
+  const existing = await db.select().from(rtmConversations).where(condition).limit(1);
+  
+  if (existing.length > 0) {
+    await db.update(rtmConversations)
+      .set({
+        lastMessageId: data.lastMessageId,
+        lastMessageContent: data.lastMessageContent,
+        lastMessageAt: data.lastMessageAt,
+        unreadCount: data.unreadCount !== undefined ? (existing[0].unreadCount || 0) + data.unreadCount : existing[0].unreadCount,
+        updatedAt: new Date()
+      })
+      .where(condition);
+  } else {
+    await db.insert(rtmConversations).values(data);
+  }
+}
+
+export async function getUserConversations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rtmConversations)
+    .where(eq(rtmConversations.userId, userId))
+    .orderBy(desc(rtmConversations.lastMessageAt));
+}
+
+export async function clearConversationUnread(userId: number, targetUserId?: number, channelName?: string) {
+  const db = await getDb();
+  if (!db) return;
+  
+  let condition = and(eq(rtmConversations.userId, userId));
+  if (targetUserId) {
+    condition = and(condition, eq(rtmConversations.targetUserId, targetUserId));
+  } else if (channelName) {
+    condition = and(condition, eq(rtmConversations.channelName, channelName));
+  }
+  
+  await db.update(rtmConversations)
+    .set({ unreadCount: 0, updatedAt: new Date() })
+    .where(condition);
+}
+
+export async function toggleConversationPin(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
+  if (existing.length > 0) {
+    await db.update(rtmConversations)
+      .set({ isPinned: existing[0].isPinned ? 0 : 1, updatedAt: new Date() })
+      .where(eq(rtmConversations.id, id));
+  }
+}
+
+export async function toggleConversationMute(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
+  if (existing.length > 0) {
+    await db.update(rtmConversations)
+      .set({ isMuted: existing[0].isMuted ? 0 : 1, updatedAt: new Date() })
+      .where(eq(rtmConversations.id, id));
+  }
+}
 
 export async function createPaymentOrder(data: InsertPaymentOrder) {
   const db = await getDb();
@@ -350,9 +513,7 @@ export async function createPaymentOrder(data: InsertPaymentOrder) {
 export async function getPaymentOrderByNo(orderNo: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(paymentOrders)
-    .where(eq(paymentOrders.orderNo, orderNo))
-    .limit(1);
+  const result = await db.select().from(paymentOrders).where(eq(paymentOrders.orderNo, orderNo)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -365,249 +526,5 @@ export async function updatePaymentOrder(orderNo: string, data: Partial<InsertPa
 export async function getUserPaymentOrders(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(paymentOrders)
-    .where(eq(paymentOrders.userId, userId))
-    .orderBy(desc(paymentOrders.createdAt));
-}
-
-// ============ USAGE RECORD QUERIES ============
-
-export async function recordUsage(data: InsertUsageRecord) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(usageRecords).values(data);
-  return result[0].insertId;
-}
-
-export async function getUserUsage(userId: number, resourceType: string, periodStart: Date, periodEnd: Date) {
-  const db = await getDb();
-  if (!db) return 0;
-  const result = await db.select({ total: sql<number>`SUM(count)` })
-    .from(usageRecords)
-    .where(and(
-      eq(usageRecords.userId, userId),
-      eq(usageRecords.resourceType, resourceType),
-      sql`${usageRecords.periodStart} >= ${periodStart}`,
-      sql`${usageRecords.periodEnd} <= ${periodEnd}`
-    ));
-  return result[0]?.total ?? 0;
-}
-
-export async function getMonthlyUsage(userId: number, resourceType: string) {
-  const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  return getUserUsage(userId, resourceType, periodStart, periodEnd);
-}
-
-// ============ RTM MESSAGE QUERIES ============
-
-/**
- * 保存 RTM 消息到数据库
- */
-export async function saveRtmMessage(data: InsertRtmMessage) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const result = await db.insert(rtmMessages).values(data);
-  return result[0].insertId;
-}
-
-/**
- * 获取两个用户之间的私聊消息历史
- */
-export async function getPrivateMessages(userId1: number, userId2: number, limit: number = 50) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return db.select().from(rtmMessages)
-    .where(
-      and(
-        eq(rtmMessages.messageType, "private"),
-        sql`(
-          (${rtmMessages.senderId} = ${userId1} AND ${rtmMessages.receiverId} = ${userId2}) OR
-          (${rtmMessages.senderId} = ${userId2} AND ${rtmMessages.receiverId} = ${userId1})
-        )`
-      )
-    )
-    .orderBy(desc(rtmMessages.createdAt))
-    .limit(limit);
-}
-
-/**
- * 获取频道消息历史
- */
-export async function getChannelMessages(channelName: string, limit: number = 50) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return db.select().from(rtmMessages)
-    .where(
-      and(
-        eq(rtmMessages.messageType, "channel"),
-        eq(rtmMessages.channelName, channelName)
-      )
-    )
-    .orderBy(desc(rtmMessages.createdAt))
-    .limit(limit);
-}
-
-/**
- * 标记消息为已读
- */
-export async function markMessagesAsRead(userId: number, senderId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  await db.update(rtmMessages)
-    .set({ isRead: 1, readAt: new Date() })
-    .where(
-      and(
-        eq(rtmMessages.receiverId, userId),
-        eq(rtmMessages.senderId, senderId),
-        eq(rtmMessages.isRead, 0)
-      )
-    );
-}
-
-/**
- * 获取未读消息数量
- */
-export async function getUnreadMessageCount(userId: number, senderId?: number) {
-  const db = await getDb();
-  if (!db) return 0;
-  
-  const conditions = [
-    eq(rtmMessages.receiverId, userId),
-    eq(rtmMessages.isRead, 0)
-  ];
-  
-  if (senderId) {
-    conditions.push(eq(rtmMessages.senderId, senderId));
-  }
-  
-  const result = await db.select({ count: sql<number>`count(*)` })
-    .from(rtmMessages)
-    .where(and(...conditions));
-  
-  return result[0]?.count ?? 0;
-}
-
-// ============ RTM CONVERSATION QUERIES ============
-
-/**
- * 创建或更新会话
- */
-export async function upsertConversation(data: InsertRtmConversation) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const existing = await db.select().from(rtmConversations)
-    .where(
-      and(
-        eq(rtmConversations.userId, data.userId),
-        data.targetUserId 
-          ? eq(rtmConversations.targetUserId, data.targetUserId)
-          : eq(rtmConversations.channelName, data.channelName!)
-      )
-    )
-    .limit(1);
-  
-  if (existing.length > 0) {
-    // 更新现有会话
-    await db.update(rtmConversations)
-      .set({
-        lastMessageId: data.lastMessageId,
-        lastMessageContent: data.lastMessageContent,
-        lastMessageAt: data.lastMessageAt,
-        unreadCount: sql`${rtmConversations.unreadCount} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq(rtmConversations.id, existing[0].id));
-    
-    return existing[0].id;
-  } else {
-    // 创建新会话
-    const result = await db.insert(rtmConversations).values(data);
-    return result[0].insertId;
-  }
-}
-
-/**
- * 获取用户的所有会话列表
- */
-export async function getUserConversations(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return db.select().from(rtmConversations)
-    .where(eq(rtmConversations.userId, userId))
-    .orderBy(
-      desc(rtmConversations.isPinned),
-      desc(rtmConversations.lastMessageAt)
-    );
-}
-
-/**
- * 清空会话的未读计数
- */
-export async function clearConversationUnread(userId: number, targetUserId?: number, channelName?: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const conditions = [eq(rtmConversations.userId, userId)];
-  
-  if (targetUserId) {
-    conditions.push(eq(rtmConversations.targetUserId, targetUserId));
-  } else if (channelName) {
-    conditions.push(eq(rtmConversations.channelName, channelName));
-  }
-  
-  await db.update(rtmConversations)
-    .set({ unreadCount: 0 })
-    .where(and(...conditions));
-}
-
-/**
- * 切换会话置顶状态
- */
-export async function toggleConversationPin(conversationId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  await db.update(rtmConversations)
-    .set({ isPinned: sql`1 - ${rtmConversations.isPinned}` })
-    .where(eq(rtmConversations.id, conversationId));
-}
-
-/**
- * 切换会话免打扰状态
- */
-export async function toggleConversationMute(conversationId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  await db.update(rtmConversations)
-    .set({ isMuted: sql`1 - ${rtmConversations.isMuted}` })
-    .where(eq(rtmConversations.id, conversationId));
-}
-
-/**
- * 获取默认配额限制
- */
-export function getDefaultQuotaLimits() {
-  return {
-    webinarCreatedMonthly: 1,
-    productsMax: 5,
-    inquiriesMonthly: 5,
-    storageGB: 1,
-    videoRecordingHours: 1,
-    aiReportsMonthly: 1,
-    webinarDurationMinutes: 30,
-    priorityListing: false,
-    verifiedBadge: false,
-    multiFactoryManagement: false,
-    apiAccess: false,
-    dedicatedSupport: false,
-  };
+  return db.select().from(paymentOrders).where(eq(paymentOrders.userId, userId)).orderBy(desc(paymentOrders.createdAt));
 }
