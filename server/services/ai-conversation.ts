@@ -1,4 +1,4 @@
-import { env } from '../_core/env';
+import { ENV } from '../_core/env';
 
 /**
  * AI 对话引擎服务
@@ -43,14 +43,14 @@ export async function chatWithAI(
   temperature: number = 0.7
 ): Promise<string> {
   try {
-    const response = await fetch(`${env.OPENAI_BASE_URL}/chat/completions`, {
+    const response = await fetch(`${ENV.forgeApiUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: env.OPENAI_MODEL, // [逆次]o4-mini
+        model: 'gpt-4-mini', // [逆次]o4-mini
         messages,
         temperature,
         max_tokens: 2000,

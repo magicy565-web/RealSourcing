@@ -4,11 +4,10 @@ import {
   InsertUser, users,
   webinars, InsertWebinar, Webinar,
   factories, InsertFactory, Factory,
-  webinarFactories,
+  webinarParticipants,
   reports, InsertReport,
   negotiationEvents,
   orders,
-  webinarResources,
   subscriptionPlans, InsertSubscriptionPlan, SubscriptionPlan,
   subscriptions, InsertSubscription, Subscription,
   paymentOrders, InsertPaymentOrder, PaymentOrder,
@@ -178,25 +177,23 @@ export async function updateFactory(id: number, data: Partial<InsertFactory>) {
 export async function addFactoryToWebinar(webinarId: number, factoryId: number, role: "presenter" | "participant" = "participant") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(webinarFactories).values({ webinarId, factoryId, role });
+  await db.insert(webinarParticipants).values({ webinarId, factoryId, role });
 }
 
 export async function getWebinarFactories(webinarId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select({
-    id: webinarFactories.id,
-    factoryId: webinarFactories.factoryId,
-    role: webinarFactories.role,
-    status: webinarFactories.status,
-    joinedAt: webinarFactories.joinedAt,
+    id: webinarParticipants.id,
+    factoryId: webinarParticipants.factoryId,
+    role: webinarParticipants.role,
     factoryName: factories.name,
     factoryLocation: factories.location,
     factoryScore: factories.overallScore,
   })
-    .from(webinarFactories)
-    .innerJoin(factories, eq(webinarFactories.factoryId, factories.id))
-    .where(eq(webinarFactories.webinarId, webinarId));
+    .from(webinarParticipants)
+    .innerJoin(factories, eq(webinarParticipants.factoryId, factories.id))
+    .where(eq(webinarParticipants.webinarId, webinarId));
 }
 
 // ============ REPORT QUERIES ============

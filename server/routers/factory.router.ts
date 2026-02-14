@@ -9,6 +9,8 @@ import {
   getFactoryById,
   createFactory,
   updateFactory,
+} from "../db";
+import {
   getFactoryCertifications,
   createFactoryCertification,
   updateFactoryCertification,
