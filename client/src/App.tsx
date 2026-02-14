@@ -23,12 +23,16 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import Messages from "./pages/Messages";
 import { Subscription } from "./pages/Subscription";
 import { QuotaDashboard } from "./pages/QuotaDashboard";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import CommandPalette from "./components/CommandPalette";
 
 function Router() {
   return (
     <Switch>
       <Route path="/landing" component={LandingPage} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/signin" component={SignIn} />
       <Route path="/" component={Home} />
       <Route path="/webinars" component={Webinars} />
