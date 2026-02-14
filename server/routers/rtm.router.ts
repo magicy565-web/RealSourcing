@@ -75,8 +75,8 @@ export const rtmRouter = router({
       await createAuditLog(ctx.user.id, {
         action: "send_message",
         entityType: "message",
-        entityId: messageId,
-        metadata: { channelName: input.channelName },
+        entityId: messageId.toString(),
+        metadata: { channelName: input.channelName || "" },
       });
       
       return { messageId };

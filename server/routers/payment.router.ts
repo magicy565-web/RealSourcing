@@ -135,7 +135,7 @@ export const paymentRouter = router({
       }
 
       // Update payment order status
-      await updatePaymentOrder(input.orderNo, {
+      await updatePaymentOrder(Number(order.id), {
         status: input.status,
         paymentId: input.paymentId,
         paidAt: input.status === "paid" ? new Date() : undefined,
@@ -192,7 +192,7 @@ export const paymentRouter = router({
       }
 
       // Update order status
-      await updatePaymentOrder(input.orderNo, {
+      await updatePaymentOrder(Number(order.id), {
         status: "paid",
         paymentId: `TEST_${nanoid(16)}`,
         paidAt: new Date(),

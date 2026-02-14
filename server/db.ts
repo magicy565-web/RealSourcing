@@ -31,43 +31,13 @@ export async function getDb() {
   return _db;
 }
 
-export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error('User openId is required for upsert');
-  }
+// ============ USER OPERATIONS ============
 
+export async function upsertUser(user: InsertUser): Promise<void> {
+  if (!user.openId) throw new Error('User openId is required');
   const db = await getDb();
   if (!db) return;
-
-  try {
-    const values: InsertUser = { openId: user.openId };
-    const updateSet: Record<string, unknown> = {};
-
-    const textFields = ['name', 'email', 'loginMethod'] as const;
-    textFields.forEach(field => {
-      const value = user[field];
-      if (value !== undefined) {
-        const normalized = value ?? null;
-        (values as any)[field] = normalized;
-        updateSet[field] = normalized;
-      }
-    });
-
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
-  } catch (error) {
-    console.error('[Database] Failed to upsert user:', error);
-    throw error;
-  }
+  await db.insert(users).values(user).onDuplicateKeyUpdate({ set: user });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -127,9 +97,7 @@ export async function getFactories(search?: string) {
   const db = await getDb();
   if (!db) return [];
   if (search) {
-    return db.select().from(factories)
-      .where(like(factories.name, '%' + search + '%'))
-      .orderBy(desc(factories.overallScore));
+    return db.select().from(factories).where(like(factories.name, `%${search}%`)).orderBy(desc(factories.overallScore));
   }
   return db.select().from(factories).orderBy(desc(factories.overallScore));
 }
@@ -146,8 +114,6 @@ export async function updateFactory(id: number, data: Partial<InsertFactory>) {
   if (!db) throw new Error('Database not available');
   await db.update(factories).set(data).where(eq(factories.id, id));
 }
-
-// ============ WEBINAR-FACTORY RELATIONSHIP ============
 
 export async function addFactoryToWebinar(webinarId: number, factoryId: number, role: 'presenter' | 'participant' = 'participant') {
   const db = await getDb();
@@ -166,9 +132,9 @@ export async function getWebinarFactories(webinarId: number) {
     factoryCity: factories.city,
     factoryScore: factories.overallScore,
   })
-    .from(webinarParticipants)
-    .innerJoin(factories, eq(webinarParticipants.factoryId, factories.id))
-    .where(eq(webinarParticipants.webinarId, webinarId));
+  .from(webinarParticipants)
+  .innerJoin(factories, eq(webinarParticipants.factoryId, factories.id))
+  .where(eq(webinarParticipants.webinarId, webinarId));
 }
 
 // ============ REPORT QUERIES ============
@@ -195,31 +161,17 @@ export async function getReportById(id: number) {
 
 // ============ NEGOTIATION EVENTS ============
 
-export async function addNegotiationEvent(data: {
-  webinarId: number;
-  type: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-  createdById?: number;
-}) {
+export async function addNegotiationEvent(data: any) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  const result = await db.insert(negotiationEvents).values({
-    webinarId: data.webinarId,
-    type: data.type,
-    description: data.description,
-    metadata: data.metadata,
-    createdById: data.createdById
-  });
+  const result = await db.insert(negotiationEvents).values(data);
   return result[0].insertId;
 }
 
 export async function getWebinarTimeline(webinarId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(negotiationEvents)
-    .where(eq(negotiationEvents.webinarId, webinarId))
-    .orderBy(desc(negotiationEvents.timestamp));
+  return db.select().from(negotiationEvents).where(eq(negotiationEvents.webinarId, webinarId)).orderBy(desc(negotiationEvents.timestamp));
 }
 
 // ============ ORDER QUERIES ============
@@ -227,9 +179,7 @@ export async function getWebinarTimeline(webinarId: number) {
 export async function getFactoryOrders(factoryId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(orders)
-    .where(eq(orders.factoryId, factoryId))
-    .orderBy(desc(orders.createdAt));
+  return db.select().from(orders).where(eq(orders.factoryId, factoryId)).orderBy(desc(orders.createdAt));
 }
 
 // ============ DASHBOARD STATS ============
@@ -237,12 +187,10 @@ export async function getFactoryOrders(factoryId: number) {
 export async function getDashboardStats(userId: number) {
   const db = await getDb();
   if (!db) return { activeWebinars: 0, totalFactories: 0, closedOrders: 0, activeNegotiations: 0 };
-
   const webinarCountRes = await db.select({ count: sql`count(*)` }).from(webinars).where(eq(webinars.status, 'live'));
   const factoryCountRes = await db.select({ count: sql`count(*)` }).from(factories);
   const orderCountRes = await db.select({ count: sql`count(*)` }).from(orders).where(eq(orders.status, 'delivered'));
   const negotiationCountRes = await db.select({ count: sql`count(*)` }).from(webinars).where(eq(webinars.status, 'scheduled'));
-
   return {
     activeWebinars: Number(webinarCountRes[0]?.count ?? 0),
     totalFactories: Number(factoryCountRes[0]?.count ?? 0),
@@ -251,37 +199,25 @@ export async function getDashboardStats(userId: number) {
   };
 }
 
-// ============ SUBSCRIPTION PLAN QUERIES ============
+// ============ SUBSCRIPTION QUERIES ============
 
 export async function getSubscriptionPlans() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(subscriptionPlans)
-    .where(eq(subscriptionPlans.isActive, 1))
-    .orderBy(subscriptionPlans.displayOrder);
+  return db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, 1)).orderBy(subscriptionPlans.displayOrder);
 }
 
 export async function getSubscriptionPlanById(id: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(subscriptionPlans)
-    .where(eq(subscriptionPlans.id, id))
-    .limit(1);
+  const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
-
-// ============ SUBSCRIPTION QUERIES ============
 
 export async function getUserSubscription(userId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(subscriptions)
-    .where(and(
-      eq(subscriptions.userId, userId),
-      eq(subscriptions.status, 'active')
-    ))
-    .orderBy(desc(subscriptions.createdAt))
-    .limit(1);
+  const result = await db.select().from(subscriptions).where(and(eq(subscriptions.userId, userId), eq(subscriptions.status, 'active'))).orderBy(desc(subscriptions.createdAt)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -301,9 +237,11 @@ export async function updateSubscription(id: number, data: Partial<InsertSubscri
 export async function cancelSubscription(userId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  await db.update(subscriptions)
-    .set({ status: 'cancelled', updatedAt: new Date() })
-    .where(eq(subscriptions.userId, userId));
+  await db.update(subscriptions).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(subscriptions.userId, userId));
+}
+
+export function getDefaultQuotaLimits() {
+  return { webinarCreatedMonthly: 2, productsMax: 10, inquiriesMonthly: 50, storageGB: 1, videoRecordingHours: 0, aiReportsMonthly: 1, webinarDurationMinutes: 60, priorityListing: false, verifiedBadge: false, multiFactoryManagement: false, apiAccess: false, dedicatedSupport: false };
 }
 
 // ============ PAYMENT QUERIES ============
@@ -339,55 +277,20 @@ export async function getUserPaymentOrders(userId: number) {
 export async function recordUsage(userId: number, resourceType: string, count: number = 1, metadata?: any) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-  await db.insert(usageRecords).values({
-    userId,
-    resourceType,
-    count,
-    periodStart,
-    periodEnd,
-    metadata
-  });
+  await db.insert(usageRecords).values({ userId, resourceType, count, periodStart, periodEnd, metadata });
 }
 
 export async function getMonthlyUsage(userId: number, resourceType: string) {
   const db = await getDb();
   if (!db) return 0;
-  
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
-  
-  const result = await db.select({ total: sql`sum(count)` })
-    .from(usageRecords)
-    .where(and(
-      eq(usageRecords.userId, userId),
-      eq(usageRecords.resourceType, resourceType),
-      sql`createdAt >= ${startOfMonth}`
-    ));
-    
+  const result = await db.select({ total: sql`sum(count)` }).from(usageRecords).where(and(eq(usageRecords.userId, userId), eq(usageRecords.resourceType, resourceType), sql`createdAt >= ${startOfMonth}`));
   return Number(result[0]?.total ?? 0);
-}
-
-export function getDefaultQuotaLimits() {
-  return {
-    webinarCreatedMonthly: 2,
-    productsMax: 10,
-    inquiriesMonthly: 50,
-    storageGB: 1,
-    videoRecordingHours: 0,
-    aiReportsMonthly: 1,
-    webinarDurationMinutes: 60,
-    priorityListing: false,
-    verifiedBadge: false,
-    multiFactoryManagement: false,
-    apiAccess: false,
-    dedicatedSupport: false,
-  };
 }
 
 // ============ RTM QUERIES ============
@@ -399,55 +302,72 @@ export async function saveRtmMessage(data: InsertRtmMessage) {
   return result[0].insertId;
 }
 
+export async function getPrivateMessages(userId1: number, userId2: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rtmMessages).where(and(eq(rtmMessages.messageType, 'private'), or(and(eq(rtmMessages.senderId, userId1), eq(rtmMessages.receiverId, userId2)), and(eq(rtmMessages.senderId, userId2), eq(rtmMessages.receiverId, userId1))))).orderBy(desc(rtmMessages.createdAt)).limit(limit);
+}
+
+export async function getChannelMessages(channelName: string, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rtmMessages).where(and(eq(rtmMessages.messageType, 'channel'), eq(rtmMessages.channelName, channelName))).orderBy(desc(rtmMessages.createdAt)).limit(limit);
+}
+
+export async function markMessagesAsRead(userId: number, senderId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(rtmMessages).set({ isRead: 1 }).where(and(eq(rtmMessages.receiverId, userId), eq(rtmMessages.senderId, senderId), eq(rtmMessages.isRead, 0)));
+}
+
+export async function getUnreadMessageCount(userId: number, senderId?: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  let conditions = [eq(rtmMessages.receiverId, userId), eq(rtmMessages.isRead, 0)];
+  if (senderId) conditions.push(eq(rtmMessages.senderId, senderId));
+  const result = await db.select({ count: sql`count(*)` }).from(rtmMessages).where(and(...conditions));
+  return Number(result[0]?.count ?? 0);
+}
+
 export async function upsertConversation(data: InsertRtmConversation) {
   const db = await getDb();
   if (!db) return;
-  
   let condition = and(eq(rtmConversations.userId, data.userId));
-  if (data.targetUserId) {
-    condition = and(condition, eq(rtmConversations.targetUserId, data.targetUserId));
-  } else if (data.channelName) {
-    condition = and(condition, eq(rtmConversations.channelName, data.channelName));
-  }
-  
+  if (data.targetUserId) condition = and(condition, eq(rtmConversations.targetUserId, data.targetUserId));
+  else if (data.channelName) condition = and(condition, eq(rtmConversations.channelName, data.channelName));
   const existing = await db.select().from(rtmConversations).where(condition).limit(1);
-  
   if (existing.length > 0) {
-    const currentUnread = Number(existing[0].unreadCount ?? 0);
-    const increment = Number(data.unreadCount ?? 0);
-    
-    await db.update(rtmConversations)
-      .set({
-        lastMessageId: data.lastMessageId,
-        lastMessageContent: data.lastMessageContent,
-        lastMessageAt: data.lastMessageAt,
-        unreadCount: currentUnread + increment,
-        updatedAt: new Date()
-      })
-      .where(condition);
+    await db.update(rtmConversations).set({ lastMessageId: data.lastMessageId, lastMessageContent: data.lastMessageContent, lastMessageAt: data.lastMessageAt, unreadCount: Number(existing[0].unreadCount ?? 0) + Number(data.unreadCount ?? 0), updatedAt: new Date() }).where(condition);
   } else {
     await db.insert(rtmConversations).values(data);
   }
+}
+
+export async function getUserConversations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rtmConversations).where(eq(rtmConversations.userId, userId)).orderBy(desc(rtmConversations.lastMessageAt));
+}
+
+export async function clearConversationUnread(userId: number, targetUserId?: number, channelName?: string) {
+  const db = await getDb();
+  if (!db) return;
+  let condition = and(eq(rtmConversations.userId, userId));
+  if (targetUserId) condition = and(condition, eq(rtmConversations.targetUserId, targetUserId));
+  else if (channelName) condition = and(condition, eq(rtmConversations.channelName, channelName));
+  await db.update(rtmConversations).set({ unreadCount: 0, updatedAt: new Date() }).where(condition);
 }
 
 export async function toggleConversationPin(id: number) {
   const db = await getDb();
   if (!db) return;
   const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
-  if (existing.length > 0) {
-    await db.update(rtmConversations)
-      .set({ isPinned: existing[0].isPinned ? 0 : 1, updatedAt: new Date() })
-      .where(eq(rtmConversations.id, id));
-  }
+  if (existing.length > 0) await db.update(rtmConversations).set({ isPinned: existing[0].isPinned ? 0 : 1, updatedAt: new Date() }).where(eq(rtmConversations.id, id));
 }
 
 export async function toggleConversationMute(id: number) {
   const db = await getDb();
   if (!db) return;
   const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
-  if (existing.length > 0) {
-    await db.update(rtmConversations)
-      .set({ isMuted: existing[0].isMuted ? 0 : 1, updatedAt: new Date() })
-      .where(eq(rtmConversations.id, id));
-  }
+  if (existing.length > 0) await db.update(rtmConversations).set({ isMuted: existing[0].isMuted ? 0 : 1, updatedAt: new Date() }).where(eq(rtmConversations.id, id));
 }
