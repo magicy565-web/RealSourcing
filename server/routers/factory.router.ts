@@ -9,6 +9,7 @@ import {
   getFactoryById,
   createFactory,
   updateFactory,
+  createAuditLog,
 } from "../db";
 import {
   getFactoryCertifications,
@@ -96,9 +97,19 @@ export const factoryRouter = router({
       website: z.string().url().optional(),
       description: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       await updateFactory(id, data);
+
+      // 记录审计日志
+      await createAuditLog({
+        userId: ctx.user.id,
+        action: "update_factory",
+        entityType: "factory",
+        entityId: id,
+        metadata: data,
+      });
+
       return { success: true };
     }),
   
@@ -222,6 +233,16 @@ export const factoryRouter = router({
       });
       
       const productId = await createFactoryProduct(input);
+
+      // 记录审计日志
+      await createAuditLog({
+        userId: ctx.user.id,
+        action: "create_product",
+        entityType: "product",
+        entityId: productId,
+        metadata: { name: input.name },
+      });
+
       return { id: productId };
     }),
   

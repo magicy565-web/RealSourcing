@@ -11,6 +11,7 @@ import {
   clearConversationUnread,
   toggleConversationPin,
   toggleConversationMute,
+  createAuditLog,
 } from "../db";
 
 export const rtmRouter = router({
@@ -70,6 +71,15 @@ export const rtmRouter = router({
         });
       }
       
+      // 记录审计日志
+      await createAuditLog({
+        userId: ctx.user.id,
+        action: "send_message",
+        entityType: "message",
+        entityId: messageId,
+        metadata: { channelName: input.channelName },
+      });
+
       return { messageId };
     }),
 

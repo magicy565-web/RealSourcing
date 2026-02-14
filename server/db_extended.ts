@@ -612,3 +612,24 @@ export async function upsertSystemSetting(data: InsertSystemSetting) {
     await db.insert(systemSettings).values(data);
   }
 }
+
+/**
+ * 回复评价
+ */
+export async function replyToReview(reviewId: number, content: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(factoryReviews)
+    .set({ 
+      replyContent: content,
+      repliedAt: new Date()
+    })
+    .where(eq(factoryReviews.id, reviewId));
+}
+
+/**
+ * 获取工厂订单
+ */
+export async function getFactoryOrders(factoryId: number, status?: string) {
+  return getOrders(undefined, factoryId, status);
+}
