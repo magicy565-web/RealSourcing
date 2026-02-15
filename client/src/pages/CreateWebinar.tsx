@@ -1,10 +1,8 @@
-import DashboardLayout from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Badge } from "../components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,394 +10,386 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { ArrowLeft, Check, Calendar, Clock, Globe, Users, Shield, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Calendar, Clock, Globe, Users, Upload, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { cn } from "../lib/utils";
-import { mockStore } from "../lib/mock-data";
-import { toast } from "sonner";
+import { useToast } from "../hooks/use-toast";
+import { directus } from "../lib/directus";
+import { createItem, uploadFiles } from "@directus/sdk";
 
-export default function WebinarCreate() {
+export default function CreateWebinar() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     date: "",
     time: "",
-    duration: "60",
+    duration: "120",
     category: "",
     language: "en",
-    type: "public",
-    max_participants: "50",
+    type: "webinar" as "webinar" | "one_to_one",
+    maxParticipants: "100",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.title.trim()) newErrors.title = "Title is required";
-    if (!formData.date) newErrors.date = "Date is required";
-    if (!formData.time) newErrors.time = "Time is required";
-    if (!formData.category) newErrors.category = "Category is required";
+    if (!formData.title.trim()) newErrors.title = "标题不能为空";
+    if (!formData.date) newErrors.date = "日期不能为空";
+    if (!formData.time) newErrors.time = "时间不能为空";
+    if (!formData.category) newErrors.category = "分类不能为空";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreate = async () => {
     if (!validate()) {
-      toast.error("Please fill in all required fields");
+      toast({
+        title: "验证失败",
+        description: "请填写所有必填字段",
+        variant: "destructive",
+      });
       return;
     }
 
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // 1. 上传封面图（如果有）
+      let coverImageId: string | null = null;
+      if (coverImageFile) {
+        const formData = new FormData();
+        formData.append("file", coverImageFile);
+        
+        const uploadResult = await directus.request(
+          uploadFiles(formData)
+        );
+        
+        if (uploadResult && typeof uploadResult === 'object' && 'id' in uploadResult) {
+          coverImageId = (uploadResult as any).id;
+        }
+      }
 
+      // 2. 创建 Webinar
       const scheduledAt = new Date(`${formData.date}T${formData.time}`).toISOString();
-      const newWebinar = mockStore.createWebinar({
-        title: formData.title,
-        description: formData.description,
-        type: formData.type as 'public' | 'private',
-        status: 'scheduled',
-        scheduled_at: scheduledAt,
-        duration: parseInt(formData.duration),
-        category: formData.category,
-        language: formData.language,
-        max_participants: parseInt(formData.max_participants),
+      
+      const newWebinar = await directus.request(
+        createItem("webinars", {
+          title: formData.title,
+          description: formData.description || null,
+          category: formData.category,
+          type: formData.type,
+          status: "scheduled",
+          language: formData.language,
+          scheduledAt: scheduledAt,
+          duration: parseInt(formData.duration),
+          maxParticipants: parseInt(formData.maxParticipants),
+          currentParticipants: 0,
+          coverImage: coverImageId ? `/assets/${coverImageId}` : null,
+          recordingEnabled: 1,
+          viewCount: 0,
+          createdById: 1, // TODO: 使用实际登录用户ID
+        })
+      );
+
+      toast({
+        title: "创建成功",
+        description: "Webinar 已成功创建",
       });
 
-      toast.success("Webinar created successfully!");
-      setLocation(`/webinars/${newWebinar.id}`);
-    } catch (error) {
+      setLocation(`/webinars/${(newWebinar as any).id}`);
+    } catch (error: any) {
       console.error("Failed to create webinar:", error);
-      toast.error("Failed to create webinar");
+      toast({
+        title: "创建失败",
+        description: error.message || "无法创建 Webinar",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <DashboardLayout>
-      <div className="h-full overflow-auto">
-        <div className="p-8 max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLocation("/webinars")}
-              className="text-muted-foreground hover:text-white hover:bg-white/5"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-light tracking-tight text-white">Create Webinar</h1>
-              <p className="text-muted-foreground mt-1 font-light text-sm">
-                Set up a new online sourcing exhibition
-              </p>
-            </div>
-          </div>
-
-          {/* Form */}
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <Card className="bg-[#141414] border-[#262626]">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-violet-400" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-light text-white">Basic Information</CardTitle>
-                    <CardDescription className="font-light">Define your webinar's core details</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-light text-muted-foreground">
-                    Webinar Title <span className="text-red-400">*</span>
-                  </Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Smart Home Products Showcase Q1 2026"
-                    className={cn(
-                      "bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 focus:border-violet-600 font-light h-11",
-                      errors.title && "border-red-500/50"
-                    )}
-                    value={formData.title}
-                    onChange={(e) => {
-                      setFormData({ ...formData, title: e.target.value });
-                      if (errors.title) setErrors({ ...errors, title: "" });
-                    }}
-                  />
-                  {errors.title && <p className="text-xs text-red-400 font-light">{errors.title}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-light text-muted-foreground">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe the webinar purpose, featured products, and what participants can expect..."
-                    rows={4}
-                    className="bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 focus:border-violet-600 font-light"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Schedule */}
-            <Card className="bg-[#141414] border-[#262626]">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-blue-400" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-light text-white">Schedule</CardTitle>
-                    <CardDescription className="font-light">Set the date, time, and duration</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">
-                      Date <span className="text-red-400">*</span>
-                    </Label>
-                    <Input
-                      type="date"
-                      className={cn(
-                        "bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 font-light h-11",
-                        errors.date && "border-red-500/50"
-                      )}
-                      value={formData.date}
-                      onChange={(e) => {
-                        setFormData({ ...formData, date: e.target.value });
-                        if (errors.date) setErrors({ ...errors, date: "" });
-                      }}
-                    />
-                    {errors.date && <p className="text-xs text-red-400 font-light">{errors.date}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">
-                      Time <span className="text-red-400">*</span>
-                    </Label>
-                    <Input
-                      type="time"
-                      className={cn(
-                        "bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 font-light h-11",
-                        errors.time && "border-red-500/50"
-                      )}
-                      value={formData.time}
-                      onChange={(e) => {
-                        setFormData({ ...formData, time: e.target.value });
-                        if (errors.time) setErrors({ ...errors, time: "" });
-                      }}
-                    />
-                    {errors.time && <p className="text-xs text-red-400 font-light">{errors.time}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">Duration</Label>
-                    <Select
-                      value={formData.duration}
-                      onValueChange={(v) => setFormData({ ...formData, duration: v })}
-                    >
-                      <SelectTrigger className="bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#141414] border-[#262626] text-white">
-                        <SelectItem value="30">30 minutes</SelectItem>
-                        <SelectItem value="60">1 hour</SelectItem>
-                        <SelectItem value="90">1.5 hours</SelectItem>
-                        <SelectItem value="120">2 hours</SelectItem>
-                        <SelectItem value="180">3 hours</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Settings */}
-            <Card className="bg-[#141414] border-[#262626]">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                    <Shield className="h-4 w-4 text-green-400" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-light text-white">Settings</CardTitle>
-                    <CardDescription className="font-light">Configure visibility and capacity</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">
-                      Category <span className="text-red-400">*</span>
-                    </Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(v) => {
-                        setFormData({ ...formData, category: v });
-                        if (errors.category) setErrors({ ...errors, category: "" });
-                      }}
-                    >
-                      <SelectTrigger className={cn(
-                        "bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 h-11",
-                        errors.category && "border-red-500/50"
-                      )}>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#141414] border-[#262626] text-white">
-                        <SelectItem value="electronics">Electronics</SelectItem>
-                        <SelectItem value="smart-home">Smart Home</SelectItem>
-                        <SelectItem value="consumer-goods">Consumer Goods</SelectItem>
-                        <SelectItem value="textiles">Textiles & Apparel</SelectItem>
-                        <SelectItem value="furniture">Furniture</SelectItem>
-                        <SelectItem value="automotive">Automotive Parts</SelectItem>
-                        <SelectItem value="packaging">Packaging</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.category && <p className="text-xs text-red-400 font-light">{errors.category}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">Language</Label>
-                    <Select
-                      value={formData.language}
-                      onValueChange={(v) => setFormData({ ...formData, language: v })}
-                    >
-                      <SelectTrigger className="bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#141414] border-[#262626] text-white">
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="zh">Chinese (中文)</SelectItem>
-                        <SelectItem value="es">Spanish</SelectItem>
-                        <SelectItem value="ar">Arabic</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">Visibility</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(v) => setFormData({ ...formData, type: v })}
-                    >
-                      <SelectTrigger className="bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#141414] border-[#262626] text-white">
-                        <SelectItem value="public">Public — Open to all</SelectItem>
-                        <SelectItem value="private">Private — Invite only</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-light text-muted-foreground">Max Participants</Label>
-                    <Select
-                      value={formData.max_participants}
-                      onValueChange={(v) => setFormData({ ...formData, max_participants: v })}
-                    >
-                      <SelectTrigger className="bg-[#0A0A0A] border-[#262626] text-white focus:ring-violet-600 h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#141414] border-[#262626] text-white">
-                        <SelectItem value="20">20 participants</SelectItem>
-                        <SelectItem value="50">50 participants</SelectItem>
-                        <SelectItem value="100">100 participants</SelectItem>
-                        <SelectItem value="200">200 participants</SelectItem>
-                        <SelectItem value="500">500 participants</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preview Card */}
-            {formData.title && (
-              <Card className="bg-gradient-to-br from-violet-600/5 to-blue-600/5 border-violet-500/20">
-                <CardHeader>
-                  <CardTitle className="text-sm font-light text-muted-foreground uppercase tracking-wider">Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <h3 className="text-xl font-light text-white">{formData.title}</h3>
-                    {formData.description && (
-                      <p className="text-sm text-muted-foreground font-light line-clamp-2">{formData.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {formData.date && formData.time && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formData.date} {formData.time}
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formData.duration} min
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        Max {formData.max_participants}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
-                        {formData.language === "en" ? "English" : formData.language === "zh" ? "中文" : formData.language}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs border-violet-500/30 text-violet-400">
-                        {formData.category || "No category"}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs border-[#262626] text-muted-foreground">
-                        {formData.type === "public" ? "Public" : "Private"}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-2 pb-8">
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/webinars")}
-                className="border-[#262626] hover:bg-white/5 font-light"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={loading}
-                className="bg-violet-600 hover:bg-violet-700 text-white font-light px-8"
-              >
-                {loading ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Create Webinar
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+    <div className="container py-8 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/webinars")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            创建 Webinar
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            设置一场新的在线产品展示会议
+          </p>
         </div>
       </div>
-    </DashboardLayout>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>基本信息</CardTitle>
+          <CardDescription>
+            填写 Webinar 的基本信息和设置
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">
+              标题 <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="title"
+              placeholder="例如：TikTok 热门产品采购会"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className={errors.title ? "border-red-500" : ""}
+            />
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title}</p>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">描述</Label>
+            <Textarea
+              id="description"
+              placeholder="详细描述这场 Webinar 的内容和亮点..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={4}
+            />
+          </div>
+
+          {/* Cover Image */}
+          <div className="space-y-2">
+            <Label htmlFor="cover">封面图</Label>
+            <div className="flex items-center gap-4">
+              <Input
+                id="cover"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                onClick={() => document.getElementById("cover")?.click()}
+                type="button"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                上传封面
+              </Button>
+              {coverImagePreview && (
+                <div className="relative w-32 h-20 rounded-lg overflow-hidden border">
+                  <img
+                    src={coverImagePreview}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Date and Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">
+                日期 <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className={`pl-10 ${errors.date ? "border-red-500" : ""}`}
+                />
+              </div>
+              {errors.date && (
+                <p className="text-sm text-red-500">{errors.date}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time">
+                时间 <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="time"
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  className={`pl-10 ${errors.time ? "border-red-500" : ""}`}
+                />
+              </div>
+              {errors.time && (
+                <p className="text-sm text-red-500">{errors.time}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Duration and Max Participants */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="duration">时长（分钟）</Label>
+              <Select
+                value={formData.duration}
+                onValueChange={(value) => setFormData({ ...formData, duration: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 分钟</SelectItem>
+                  <SelectItem value="60">60 分钟</SelectItem>
+                  <SelectItem value="90">90 分钟</SelectItem>
+                  <SelectItem value="120">120 分钟</SelectItem>
+                  <SelectItem value="180">180 分钟</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maxParticipants">最大参与人数</Label>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="maxParticipants"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={formData.maxParticipants}
+                  onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value })}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label htmlFor="category">
+              分类 <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+                <SelectValue placeholder="选择分类" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Electronics">电子产品</SelectItem>
+                <SelectItem value="E-commerce">电商产品</SelectItem>
+                <SelectItem value="Fashion">时尚服饰</SelectItem>
+                <SelectItem value="Home & Garden">家居园艺</SelectItem>
+                <SelectItem value="Beauty">美妆护肤</SelectItem>
+                <SelectItem value="Sports">运动户外</SelectItem>
+                <SelectItem value="Toys">玩具礼品</SelectItem>
+                <SelectItem value="Other">其他</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.category && (
+              <p className="text-sm text-red-500">{errors.category}</p>
+            )}
+          </div>
+
+          {/* Language */}
+          <div className="space-y-2">
+            <Label htmlFor="language">语言</Label>
+            <Select
+              value={formData.language}
+              onValueChange={(value) => setFormData({ ...formData, language: value })}
+            >
+              <SelectTrigger>
+                <Globe className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">🇬🇧 English</SelectItem>
+                <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                <SelectItem value="es">🇪🇸 Español</SelectItem>
+                <SelectItem value="fr">🇫🇷 Français</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Type */}
+          <div className="space-y-2">
+            <Label htmlFor="type">类型</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) => setFormData({ ...formData, type: value as "webinar" | "one_to_one" })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="webinar">群组 Webinar</SelectItem>
+                <SelectItem value="one_to_one">一对一会议</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-4 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/webinars")}
+              disabled={loading}
+              className="flex-1"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  创建中...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  创建 Webinar
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

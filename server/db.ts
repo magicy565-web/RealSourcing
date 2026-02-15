@@ -319,3 +319,112 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
   const result = await db.select({ total: sql`sum(count)` }).from(schema.usageRecords).where(and(eq(schema.usageRecords.userId, userId), eq(schema.usageRecords.resourceType, resourceType), sql`periodStart >= ${periodStart}`));
   return Number(result[0]?.total ?? 0);
 }
+
+// ============ RTM MESSAGE OPERATIONS ============
+
+export async function saveRtmMessage(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(schema.rtmMessages).values(data);
+  return result[0].insertId;
+}
+
+export async function getPrivateMessages(userId1: number, userId2: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.rtmMessages)
+    .where(and(
+      eq(schema.rtmMessages.messageType, 'private'),
+      or(
+        and(eq(schema.rtmMessages.senderId, userId1), eq(schema.rtmMessages.receiverId, userId2)),
+        and(eq(schema.rtmMessages.senderId, userId2), eq(schema.rtmMessages.receiverId, userId1))
+      )
+    ))
+    .orderBy(desc(schema.rtmMessages.createdAt))
+    .limit(limit);
+}
+
+export async function getChannelMessages(channelName: string, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.rtmMessages)
+    .where(and(
+      eq(schema.rtmMessages.messageType, 'channel'),
+      eq(schema.rtmMessages.channelName, channelName)
+    ))
+    .orderBy(desc(schema.rtmMessages.createdAt))
+    .limit(limit);
+}
+
+export async function markMessagesAsRead(userId: number, senderId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(schema.rtmMessages).set({ isRead: 1, readAt: new Date() })
+    .where(and(
+      eq(schema.rtmMessages.receiverId, userId),
+      eq(schema.rtmMessages.senderId, senderId),
+      eq(schema.rtmMessages.isRead, 0)
+    ));
+}
+
+export async function getUnreadMessageCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`count(*)` }).from(schema.rtmMessages)
+    .where(and(eq(schema.rtmMessages.receiverId, userId), eq(schema.rtmMessages.isRead, 0)));
+  return result[0]?.count || 0;
+}
+
+export async function upsertConversation(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.insert(schema.rtmConversations).values(data)
+    .onDuplicateKeyUpdate({ set: data });
+}
+
+export async function getUserConversations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(schema.rtmConversations)
+    .where(eq(schema.rtmConversations.userId, userId))
+    .orderBy(desc(schema.rtmConversations.updatedAt));
+}
+
+export async function clearConversationUnread(userId: number, targetUserId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(schema.rtmConversations).set({ unreadCount: 0 })
+    .where(and(
+      eq(schema.rtmConversations.userId, userId),
+      eq(schema.rtmConversations.targetUserId, targetUserId)
+    ));
+}
+
+export async function toggleConversationPin(userId: number, targetUserId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.execute(sql`UPDATE rtm_conversations SET isPinned = NOT isPinned WHERE userId = ${userId} AND targetUserId = ${targetUserId}`);
+}
+
+export async function toggleConversationMute(userId: number, targetUserId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.execute(sql`UPDATE rtm_conversations SET isMuted = NOT isMuted WHERE userId = ${userId} AND targetUserId = ${targetUserId}`);
+}
+
+// ============ SAAS / QUOTA OPERATIONS ============
+
+export async function getDefaultQuotaLimits() {
+  return {
+    webinar_created: 3,
+    factory_invited: 10,
+    report_generated: 5,
+    storage_mb: 100,
+  };
+}
+
+export async function createSubscriptionPlan(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.insert(schema.subscriptionPlans).values(data);
+}
