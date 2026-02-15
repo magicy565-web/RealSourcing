@@ -39,7 +39,7 @@ interface DashboardLayoutProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Dashboard", href: "/home", icon: Home },
   { name: "Webinars", href: "/webinars", icon: Video },
   { name: "Factories", href: "/factories", icon: Building2 },
   { name: "Messages", href: "/messages", icon: MessageSquare },
