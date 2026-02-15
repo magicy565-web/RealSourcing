@@ -25,7 +25,10 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+    // Only log non-transform errors to reduce console noise
+    if (error instanceof TRPCClientError && !error.message.includes('Unable to transform')) {
+      console.error("[API Query Error]", error);
+    }
   }
 });
 
@@ -33,7 +36,10 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
+    // Only log non-transform errors to reduce console noise
+    if (error instanceof TRPCClientError && !error.message.includes('Unable to transform')) {
+      console.error("[API Mutation Error]", error);
+    }
   }
 });
 
