@@ -1,10 +1,11 @@
 /**
- * Vercel Serverless Function Entry Point (Native ESM Version)
+ * Vercel Serverless Function Entry Point (Diagnostic Version)
  */
 
 import "dotenv/config";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import mysql from 'mysql2/promise';
 
 // 显式使用 .js 后缀以符合 Vercel ESM 运行时要求
 import { registerOAuthRoutes } from "../server/_core/oauth.js";
@@ -28,6 +29,42 @@ app.use((req: any, res: any, next: any) => {
   next();
 });
 
+// 🚀 核心诊断接口
+app.get("/api/check-db", async (req, res) => {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    return res.json({ status: "error", message: "DATABASE_URL is missing in environment variables" });
+  }
+
+  try {
+    const connection = await mysql.createConnection({
+      uri: dbUrl,
+      ssl: { rejectUnauthorized: false },
+      connectTimeout: 10000
+    });
+    await connection.query('SELECT 1');
+    await connection.end();
+    return res.json({ 
+      status: "success", 
+      message: "Successfully connected to MySQL!",
+      dbUrlMasked: dbUrl.replace(/\/\/.*@/, "//***:***@")
+    });
+  } catch (err: any) {
+    return res.json({ 
+      status: "failed", 
+      error_code: err.code,
+      error_message: err.message,
+      errno: err.errno,
+      sqlState: err.sqlState,
+      dbUrlMasked: dbUrl.replace(/\/\/.*@/, "//***:***@")
+    });
+  }
+});
+
+app.get("/api/health", (req: any, res: any) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // Register Routes
 registerOAuthRoutes(app);
 app.use("/api/auth", authRouter);
@@ -41,13 +78,5 @@ app.use(
     createContext,
   })
 );
-
-app.get("/api/health", (req: any, res: any) => {
-  res.json({ 
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV
-  });
-});
 
 export default app;
