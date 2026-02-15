@@ -68,7 +68,7 @@ export default function Webinars() {
     };
 
     fetchWebinars();
-  }, [statusFilter, toast]);
+  }, [statusFilter]); // 移除 toast 避免无限循环
 
   // 过滤 Webinars
   const filteredWebinars = webinars.filter((w) => {
