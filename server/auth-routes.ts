@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { hashPassword, verifyPassword } from './_core/password';
 import { signToken } from './_core/auth';
 import { setAuthCookie } from './_core/cookies';
-import { getUserByOpenId, upsertUser } from './db';
+import { getUserByEmail, upsertUser } from './db';
+import { requireAuth } from './middleware/auth';
+import { COOKIE_NAME } from '@shared/const';
 
 const router = Router();
 
@@ -21,7 +23,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await getUserByOpenId(email);
+    const existingUser = await getUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email already exists' });
     }
@@ -41,7 +43,7 @@ router.post('/register', async (req, res) => {
     });
 
     // Generate token and set cookie
-    const token = signToken({ userId: user.id, role: user.role });
+    const token = await signToken({ openId: user.openId, name: user.name || undefined });
     setAuthCookie(res, token);
 
     return res.json({
@@ -70,7 +72,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by email
-    const user = await getUserByOpenId(email);
+    const user = await getUserByEmail(email);
 
     if (!user || !user.passwordHash) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -82,7 +84,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Generate token and set cookie
-    const token = signToken({ userId: user.id, role: user.role });
+    const token = await signToken({ openId: user.openId, name: user.name || undefined });
     setAuthCookie(res, token);
 
     return res.json({
@@ -97,6 +99,48 @@ router.post('/login', async (req, res) => {
   } catch (error: any) {
     console.error('Login error:', error);
     return res.status(500).json({ error: error.message || 'Login failed' });
+  }
+});
+
+// Get current user endpoint (protected)
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get user error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to get user info' });
+  }
+});
+
+// Logout endpoint
+router.post('/logout', (req, res) => {
+  try {
+    // Clear the auth cookie
+    res.clearCookie(COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+    
+    return res.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error: any) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ error: error.message || 'Logout failed' });
   }
 });
 

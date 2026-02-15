@@ -24,10 +24,39 @@ export default function Home() {
   const [pendingRegistrations, setPendingRegistrations] = useState<MockRegistration[]>([]);
 
   useEffect(() => {
-    setStats(mockStore.getDashboardStats());
-    setRecentWebinars(mockStore.getWebinars().slice(0, 4));
-    const allRegs = mockStore.getRegistrations();
-    setPendingRegistrations(allRegs.filter(r => r.status === "pending").slice(0, 5));
+    // Fetch dashboard stats from API
+    fetch('/api/dashboard/stats', {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setStats({
+            activeWebinars: data.stats.liveWebinars,
+            scheduledWebinars: data.stats.scheduledWebinars,
+            totalFactories: data.stats.totalFactories,
+            totalRegistrations: data.stats.participants,
+            pendingReviews: data.stats.pendingReviews,
+          });
+        }
+      })
+      .catch(err => console.error('Failed to fetch dashboard stats:', err));
+
+    // Fetch recent webinars from API
+    fetch('/api/dashboard/webinars/recent', {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setRecentWebinars(data.webinars.slice(0, 4));
+        }
+      })
+      .catch(err => console.error('Failed to fetch recent webinars:', err));
+
+    // For now, use empty array for pending registrations
+    // This would need a separate API endpoint
+    setPendingRegistrations([]);
   }, []);
 
   const handleApprove = (regId: number) => {
@@ -157,9 +186,6 @@ export default function Home() {
                 <CardContent>
                   <div className="space-y-3">
                     {recentWebinars.map((webinar) => {
-                      const regs = mockStore.getRegistrations(webinar.id);
-                      const approvedCount = regs.filter(r => r.status === "approved").length;
-
                       return (
                         <div
                           key={webinar.id}
@@ -199,11 +225,11 @@ export default function Home() {
                               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  {new Date(webinar.scheduled_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                  {new Date(webinar.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Users className="h-3 w-3" />
-                                  {approvedCount}
+                                  {webinar.currentParticipants || 0}
                                 </span>
                               </div>
                             </div>
