@@ -5,9 +5,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getWebinars, type WebinarFilters } from '../../../src/lib/api/webinars';
-import { mockStore, type MockWebinar } from '../../../src/lib/mock-data';
-import type { Webinar } from '../../../src/lib/directus';
+import { getWebinars, type WebinarFilters } from '../lib/api/webinars';
+import { mockStore, type MockWebinar } from '../lib/mock-data';
+import type { Webinar } from '../lib/directus';
 
 export function useWebinars(filters?: WebinarFilters) {
   const [webinars, setWebinars] = useState<MockWebinar[]>([]);

@@ -1,6 +1,6 @@
-import { useDialogComposition } from "../../../../src/components/ui/dialog";
-import { useComposition } from "../../../../src/hooks/useComposition";
-import { cn } from "../../../../src/lib/utils";
+import { useDialogComposition } from "../../components/ui/dialog";
+import { useComposition } from "../../hooks/useComposition";
+import { cn } from "../../lib/utils";
 import * as React from "react";
 
 function Textarea({

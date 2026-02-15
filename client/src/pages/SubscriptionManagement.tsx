@@ -1,9 +1,9 @@
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../src/components/ui/card";
-import { Button } from "../../../src/components/ui/button";
-import { Badge } from "../../../src/components/ui/badge";
-import { Progress } from "../../../src/components/ui/progress";
-import { Separator } from "../../../src/components/ui/separator";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
+import { Separator } from "../components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,9 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "../../../src/components/ui/alert-dialog";
+} from "../components/ui/alert-dialog";
 import { Calendar, CreditCard, TrendingUp, Users, Package, MessageSquare, AlertCircle } from "lucide-react";
-import { trpc } from "../../../src/lib/trpc";
+import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";

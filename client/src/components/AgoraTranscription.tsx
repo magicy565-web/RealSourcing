@@ -4,11 +4,11 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Button } from '../../../src/components/ui/button';
-import { Card } from '../../../src/components/ui/card';
-import { Badge } from '../../../src/components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { Loader2, Play, Square, RotateCcw } from 'lucide-react';
-import { trpc } from '../../../src/lib/trpc';
+import { trpc } from '../lib/trpc';
 
 interface AgoraTranscriptionProps {
   channelName: string;

@@ -6,7 +6,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "../../../src/components/ui/command";
+} from "../components/ui/command";
 import {
   Home,
   Video,

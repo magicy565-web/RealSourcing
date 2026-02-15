@@ -1,10 +1,10 @@
 import { useState } from "react";
-import DashboardLayout from "../../../src/components/DashboardLayout";
-import ConversationList from "../../../src/components/ConversationList";
-import PrivateChat from "../../../src/components/PrivateChat";
-import { Card, CardContent } from "../../../src/components/ui/card";
+import DashboardLayout from "../components/DashboardLayout";
+import ConversationList from "../components/ConversationList";
+import PrivateChat from "../components/PrivateChat";
+import { Card, CardContent } from "../components/ui/card";
 import { MessageSquare } from "lucide-react";
-import { trpc } from "../../../src/lib/trpc";
+import { trpc } from "../lib/trpc";
 
 export default function Messages() {
   const { data: user } = trpc.auth.me.useQuery();

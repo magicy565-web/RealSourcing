@@ -1,24 +1,24 @@
 "use client";
 
-import { Button } from "../../../../src/components/ui/button";
-import { Input } from "../../../../src/components/ui/input";
-import { Separator } from "../../../../src/components/ui/separator";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Separator } from "../../components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "../../../../src/components/ui/sheet";
-import { Skeleton } from "../../../../src/components/ui/skeleton";
+} from "../../components/ui/sheet";
+import { Skeleton } from "../../components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../../../../src/components/ui/tooltip";
-import { useIsMobile } from "../../../../src/hooks/useMobile";
-import { cn } from "../../../../src/lib/utils";
+} from "../../components/ui/tooltip";
+import { useIsMobile } from "../../hooks/useMobile";
+import { cn } from "../../lib/utils";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";

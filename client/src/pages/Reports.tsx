@@ -1,8 +1,8 @@
-import DashboardLayout from "../../../src/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../src/components/ui/card";
-import { Button } from "../../../src/components/ui/button";
-import { Badge } from "../../../src/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
+import DashboardLayout from "../components/DashboardLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   FileText, Download, Eye, Calendar, Zap, TrendingUp,
   BarChart3, Users, Loader2,

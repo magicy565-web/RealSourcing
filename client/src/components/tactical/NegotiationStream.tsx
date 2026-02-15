@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { trpc } from "../../../../src/lib/trpc";
-import { ScrollArea } from "../../../../src/components/ui/scroll-area";
+import { trpc } from "../../lib/trpc";
+import { ScrollArea } from "../../components/ui/scroll-area";
 import {
   DollarSign,
   CheckCircle2,
@@ -10,7 +10,7 @@ import {
   Mic,
   FileText,
 } from "lucide-react";
-import { cn } from "../../../../src/lib/utils";
+import { cn } from "../../lib/utils";
 
 interface NegotiationStreamProps {
   webinarId: number;

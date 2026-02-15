@@ -6,11 +6,11 @@ import AgoraRTC, {
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
-import { Button } from "../../../src/components/ui/button";
-import { Card, CardContent } from "../../../src/components/ui/card";
-import { Badge } from "../../../src/components/ui/badge";
-import { Separator } from "../../../src/components/ui/separator";
-import { Alert, AlertDescription } from "../../../src/components/ui/alert";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import {
   Mic,
   MicOff,
@@ -24,9 +24,9 @@ import {
   ScreenShare,
   AlertCircle,
 } from "lucide-react";
-import { trpc } from "../../../src/lib/trpc";
-import { useToast } from "../../../src/hooks/use-toast";
-import { cn } from "../../../src/lib/utils";
+import { trpc } from "../lib/trpc";
+import { useToast } from "../hooks/use-toast";
+import { cn } from "../lib/utils";
 
 // 声网客户端配置
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID;

@@ -1,19 +1,19 @@
-import DashboardLayout from "../../../src/components/DashboardLayout";
-import { mockStore } from "../../../src/lib/mock-data";
+import DashboardLayout from "../components/DashboardLayout";
+import { mockStore } from "../lib/mock-data";
 import { useEffect, useState } from "react";
-import { cn } from "../../../src/lib/utils";
-import { Button } from "../../../src/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../src/components/ui/card";
-import { Input } from "../../../src/components/ui/input";
-import { Badge } from "../../../src/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
+import { cn } from "../lib/utils";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Search, MapPin, Star, TrendingUp, MoreHorizontal, Plus, Building2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../../../src/components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 

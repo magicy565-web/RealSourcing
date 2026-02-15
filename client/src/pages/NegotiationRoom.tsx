@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { Button } from "../../../src/components/ui/button";
-import { Badge } from "../../../src/components/ui/badge";
-import { Card, CardContent } from "../../../src/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
-import { cn } from "../../../src/lib/utils";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Card, CardContent } from "../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { cn } from "../lib/utils";
 import {
   ArrowLeft, Circle, Video, Mic, MicOff, VideoOff,
   Users, TrendingUp, AlertTriangle, Zap, Clock, MessageSquare,
   Monitor, MonitorOff, Maximize2, Minimize2, PhoneOff,
   MoreVertical, Globe, Building2, Shield, Send,
 } from "lucide-react";
-import DashboardLayout from "../../../src/components/DashboardLayout";
-import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "../../../src/lib/mock-data";
-import { agoraService } from "../../../src/lib/agora";
-import { trpc } from "../../../src/lib/trpc";
-import NegotiationTimeline from "../../../src/components/NegotiationTimeline";
+import DashboardLayout from "../components/DashboardLayout";
+import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "../lib/mock-data";
+import { agoraService } from "../lib/agora";
+import { trpc } from "../lib/trpc";
+import NegotiationTimeline from "../components/NegotiationTimeline";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { cn } from "../../../src/lib/utils";
+import { cn } from "../lib/utils";
 import { Sparkles, TrendingUp, DollarSign, Clock, FileText, Zap } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

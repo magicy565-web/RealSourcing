@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { cn } from "../../../src/lib/utils";
+import { cn } from "../lib/utils";
 import { Send, Paperclip, Smile, X, Loader2 } from "lucide-react";
-import { Button } from "../../../src/components/ui/button";
+import { Button } from "../components/ui/button";
 import ChatMessage, { type Message } from "./ChatMessage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

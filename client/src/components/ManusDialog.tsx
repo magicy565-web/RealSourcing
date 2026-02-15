@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { Button } from "../../../src/components/ui/button";
+import { Button } from "../components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogTitle,
-} from "../../../src/components/ui/dialog";
+} from "../components/ui/dialog";
 
 interface ManusDialogProps {
   title?: string;

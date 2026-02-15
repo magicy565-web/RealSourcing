@@ -3,11 +3,11 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../../../src/components/ui/accordion";
-import { Alert, AlertDescription, AlertTitle } from "../../../src/components/ui/alert";
-import { AspectRatio } from "../../../src/components/ui/aspect-ratio";
-import { Avatar, AvatarFallback, AvatarImage } from "../../../src/components/ui/avatar";
-import { Badge } from "../../../src/components/ui/badge";
+} from "../components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+import { AspectRatio } from "../components/ui/aspect-ratio";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Badge } from "../components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,9 +15,9 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "../../../src/components/ui/breadcrumb";
-import { Button } from "../../../src/components/ui/button";
-import { Calendar } from "../../../src/components/ui/calendar";
+} from "../components/ui/breadcrumb";
+import { Button } from "../components/ui/button";
+import { Calendar } from "../components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -25,20 +25,20 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../../../src/components/ui/card";
+} from "../components/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "../../../src/components/ui/carousel";
-import { Checkbox } from "../../../src/components/ui/checkbox";
+} from "../components/ui/carousel";
+import { Checkbox } from "../components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../../src/components/ui/collapsible";
+} from "../components/ui/collapsible";
 import {
   Command,
   CommandEmpty,
@@ -46,13 +46,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "../../../src/components/ui/command";
+} from "../components/ui/command";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "../../../src/components/ui/context-menu";
+} from "../components/ui/context-menu";
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../src/components/ui/dialog";
+} from "../components/ui/dialog";
 import {
   Drawer,
   DrawerClose,
@@ -70,7 +70,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "../../../src/components/ui/drawer";
+} from "../components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,19 +78,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../src/components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "../../../src/components/ui/hover-card";
-import { Input } from "../../../src/components/ui/input";
+} from "../components/ui/hover-card";
+import { Input } from "../components/ui/input";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from "../../../src/components/ui/input-otp";
-import { Label } from "../../../src/components/ui/label";
+} from "../components/ui/input-otp";
+import { Label } from "../components/ui/label";
 import {
   Menubar,
   MenubarContent,
@@ -98,7 +98,7 @@ import {
   MenubarMenu,
   MenubarSeparator,
   MenubarTrigger,
-} from "../../../src/components/ui/menubar";
+} from "../components/ui/menubar";
 import {
   Pagination,
   PaginationContent,
@@ -106,28 +106,28 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "../../../src/components/ui/pagination";
+} from "../components/ui/pagination";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../../src/components/ui/popover";
-import { Progress } from "../../../src/components/ui/progress";
-import { RadioGroup, RadioGroupItem } from "../../../src/components/ui/radio-group";
+} from "../components/ui/popover";
+import { Progress } from "../components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "../../../src/components/ui/resizable";
-import { ScrollArea } from "../../../src/components/ui/scroll-area";
+} from "../components/ui/resizable";
+import { ScrollArea } from "../components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../src/components/ui/select";
-import { Separator } from "../../../src/components/ui/separator";
+} from "../components/ui/select";
+import { Separator } from "../components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -135,10 +135,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../../src/components/ui/sheet";
-import { Skeleton } from "../../../src/components/ui/skeleton";
-import { Slider } from "../../../src/components/ui/slider";
-import { Switch } from "../../../src/components/ui/switch";
+} from "../components/ui/sheet";
+import { Skeleton } from "../components/ui/skeleton";
+import { Slider } from "../components/ui/slider";
+import { Switch } from "../components/ui/switch";
 import {
   Table,
   TableBody,
@@ -147,17 +147,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../src/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
-import { Textarea } from "../../../src/components/ui/textarea";
-import { Toggle } from "../../../src/components/ui/toggle";
-import { ToggleGroup, ToggleGroupItem } from "../../../src/components/ui/toggle-group";
+} from "../components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Textarea } from "../components/ui/textarea";
+import { Toggle } from "../components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "../../../src/components/ui/tooltip";
-import { useTheme } from "../../../src/contexts/ThemeContext";
+} from "../components/ui/tooltip";
+import { useTheme } from "../contexts/ThemeContext";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -171,7 +171,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast as sonnerToast } from "sonner";
-import { AIChatBox, type Message } from "../../../src/components/AIChatBox";
+import { AIChatBox, type Message } from "../components/AIChatBox";
 
 export default function ComponentsShowcase() {
   const { theme, toggleTheme } = useTheme();

@@ -7,7 +7,7 @@ import {
   destroyRTMClient,
   type RTMMessage,
 } from '../lib/rtm';
-import { trpc } from '../../../src/lib/trpc';
+import { trpc } from '../lib/trpc';
 
 interface PrivateChatProps {
   currentUserId: string;

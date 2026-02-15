@@ -4,9 +4,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '../../../src/components/ui/button';
+import { Button } from '../components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
-import { trpc } from '../../../src/lib/trpc';
+import { trpc } from '../lib/trpc';
 import AgoraRTC, {
   AgoraRTCProvider,
   useRTCClient,

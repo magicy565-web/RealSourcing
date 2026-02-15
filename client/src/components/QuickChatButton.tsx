@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Button } from "../../../src/components/ui/button";
+import { Button } from "../components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../src/components/ui/dialog";
+} from "../components/ui/dialog";
 import { MessageSquare } from "lucide-react";
 import PrivateChat from "./PrivateChat";
 

@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../../src/components/ui/dialog";
+} from "../../components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -14,11 +14,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../src/components/ui/table";
-import { Badge } from "../../../../src/components/ui/badge";
-import { Button } from "../../../../src/components/ui/button";
+} from "../../components/ui/table";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
 import { Check, X, Bot, Sparkles, Loader2 } from "lucide-react";
-import { cn } from "../../../../src/lib/utils";
+import { cn } from "../../lib/utils";
 
 interface FactoryComparison {
   id: number;

@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import DashboardLayout from "../../../src/components/DashboardLayout";
-import { Button } from "../../../src/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../src/components/ui/card";
-import { Badge } from "../../../src/components/ui/badge";
-import { Input } from "../../../src/components/ui/input";
-import { Label } from "../../../src/components/ui/label";
-import { Textarea } from "../../../src/components/ui/textarea";
+import DashboardLayout from "../components/DashboardLayout";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../src/components/ui/select";
+} from "../components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "../../../src/components/ui/dialog";
+} from "../components/ui/dialog";
 import {
   ArrowLeft, Calendar, Clock, Users, Globe, Video, Circle,
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle,
   Play, MapPin, Shield, Star, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "../../../src/lib/utils";
-import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "../../../src/lib/mock-data";
-import DecisionMatrix from "../../../src/components/tactical/DecisionMatrix";
+import { cn } from "../lib/utils";
+import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "../lib/mock-data";
+import DecisionMatrix from "../components/tactical/DecisionMatrix";
 
 interface WebinarDetailProps {
   params: {

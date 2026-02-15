@@ -6,12 +6,12 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../../../../src/components/ui/sheet";
-import { Button } from "../../../../src/components/ui/button";
-import { Badge } from "../../../../src/components/ui/badge";
-import { ScrollArea } from "../../../../src/components/ui/scroll-area";
-import { Separator } from "../../../../src/components/ui/separator";
-import { trpc } from "../../../../src/lib/trpc";
+} from "../../components/ui/sheet";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { Separator } from "../../components/ui/separator";
+import { trpc } from "../../lib/trpc";
 import {
   Radar,
   RadarChart,
@@ -28,7 +28,7 @@ import {
   Bot,
   ChevronRight,
 } from "lucide-react";
-import { cn } from "../../../../src/lib/utils";
+import { cn } from "../../lib/utils";
 
 interface FactoryTacticalPanelProps {
   factoryId: number;
