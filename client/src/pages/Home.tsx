@@ -32,7 +32,7 @@ export default function Home() {
   });
   const [recentWebinars, setRecentWebinars] = useState<Webinar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [factoryTimelines, setFactoryTimelines] = useState<any[]>([]);
+  const [employeeTimelines, setEmployeeTimelines] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
 
   const getGreeting = () => {
@@ -78,51 +78,47 @@ export default function Home() {
           (recentData.data || []).filter((w: any) => !w.deletedAt) as Webinar[]
         );
 
-        // 构建工厂时间线数据
-        // 将 webinar 按工厂分组（如果有 participants 数据的话）
-        // 如果没有工厂数据，用 webinar 的 category 模拟分组
+        // 构建员工时间线数据（工厂视角）
         const today = startOfDay(new Date());
         const futureWebinars = allWebinars.filter((w: any) => {
           const d = new Date(w.scheduledAt || w.scheduled_at);
           return d >= today || w.status === "live";
         });
 
-        let timelines: any[] = [];
+        // 模拟员工数据（实际应从 participants 表获取）
+        const mockEmployees = [
+          { id: 1, name: "张伟", role: "采购经理" },
+          { id: 2, name: "李娜", role: "产品专员" },
+          { id: 3, name: "王强", role: "技术总监" },
+          { id: 4, name: "刘芳", role: "质量主管" },
+          { id: 5, name: "陈明", role: "供应链专员" },
+          { id: 6, name: "赵丽", role: "采购助理" },
+        ];
 
-        if (Array.isArray(factories) && factories.length > 0) {
-          // 真实工厂数据
-          timelines = factories.slice(0, 8).map((f: Factory) => ({
-            id: f.id,
-            name: f.name || `供应商 ${f.id}`,
-            avatar: f.avatar,
-            webinars: futureWebinars.slice(0, 3).map((w: any) => ({
-              id: w.id,
+        // 为每个员工分配不同的活动
+        const employeeTimelines = mockEmployees.map((emp, idx) => {
+          // 每个员工参加 2-4 个活动
+          const empWebinars = futureWebinars
+            .slice(idx, idx + 3)
+            .map((w: any, wIdx) => ({
+              id: w.id + idx * 100,
               title: w.title,
               status: w.status,
               scheduledAt: w.scheduledAt || w.scheduled_at,
-              duration: w.duration || 2,
+              duration: [1.5, 2, 3, 2.5][wIdx % 4], // 不同时长
               category: w.category,
-            })),
-          }));
-        } else {
-          // 用 webinar 数据模拟
-          const categories = [...new Set(futureWebinars.map((w: any) => w.category || "未分类"))];
-          timelines = categories.slice(0, 6).map((cat, idx) => ({
-            id: idx + 1,
-            name: cat as string,
-            webinars: futureWebinars
-              .filter((w: any) => (w.category || "未分类") === cat)
-              .map((w: any) => ({
-                id: w.id,
-                title: w.title,
-                status: w.status,
-                scheduledAt: w.scheduledAt || w.scheduled_at,
-                duration: w.duration || 2,
-                category: w.category,
-              })),
-          }));
-        }
-        setFactoryTimelines(timelines);
+              participants: Math.floor(Math.random() * 5) + 1,
+            }));
+          
+          return {
+            id: emp.id,
+            name: emp.name,
+            role: emp.role,
+            webinars: empWebinars,
+          };
+        });
+
+        setEmployeeTimelines(employeeTimelines);
 
         // 图表数据 - 过去 7 天参与人数
         const chart = Array.from({ length: 7 }, (_, i) => {
@@ -383,11 +379,12 @@ export default function Home() {
             </Card>
           </div>
 
-          {/* 底部：工厂活动时间线 */}
+          {/* 底部：员工活动时间线 */}
           <Card className="bg-[#111111] border-[#1e1e1e]">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-white">供应商活动时间线</CardTitle>
+              <CardTitle className="text-sm font-medium text-white">员工活动安排</CardTitle>
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground/50">
+                <Users className="h-3.5 w-3.5" />
                 <span>未来 14 天</span>
               </div>
             </CardHeader>
@@ -397,7 +394,7 @@ export default function Home() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-violet-500" />
                 </div>
               ) : (
-                <ActivityCalendar factories={factoryTimelines} days={14} />
+                <ActivityCalendar employees={employeeTimelines} days={14} />
               )}
             </CardContent>
           </Card>
