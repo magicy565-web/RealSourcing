@@ -282,12 +282,12 @@ export default function Home() {
             ))}
           </div>
 
-          {/* 中间行：近期会议 + 活动趋势 */}
+          {/* 中间行：关注/预定的会议 + 活动趋势 */}
           <div className="grid grid-cols-3 gap-4">
-            {/* 近期会议 */}
+            {/* 关注/预定的会议 */}
             <Card className="col-span-2 bg-[#111111] border-[#1e1e1e]">
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-white">近期会议</CardTitle>
+                <CardTitle className="text-sm font-medium text-white">关注/预定的会议</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
