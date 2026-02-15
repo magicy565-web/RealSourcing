@@ -87,12 +87,12 @@ export default function Home() {
 
         // 模拟员工数据（实际应从 participants 表获取）
         const mockEmployees = [
-          { id: 1, name: "张伟", role: "采购经理" },
-          { id: 2, name: "李娜", role: "产品专员" },
-          { id: 3, name: "王强", role: "技术总监" },
-          { id: 4, name: "刘芳", role: "质量主管" },
-          { id: 5, name: "陈明", role: "供应链专员" },
-          { id: 6, name: "赵丽", role: "采购助理" },
+          { id: 1, name: "张伟" },
+          { id: 2, name: "李娜" },
+          { id: 3, name: "王强" },
+          { id: 4, name: "刘芳" },
+          { id: 5, name: "陈明" },
+          { id: 6, name: "赵丽" },
         ];
 
         // 为每个员工分配不同的活动
@@ -105,15 +105,13 @@ export default function Home() {
               title: w.title,
               status: w.status,
               scheduledAt: w.scheduledAt || w.scheduled_at,
-              duration: [1.5, 2, 3, 2.5][wIdx % 4], // 不同时长
-              category: w.category,
-              participants: Math.floor(Math.random() * 5) + 1,
+              duration: [1.5, 2, 3, 2.5][wIdx % 4],
+              coverImage: w.coverImage || w.cover_image,
             }));
           
           return {
             id: emp.id,
             name: emp.name,
-            role: emp.role,
             webinars: empWebinars,
           };
         });
