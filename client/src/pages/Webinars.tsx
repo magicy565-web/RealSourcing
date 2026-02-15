@@ -57,9 +57,10 @@ export default function Webinars() {
         setWebinars(result as Webinar[]);
       } catch (error: any) {
         console.error("Failed to fetch webinars:", error);
+        setWebinars([]); // 设置为空数组确保停止加载
         toast({
           title: "加载失败",
-          description: error.message || "无法获取 Webinar 列表",
+          description: error.message || "无法连接到服务器，请稍后重试",
           variant: "destructive",
         });
       } finally {
