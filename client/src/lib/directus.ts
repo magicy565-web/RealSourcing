@@ -147,13 +147,8 @@ const MOCK_DATA = {
 // In dev mode, use full localhost URL with proxy path; Vite proxy will intercept and forward
 // In production, use environment variable or fallback to remote
 const getDirectusUrl = () => {
-  if (import.meta.env.PROD) {
-    return import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz';
-  }
-  // Dev mode: use localhost with /api/directus path (Vite proxy will handle it)
-  const protocol = window.location.protocol;
-  const host = window.location.host;
-  return `${protocol}//${host}/api/directus`;
+  // 优先使用环境变量，否则使用阿里云服务器地址
+  return import.meta.env.VITE_DIRECTUS_URL || 'http://47.99.205.136:8055';
 };
 
 export const directus = createDirectus<Schema>(getDirectusUrl())
