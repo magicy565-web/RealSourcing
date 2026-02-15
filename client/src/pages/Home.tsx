@@ -1,4 +1,4 @@
-import DashboardLayout from "../components/DashboardLayout";
+import { DashboardLayout } from "../components/layouts/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -9,7 +9,8 @@ import {
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/utils";
-import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "../lib/mock-data";
+import { directus, type Webinar } from "../lib/directus";
+import { readItems } from "@directus/sdk";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -20,60 +21,54 @@ export default function Home() {
     totalRegistrations: 0,
     pendingReviews: 0,
   });
-  const [recentWebinars, setRecentWebinars] = useState<MockWebinar[]>([]);
-  const [pendingRegistrations, setPendingRegistrations] = useState<MockRegistration[]>([]);
+  const [recentWebinars, setRecentWebinars] = useState<Webinar[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch dashboard stats from API
-    fetch('/api/dashboard/stats', {
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setStats({
-            activeWebinars: data.stats.liveWebinars,
-            scheduledWebinars: data.stats.scheduledWebinars,
-            totalFactories: data.stats.totalFactories,
-            totalRegistrations: data.stats.participants,
-            pendingReviews: data.stats.pendingReviews,
-          });
-        }
-      })
-      .catch(err => console.error('Failed to fetch dashboard stats:', err));
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // 并行获取所有数据
+        const [allWebinars, factories, participants] = await Promise.all([
+          directus.request(readItems("webinars", { limit: -1 })),
+          directus.request(readItems("factories", { limit: -1 })).catch(() => []),
+          directus.request(readItems("webinar_participants", { limit: -1 })).catch(() => []),
+        ]);
 
-    // Fetch recent webinars from API
-    fetch('/api/dashboard/webinars/recent', {
-      credentials: 'include',
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setRecentWebinars(data.webinars.slice(0, 4));
-        }
-      })
-      .catch(err => console.error('Failed to fetch recent webinars:', err));
+        // 计算统计数据
+        const liveCount = allWebinars.filter((w: any) => w.status === "live").length;
+        const scheduledCount = allWebinars.filter((w: any) => w.status === "scheduled").length;
 
-    // For now, use empty array for pending registrations
-    // This would need a separate API endpoint
-    setPendingRegistrations([]);
+        setStats({
+          activeWebinars: liveCount,
+          scheduledWebinars: scheduledCount,
+          totalFactories: Array.isArray(factories) ? factories.length : 0,
+          totalRegistrations: Array.isArray(participants) ? participants.length : 0,
+          pendingReviews: 0, // 暂时设为 0
+        });
+
+        // 获取最近的 4 个 Webinar
+        const recent = await directus.request(
+          readItems("webinars", {
+            sort: ["-created_at"],
+            limit: 4,
+          })
+        );
+
+        setRecentWebinars(recent as Webinar[]);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
-
-  const handleApprove = (regId: number) => {
-    mockStore.updateRegistrationStatus(regId, "approved");
-    setPendingRegistrations(prev => prev.filter(r => r.id !== regId));
-    setStats(mockStore.getDashboardStats());
-  };
-
-  const handleReject = (regId: number) => {
-    mockStore.updateRegistrationStatus(regId, "rejected");
-    setPendingRegistrations(prev => prev.filter(r => r.id !== regId));
-    setStats(mockStore.getDashboardStats());
-  };
 
   const statCards = [
     {
-      title: "Live Webinars",
+      title: "Currently broadcasting",
       value: stats.activeWebinars,
       icon: Video,
       color: "text-red-400",
@@ -81,7 +76,7 @@ export default function Home() {
       desc: "Currently broadcasting",
     },
     {
-      title: "Scheduled",
+      title: "Upcoming events",
       value: stats.scheduledWebinars,
       icon: Calendar,
       color: "text-blue-400",
@@ -89,7 +84,7 @@ export default function Home() {
       desc: "Upcoming events",
     },
     {
-      title: "Factories",
+      title: "Registered suppliers",
       value: stats.totalFactories,
       icon: Building2,
       color: "text-orange-400",
@@ -97,7 +92,7 @@ export default function Home() {
       desc: "Registered suppliers",
     },
     {
-      title: "Participants",
+      title: "Approved registrations",
       value: stats.totalRegistrations,
       icon: Users,
       color: "text-green-400",
@@ -105,7 +100,7 @@ export default function Home() {
       desc: "Approved registrations",
     },
     {
-      title: "Pending Reviews",
+      title: "Awaiting approval",
       value: stats.pendingReviews,
       icon: AlertCircle,
       color: "text-yellow-400",
@@ -116,9 +111,11 @@ export default function Home() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { color: string; label: string; dot?: boolean }> = {
-      live: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "Live", dot: true },
+      live: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "🔴 Live", dot: true },
       scheduled: { color: "bg-blue-500/10 text-blue-400 border-blue-500/20", label: "Scheduled" },
       completed: { color: "bg-green-500/10 text-green-400 border-green-500/20", label: "Completed" },
+      draft: { color: "bg-gray-500/10 text-gray-400 border-gray-500/20", label: "Draft" },
+      cancelled: { color: "bg-gray-500/10 text-gray-400 border-gray-500/20", label: "Cancelled" },
     };
     const c = config[status] || { color: "bg-gray-500/10 text-gray-400", label: status };
     return (
@@ -127,6 +124,17 @@ export default function Home() {
         {c.label}
       </Badge>
     );
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Not scheduled";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -143,17 +151,17 @@ export default function Home() {
             </div>
             <Button
               onClick={() => setLocation("/webinars/create")}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-light"
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-light shadow-lg shadow-violet-500/20"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create Webinar
+              创建 Webinar
             </Button>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-5 gap-4 mb-8">
             {statCards.map((stat) => (
-              <Card key={stat.title} className="bg-[#141414] border-[#262626]">
+              <Card key={stat.title} className="bg-[#141414] border-[#262626] hover:border-[#404040] transition-colors">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", stat.bg)}>
@@ -184,75 +192,73 @@ export default function Home() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {recentWebinars.map((webinar) => {
-                      return (
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+                    </div>
+                  ) : recentWebinars.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Video className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                      <p className="font-light">No webinars yet</p>
+                      <Button
+                        variant="link"
+                        onClick={() => setLocation("/webinars/create")}
+                        className="text-violet-400 mt-2"
+                      >
+                        Create your first webinar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {recentWebinars.map((webinar) => (
                         <div
                           key={webinar.id}
-                          className="flex items-center justify-between p-3 rounded-lg border border-[#262626] hover:border-[#404040] transition-colors cursor-pointer group"
+                          className="flex items-center justify-between p-3 rounded-lg border border-[#262626] hover:border-violet-500/30 transition-all cursor-pointer group hover:bg-[#1a1a1a]"
                           onClick={() => setLocation(`/webinars/${webinar.id}`)}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-1">
                             {/* Cover Thumbnail */}
                             {webinar.cover_image ? (
                               <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
                                 <img
-                                  src={webinar.cover_image}
+                                  src={`https://admin.cnsubscribe.xyz/assets/${webinar.cover_image}`}
                                   alt={webinar.title}
-                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                  className="w-full h-full object-cover"
                                 />
-                                {webinar.status === "live" && (
-                                  <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-                                    <Circle className="h-2 w-2 fill-red-400 text-red-400 animate-pulse" />
-                                  </div>
-                                )}
                               </div>
                             ) : (
-                              <div className={cn(
-                                "h-16 w-16 rounded-lg flex items-center justify-center flex-shrink-0",
-                                webinar.status === "live" ? "bg-red-500/10" : "bg-violet-500/10"
-                              )}>
-                                <Video className={cn(
-                                  "h-6 w-6",
-                                  webinar.status === "live" ? "text-red-400" : "text-violet-400"
-                                )} />
+                              <div className="w-16 h-16 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center">
+                                <Video className="h-6 w-6 text-violet-400" />
                               </div>
                             )}
-                            <div>
-                              <p className="text-sm font-light text-white group-hover:text-violet-400 transition-colors">
-                                {webinar.title}
-                              </p>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-sm font-light text-white truncate group-hover:text-violet-400 transition-colors">
+                                  {webinar.title}
+                                </h3>
+                                {getStatusBadge(webinar.status)}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {new Date(webinar.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                  <Clock className="h-3 w-3" />
+                                  {formatDate(webinar.scheduled_at)}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {webinar.currentParticipants || 0}
-                                </span>
+                                {webinar.category && (
+                                  <span className="flex items-center gap-1">
+                                    <Globe className="h-3 w-3" />
+                                    {webinar.category}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            {getStatusBadge(webinar.status)}
-                            {webinar.status === "live" && (
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLocation(`/webinars/${webinar.id}/room`);
-                                }}
-                                className="bg-violet-600 hover:bg-violet-700 text-white font-light text-xs"
-                              >
-                                Join
-                              </Button>
-                            )}
-                          </div>
+
+                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-violet-400 transition-colors flex-shrink-0 ml-2" />
                         </div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -261,70 +267,14 @@ export default function Home() {
             <div>
               <Card className="bg-[#141414] border-[#262626]">
                 <CardHeader>
-                  <CardTitle className="text-lg font-light text-white flex items-center gap-2">
-                    Pending Reviews
-                    {pendingRegistrations.length > 0 && (
-                      <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-xs">
-                        {pendingRegistrations.length}
-                      </Badge>
-                    )}
-                  </CardTitle>
+                  <CardTitle className="text-lg font-light text-white">Pending Reviews</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {pendingRegistrations.length === 0 ? (
-                    <div className="text-center py-8">
-                      <AlertCircle className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground font-light">All caught up!</p>
-                      <p className="text-xs text-muted-foreground/60 font-light mt-1">No pending reviews</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {pendingRegistrations.map((reg) => {
-                        const webinar = mockStore.getWebinarById(reg.webinar_id);
-                        return (
-                          <div key={reg.id} className="p-3 rounded-lg border border-[#262626] space-y-2">
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={getAvatarByRole(reg.role, reg.user_name)}
-                                alt={reg.user_name}
-                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-light text-white truncate">{reg.user_name}</p>
-                                <p className="text-xs text-muted-foreground font-light truncate">{reg.company_name}</p>
-                              </div>
-                              <Badge variant="outline" className="text-[10px] border-[#262626] text-muted-foreground flex-shrink-0">
-                                {reg.role === "factory" ? "Factory" : "Buyer"}
-                              </Badge>
-                            </div>
-                            {webinar && (
-                              <p className="text-[10px] text-muted-foreground/60 font-light truncate">
-                                → {webinar.title}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleApprove(reg.id)}
-                                className="flex-1 h-7 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleReject(reg.id)}
-                                className="flex-1 h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <div className="text-center py-12 text-muted-foreground">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p className="font-light text-sm">All caught up!</p>
+                    <p className="text-xs mt-1">No pending reviews</p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
