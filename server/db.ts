@@ -1,5 +1,6 @@
 import { eq, desc, sql, and, like, or } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
 import {
   InsertUser, users,
   webinars, InsertWebinar,
@@ -18,13 +19,19 @@ import {
 import { ENV } from './_core/env.js';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // 在生产环境（如 Vercel）中，使用连接池更稳定
+      // 阿里云 RDS 通常需要 SSL 连接，可以通过 DATABASE_URL 的 query 参数传递
+      // 或者在这里显式配置
+      _pool = mysql.createPool(process.env.DATABASE_URL);
+      _db = drizzle(_pool);
+      console.log('[Database] Connection pool initialized');
     } catch (error) {
-      console.warn('[Database] Failed to connect:', error);
+      console.error('[Database] Failed to connect:', error);
       _db = null;
     }
   }
@@ -295,88 +302,34 @@ export async function recordUsage(userId: number, resourceType: string, count: n
 export async function getMonthlyUsage(userId: number, resourceType: string) {
   const db = await getDb();
   if (!db) return 0;
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  const result = await db.select({ total: sql`sum(count)` }).from(usageRecords).where(and(eq(usageRecords.userId, userId), eq(usageRecords.resourceType, resourceType), sql`createdAt >= ${startOfMonth}`));
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const result = await db.select({ total: sql`sum(count)` }).from(usageRecords).where(and(eq(usageRecords.userId, userId), eq(usageRecords.resourceType, resourceType), sql`periodStart >= ${periodStart}`));
   return Number(result[0]?.total ?? 0);
 }
 
-// ============ RTM QUERIES ============
+// ============ RTM MESSAGES ============
 
 export async function saveRtmMessage(data: InsertRtmMessage) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  const result = await db.insert(rtmMessages).values(data);
-  return result[0].insertId;
+  await db.insert(rtmMessages).values(data);
 }
 
-export async function getPrivateMessages(userId1: number, userId2: number, limit: number = 50) {
+export async function getRtmMessages(conversationId: string, limit: number = 50) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(rtmMessages).where(and(eq(rtmMessages.messageType, 'private'), or(and(eq(rtmMessages.senderId, userId1), eq(rtmMessages.receiverId, userId2)), and(eq(rtmMessages.senderId, userId2), eq(rtmMessages.receiverId, userId1))))).orderBy(desc(rtmMessages.createdAt)).limit(limit);
+  return db.select().from(rtmMessages).where(eq(rtmMessages.conversationId, conversationId)).orderBy(desc(rtmMessages.timestamp)).limit(limit);
 }
 
-export async function getChannelMessages(channelName: string, limit: number = 50) {
+export async function upsertRtmConversation(data: InsertRtmConversation) {
   const db = await getDb();
-  if (!db) return [];
-  return db.select().from(rtmMessages).where(and(eq(rtmMessages.messageType, 'channel'), eq(rtmMessages.channelName, channelName))).orderBy(desc(rtmMessages.createdAt)).limit(limit);
-}
-
-export async function markMessagesAsRead(userId: number, senderId: number) {
-  const db = await getDb();
-  if (!db) return;
-  await db.update(rtmMessages).set({ isRead: 1 }).where(and(eq(rtmMessages.receiverId, userId), eq(rtmMessages.senderId, senderId), eq(rtmMessages.isRead, 0)));
-}
-
-export async function getUnreadMessageCount(userId: number, senderId?: number) {
-  const db = await getDb();
-  if (!db) return 0;
-  let conditions = [eq(rtmMessages.receiverId, userId), eq(rtmMessages.isRead, 0)];
-  if (senderId) conditions.push(eq(rtmMessages.senderId, senderId));
-  const result = await db.select({ count: sql`count(*)` }).from(rtmMessages).where(and(...conditions));
-  return Number(result[0]?.count ?? 0);
-}
-
-export async function upsertConversation(data: InsertRtmConversation) {
-  const db = await getDb();
-  if (!db) return;
-  let condition = and(eq(rtmConversations.userId, data.userId));
-  if (data.targetUserId) condition = and(condition, eq(rtmConversations.targetUserId, data.targetUserId));
-  else if (data.channelName) condition = and(condition, eq(rtmConversations.channelName, data.channelName));
-  const existing = await db.select().from(rtmConversations).where(condition).limit(1);
-  if (existing.length > 0) {
-    await db.update(rtmConversations).set({ lastMessageId: data.lastMessageId, lastMessageContent: data.lastMessageContent, lastMessageAt: data.lastMessageAt, unreadCount: Number(existing[0].unreadCount ?? 0) + Number(data.unreadCount ?? 0), updatedAt: new Date() }).where(condition);
-  } else {
-    await db.insert(rtmConversations).values(data);
-  }
+  if (!db) throw new Error('Database not available');
+  await db.insert(rtmConversations).values(data).onDuplicateKeyUpdate({ set: data });
 }
 
 export async function getUserConversations(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(rtmConversations).where(eq(rtmConversations.userId, userId)).orderBy(desc(rtmConversations.lastMessageAt));
-}
-
-export async function clearConversationUnread(userId: number, targetUserId?: number, channelName?: string) {
-  const db = await getDb();
-  if (!db) return;
-  let condition = and(eq(rtmConversations.userId, userId));
-  if (targetUserId) condition = and(condition, eq(rtmConversations.targetUserId, targetUserId));
-  else if (channelName) condition = and(condition, eq(rtmConversations.channelName, channelName));
-  await db.update(rtmConversations).set({ unreadCount: 0, updatedAt: new Date() }).where(condition);
-}
-
-export async function toggleConversationPin(id: number) {
-  const db = await getDb();
-  if (!db) return;
-  const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
-  if (existing.length > 0) await db.update(rtmConversations).set({ isPinned: existing[0].isPinned ? 0 : 1, updatedAt: new Date() }).where(eq(rtmConversations.id, id));
-}
-
-export async function toggleConversationMute(id: number) {
-  const db = await getDb();
-  if (!db) return;
-  const existing = await db.select().from(rtmConversations).where(eq(rtmConversations.id, id)).limit(1);
-  if (existing.length > 0) await db.update(rtmConversations).set({ isMuted: existing[0].isMuted ? 0 : 1, updatedAt: new Date() }).where(eq(rtmConversations.id, id));
+  return db.select().from(rtmConversations).where(or(eq(rtmConversations.user1Id, userId), eq(rtmConversations.user2Id, userId))).orderBy(desc(rtmConversations.lastMessageAt));
 }

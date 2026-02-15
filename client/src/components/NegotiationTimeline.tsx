@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Badge } from "../../../src/components/ui/badge";
+import { cn } from "../../../src/lib/utils";
 import {
   Circle,
   CheckCircle2,

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../../src/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Input } from "../../../src/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
+import { Badge } from "../../../src/components/ui/badge";
 import {
   Plus,
   Search,
@@ -16,9 +16,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { trpc } from "../../../src/lib/trpc";
+import { useToast } from "../../../src/hooks/use-toast";
+import { cn } from "../../../src/lib/utils";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 

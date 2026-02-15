@@ -1,8 +1,8 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { useAuth } from "../../../src/_core/hooks/useAuth";
+import { getLoginUrl } from "../../../src/const";
+import { Button } from "../../../src/components/ui/button";
+import { ScrollArea } from "../../../src/components/ui/scroll-area";
+import { Separator } from "../../../src/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,8 +10,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { trpc } from "@/lib/trpc";
+} from "../../../src/components/ui/dropdown-menu";
+import { trpc } from "../../../src/lib/trpc";
 import {
   Home,
   Video,
@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../src/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

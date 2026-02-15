@@ -1,15 +1,15 @@
-import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import DashboardLayout from "../../../src/components/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Button } from "../../../src/components/ui/button";
+import { Badge } from "../../../src/components/ui/badge";
 import {
   Video, Building2, Users, Clock, Plus, ArrowRight,
   Circle, Calendar, Globe, TrendingUp, AlertCircle
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "@/lib/mock-data";
+import { cn } from "../../../src/lib/utils";
+import { mockStore, type MockWebinar, type MockRegistration, getAvatarByRole } from "../../../src/lib/mock-data";
 
 export default function Home() {
   const [, setLocation] = useLocation();

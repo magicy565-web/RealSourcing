@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import DashboardLayout from "../../../src/components/DashboardLayout";
+import { Button } from "../../../src/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Badge } from "../../../src/components/ui/badge";
 import {
   ArrowLeft,
   FileText,
@@ -16,7 +16,7 @@ import {
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../src/lib/utils";
 
 interface ReportViewProps {
   params: {

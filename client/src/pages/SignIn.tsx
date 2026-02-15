@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { GlassCard } from '../components/GlassCard';
 import { Factory, Github, Mail, Loader2 } from 'lucide-react';
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "../../../src/lib/trpc";
 import { toast } from "sonner";
 
 export default function SignIn() {

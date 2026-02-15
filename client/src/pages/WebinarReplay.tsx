@@ -1,8 +1,8 @@
-import DashboardLayout from "@/components/DashboardLayout";
-import VideoTimeline from "@/components/VideoTimeline";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import DashboardLayout from "../../../src/components/DashboardLayout";
+import VideoTimeline from "../../../src/components/VideoTimeline";
+import { Button } from "../../../src/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
+import { Badge } from "../../../src/components/ui/badge";
 import {
   ArrowLeft,
   Clock,
@@ -15,7 +15,7 @@ import { useLocation } from "wouter";
 import { useState } from "react";
 
 // Import AI-generated timeline highlights
-import timelineHighlights from "@/data/timeline_highlights.json";
+import timelineHighlights from "../../../src/data/timeline_highlights.json";
 
 const VIDEO_URL =
   "https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/YTDown.com_YouTube_Global-Sources-Hong-Kong-Shows-Tour-Autu_Media_ANdT4gGIAas_001_1080p.mp4";

@@ -1,10 +1,10 @@
-import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import DashboardLayout from "../../../src/components/DashboardLayout";
+import { Button } from "../../../src/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Badge } from "../../../src/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
+import { Progress } from "../../../src/components/ui/progress";
+import { Separator } from "../../../src/components/ui/separator";
 import {
   ArrowLeft,
   Building2,
@@ -23,9 +23,9 @@ import {
   Award,
 } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
-import { mockStore } from "@/lib/mock-data";
+import { mockStore } from "../../../src/lib/mock-data";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../src/lib/utils";
 
 const defaultFactoryData = {
   id: 1,

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Button } from "../../../src/components/ui/button";
+import { Badge } from "../../../src/components/ui/badge";
+import { Switch } from "../../../src/components/ui/switch";
+import { Label } from "../../../src/components/ui/label";
 import { Check, Sparkles } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "../../../src/lib/trpc";
 import { toast } from "sonner";
 
 export default function Pricing() {

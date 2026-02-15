@@ -1,19 +1,19 @@
-import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DashboardLayout from "../../../src/components/DashboardLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../src/components/ui/tabs";
+import { Button } from "../../../src/components/ui/button";
+import { Input } from "../../../src/components/ui/input";
+import { Label } from "../../../src/components/ui/label";
+import { Switch } from "../../../src/components/ui/switch";
+import { Separator } from "../../../src/components/ui/separator";
+import { Badge } from "../../../src/components/ui/badge";
+import { Progress } from "../../../src/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../src/components/ui/select";
 import {
   Globe, Shield, Bell, Users, Puzzle, CreditCard,
   Copy, Key, Plus, ExternalLink, Check,
 } from "lucide-react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "../../../src/_core/hooks/useAuth";
 import { toast } from "sonner";
 
 export default function Settings() {

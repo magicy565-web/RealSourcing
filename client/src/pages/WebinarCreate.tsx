@@ -1,26 +1,26 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
+import { DashboardLayout } from "../../../src/components/DashboardLayout";
+import { Button } from "../../../src/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Input } from "../../../src/components/ui/input";
+import { Label } from "../../../src/components/ui/label";
+import { Textarea } from "../../../src/components/ui/textarea";
+import { Badge } from "../../../src/components/ui/badge";
+import { Separator } from "../../../src/components/ui/separator";
+import { Checkbox } from "../../../src/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+} from "../../../src/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "../../../src/components/ui/alert";
 import { ArrowLeft, ArrowRight, Check, Upload, X, Building2, Calendar, FileText, Clock, Zap, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { cn } from "@/lib/utils";
-import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
+import { cn } from "../../../src/lib/utils";
+import { trpc } from "../../../src/lib/trpc";
+import { useToast } from "../../../src/hooks/use-toast";
 
 const steps = [
   { id: 1, name: "Basic Info", icon: Calendar, description: "Webinar details and schedule" },

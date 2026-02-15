@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../src/components/ui/card";
+import { Badge } from "../../../src/components/ui/badge";
+import { Button } from "../../../src/components/ui/button";
+import { Input } from "../../../src/components/ui/input";
 import { MessageSquare, Search, Pin, BellOff, MoreVertical } from "lucide-react";
-import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
+import { trpc } from "../../../src/lib/trpc";
+import { cn } from "../../../src/lib/utils";
 
 interface ConversationListProps {
   userId: number;
