@@ -20,13 +20,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 构建完整的 Directus URL
     const directusUrl = `https://admin.cnsubscribe.xyz${path.startsWith('/') ? path : '/' + path}`;
-    
-    // 添加查询参数 - 直接从原始 URL 中提取
     const url = new URL(directusUrl);
-    const originalUrl = new URL(req.url || '', `http://${req.headers.host}`);
-    originalUrl.searchParams.forEach((value, key) => {
-      if (key !== 'path') {
-        url.searchParams.append(key, value);
+    
+    // 添加查询参数 - 直接从 req.query 中获取（更可靠）
+    Object.entries(req.query).forEach(([key, value]) => {
+      if (key !== 'path' && value) {
+        // 处理数组和字符串
+        if (Array.isArray(value)) {
+          value.forEach(v => url.searchParams.append(key, v));
+        } else {
+          url.searchParams.append(key, value as string);
+        }
       }
     });
 
