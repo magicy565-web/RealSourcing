@@ -29,9 +29,9 @@ export default function Webinars() {
   const [webinars, setWebinars] = useState<Webinar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 获取 Webinar 列表
+  // 获取 Webinar 列表（带重试机制）
   useEffect(() => {
-    const fetchWebinars = async () => {
+    const fetchWebinars = async (retryCount = 0) => {
       setIsLoading(true);
       try {
         // 直接加载所有数据，不带 filter 参数
@@ -45,6 +45,12 @@ export default function Webinars() {
         });
 
         if (!response.ok) {
+          // 如果失败且还有重试次数，则重试
+          if (retryCount < 2) {
+            console.log(`API request failed (${response.status}), retrying... (${retryCount + 1}/2)`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 等待 1 秒
+            return fetchWebinars(retryCount + 1);
+          }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -52,7 +58,7 @@ export default function Webinars() {
         console.log("Webinars loaded:", data.data?.length || 0);
         setWebinars(data.data as Webinar[]);
       } catch (error: any) {
-        console.error("Failed to fetch webinars:", error);
+        console.error("Failed to fetch webinars after retries:", error);
         setWebinars([]);
       } finally {
         setIsLoading(false);
