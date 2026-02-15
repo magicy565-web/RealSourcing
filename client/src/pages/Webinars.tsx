@@ -34,15 +34,14 @@ export default function Webinars() {
     const fetchWebinars = async (retryCount = 0) => {
       setIsLoading(true);
       try {
-        // 直接连接服务器 API，绕过 Vercel Proxy 以解决 HTTP/2 协议错误
-        const url = "http://47.99.205.136:8055/items/webinars?limit=100";
+        // 使用 Vercel Proxy 避免混合内容错误，Proxy 内部使用 HTTP 访问服务器以绕过 HTTP/2 问题
+        const url = "/api/directus-proxy?path=/items/webinars&limit=100";
 
         const response = await fetch(url, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
-          mode: "cors", // 显式启用 CORS
         });
 
         if (!response.ok) {
