@@ -34,8 +34,8 @@ export default function Webinars() {
     const fetchWebinars = async () => {
       setIsLoading(true);
       try {
-        // 构建查询参数
-        let url = "https://admin.cnsubscribe.xyz/items/webinars?limit=100&sort=-created_at";
+        // 构建代理 API URL
+        let url = "/api/directus-proxy?path=/items/webinars&limit=100&sort=-created_at";
         
         // 状态筛选
         if (statusFilter !== "all") {

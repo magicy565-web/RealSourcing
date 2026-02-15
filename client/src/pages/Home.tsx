@@ -9,8 +9,7 @@ import {
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/utils";
-import { directus, type Webinar } from "../lib/directus";
-import { readItems } from "@directus/sdk";
+import type { Webinar } from "../lib/directus";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -29,11 +28,15 @@ export default function Home() {
       setIsLoading(true);
       try {
         // 并行获取所有数据
-        const [allWebinars, factories, participants] = await Promise.all([
-          directus.request(readItems("webinars", { limit: -1 })),
-          directus.request(readItems("factories", { limit: -1 })).catch(() => []),
-          directus.request(readItems("webinar_participants", { limit: -1 })).catch(() => []),
+        const [webinarsRes, factoriesRes, participantsRes] = await Promise.all([
+          fetch("/api/directus-proxy?path=/items/webinars&limit=-1").then(r => r.json()),
+          fetch("/api/directus-proxy?path=/items/factories&limit=-1").then(r => r.json()).catch(() => ({ data: [] })),
+          fetch("/api/directus-proxy?path=/items/webinar_participants&limit=-1").then(r => r.json()).catch(() => ({ data: [] })),
         ]);
+        
+        const allWebinars = webinarsRes.data || [];
+        const factories = factoriesRes.data || [];
+        const participants = participantsRes.data || [];
 
         // 计算统计数据
         const liveCount = allWebinars.filter((w: any) => w.status === "live").length;
@@ -48,14 +51,9 @@ export default function Home() {
         });
 
         // 获取最近的 4 个 Webinar
-        const recent = await directus.request(
-          readItems("webinars", {
-            sort: ["-created_at"],
-            limit: 4,
-          })
-        );
-
-        setRecentWebinars(recent as Webinar[]);
+        const recentRes = await fetch("/api/directus-proxy?path=/items/webinars&sort=-created_at&limit=4");
+        const recentData = await recentRes.json();
+        setRecentWebinars(recentData.data as Webinar[]);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
