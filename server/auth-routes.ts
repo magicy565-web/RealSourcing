@@ -4,7 +4,7 @@ import { signToken } from './_core/auth.js';
 import { setAuthCookie } from './_core/cookies.js';
 import { getUserByEmail, upsertUser } from './db.js';
 import { requireAuth } from './middleware/auth.js';
-import { COOKIE_NAME } from '@shared/const';
+import { COOKIE_NAME } from '../shared/const.js';
 
 const router = Router();
 

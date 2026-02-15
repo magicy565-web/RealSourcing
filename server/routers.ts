@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME } from "../shared/const.js";
 import { getSessionCookieOptions, setAuthCookie } from "./_core/cookies.js";
 import { hashPassword, verifyPassword } from "./_core/password.js";
 import { signToken } from "./_core/auth.js";

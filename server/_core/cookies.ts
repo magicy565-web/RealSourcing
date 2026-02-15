@@ -18,7 +18,7 @@ export function getSessionCookieOptions(
   };
 }
 
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
 
 /**
  * 设置认证 Cookie
