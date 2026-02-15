@@ -1,11 +1,15 @@
-import { format, subDays, isSameDay } from "date-fns";
+import { format, subDays, isSameDay, isToday } from "date-fns";
 import { cn } from "../lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+
+interface ActivityEvent {
+  title: string;
+  status: "pending" | "active" | "completed" | "cancelled";
+}
 
 interface ActivityData {
   date: Date;
   count: number;
-  events: string[];
+  events: ActivityEvent[];
 }
 
 interface ActivityCalendarProps {
@@ -13,89 +17,120 @@ interface ActivityCalendarProps {
   days?: number;
 }
 
-export default function ActivityCalendar({ data, days = 14 }: ActivityCalendarProps) {
-  // 生成最近 N 天的日期
-  const dates = Array.from({ length: days }, (_, i) => subDays(new Date(), days - 1 - i));
+const statusColors: Record<string, string> = {
+  pending: "bg-orange-500",
+  active: "bg-green-500",
+  completed: "bg-blue-500",
+  cancelled: "bg-gray-500",
+};
 
-  // 获取每天的活动数据
+export default function ActivityCalendar({ data, days = 21 }: ActivityCalendarProps) {
+  const dates = Array.from({ length: days }, (_, i) => subDays(new Date(), days - 1 - i));
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+
   const getActivityForDate = (date: Date) => {
     return data.find(d => isSameDay(d.date, date)) || { date, count: 0, events: [] };
   };
 
-  // 根据活动数量返回颜色
-  const getColorClass = (count: number) => {
-    if (count === 0) return "bg-[#1a1a1a]";
-    if (count <= 2) return "bg-orange-500/30";
-    if (count <= 5) return "bg-orange-500/60";
-    return "bg-orange-500";
-  };
+  // 获取所有有事件的唯一标题（用于甘特图行）
+  const allEventTitles = Array.from(
+    new Set(data.flatMap(d => d.events.map(e => e.title)))
+  ).slice(0, 5);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>活动（过去 {days} 天）</span>
-        <div className="flex items-center gap-2">
-          <span>少</span>
-          <div className="flex gap-1">
-            {[0, 1, 3, 6].map(count => (
+    <div className="space-y-4">
+      {/* 日期头部 */}
+      <div className="overflow-x-auto">
+        <div className="min-w-full">
+          {/* 星期和日期 */}
+          <div className="flex items-end gap-0">
+            <div className="w-28 flex-shrink-0" />
+            {dates.map((date, i) => (
               <div
-                key={count}
-                className={cn("h-2.5 w-2.5 rounded-sm", getColorClass(count))}
-              />
+                key={i}
+                className={cn(
+                  "flex-1 min-w-[32px] text-center",
+                  isToday(date) && "relative"
+                )}
+              >
+                <div className="text-[10px] text-muted-foreground/60 mb-0.5">
+                  {weekdays[date.getDay()]}
+                </div>
+                <div
+                  className={cn(
+                    "text-[11px] font-medium mx-auto w-6 h-6 flex items-center justify-center rounded-full",
+                    isToday(date)
+                      ? "bg-violet-500 text-white"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {format(date, "d")}
+                </div>
+              </div>
             ))}
           </div>
-          <span>多</span>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-14 gap-1.5">
-        {dates.map((date, index) => {
-          const activity = getActivityForDate(date);
-          return (
-            <TooltipProvider key={index}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center gap-1">
-                    <div
-                      className={cn(
-                        "h-10 w-full rounded-md transition-all cursor-pointer hover:ring-2 hover:ring-violet-500/50",
-                        getColorClass(activity.count)
-                      )}
-                    />
-                    <span className="text-[10px] text-muted-foreground">
-                      {format(date, "d")}
+          {/* 甘特图行 */}
+          {allEventTitles.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {allEventTitles.map((title, rowIdx) => (
+                <div key={rowIdx} className="flex items-center gap-0">
+                  <div className="w-28 flex-shrink-0 pr-2">
+                    <span className="text-[11px] text-muted-foreground truncate block">
+                      {title}
                     </span>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div className="text-xs">
-                    <div className="font-medium">{format(date, "MMM d, yyyy")}</div>
-                    <div className="text-muted-foreground mt-1">
-                      {activity.count === 0 ? "暂无活动" : `${activity.count} 个活动`}
-                    </div>
-                    {activity.events.length > 0 && (
-                      <ul className="mt-2 space-y-1">
-                        {activity.events.slice(0, 3).map((event, i) => (
-                          <li key={i} className="text-xs">• {event}</li>
-                        ))}
-                        {activity.events.length > 3 && (
-                          <li className="text-xs text-muted-foreground">
-                            +{activity.events.length - 3} 更多
-                          </li>
+                  {dates.map((date, colIdx) => {
+                    const activity = getActivityForDate(date);
+                    const event = activity.events.find(e => e.title === title);
+                    return (
+                      <div key={colIdx} className="flex-1 min-w-[32px] px-0.5">
+                        {event ? (
+                          <div
+                            className={cn(
+                              "h-5 rounded-sm",
+                              statusColors[event.status] || "bg-violet-500"
+                            )}
+                            title={`${title} - ${format(date, "MM/dd")}`}
+                          />
+                        ) : (
+                          <div className="h-5" />
                         )}
-                      </ul>
-                    )}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        })}
-      </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 text-center py-6">
+              <div className="text-muted-foreground/40 text-sm">暂无活动</div>
+              <div className="text-muted-foreground/30 text-xs mt-1">
+                会话开始后，活动数据将显示。
+              </div>
+            </div>
+          )}
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-[#262626]">
-        <span>{format(dates[0], "MMM d")}</span>
-        <span>{format(dates[dates.length - 1], "MMM d")}</span>
+          {/* 图例 */}
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-[#262626]">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-sm bg-orange-500" />
+              <span className="text-[10px] text-muted-foreground">待办的</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-sm bg-green-500" />
+              <span className="text-[10px] text-muted-foreground">积极的</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-sm bg-blue-500" />
+              <span className="text-[10px] text-muted-foreground">完全的</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-sm bg-gray-500" />
+              <span className="text-[10px] text-muted-foreground">取消</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
