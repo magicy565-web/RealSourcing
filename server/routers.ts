@@ -20,6 +20,7 @@ import { factoryRouter } from "./routers/factory.router";
 import { orderRouter } from "./routers/order.router";
 import { subscriptionEnhancedRouter } from "./routers/subscription_enhanced.router";
 import { agoraRouter } from "./routers/agora.router";
+import { webinarRouter } from "./routers/webinar.router";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -77,7 +78,10 @@ export const appRouter = router({
     }),
   }),
 
-  // Webinars
+  // Webinars (Enhanced with permissions)
+  webinarEnhanced: webinarRouter,
+
+  // Webinars (Legacy)
   webinar: router({
     list: protectedProcedure
       .input(z.object({ status: z.string().optional() }).optional())

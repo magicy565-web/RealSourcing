@@ -125,3 +125,47 @@
 - Responsive design and accessibility features
 
 ✅ **Ready for deployment**
+
+
+---
+
+## Phase 13: Webinar 创建功能优化（2026-02-15）
+
+### 设计Webinar数据模型和权限系统
+- [x] 检查现有 webinars 表结构
+- [x] 添加时长限制字段（duration_minutes）
+- [x] 设计权限控制逻辑（基于订阅套餐）
+- [x] 定义订阅套餐的时长限制规则
+
+### 实现Webinar后端API
+- [x] 创建 webinar.router.ts
+- [x] 实现创建 Webinar API（带权限和时长检查）
+- [x] 实现获取 Webinar 列表 API
+- [x] 实现获取 Webinar 详情 API
+- [x] 实现更新 Webinar API
+- [x] 实现删除 Webinar API
+- [x] 实现参会管理 API
+
+### 优化前端分步骤创建流程
+- [x] 检查现有 WebinarCreate.tsx
+- [x] 优化步骤1：基本信息（标题、描述、封面）
+- [x] 优化步骤2：时间设置（日期、时间、时长限制）
+- [x] 优化步骤3：高级设置（语言、录制、审核）
+- [x] 实现时长限制提示和升级引导
+- [x] 集成webinarEnhanced API
+- [x] 添加表单验证和错误处理
+
+### 集成声网实时功能到Webinar房间
+- [ ] 创建 WebinarRoom.tsx
+- [ ] 集成 AgoraVideoCall 组件
+- [ ] 集成 AgoraWhiteboard 组件
+- [ ] 集成聊天室功能
+- [ ] 实现主持人控制功能
+- [ ] 实现录制控制功能
+
+### 测试完整流程并提交代码
+- [ ] 测试创建流程
+- [ ] 测试权限控制
+- [ ] 测试时长限制
+- [ ] 测试实时功能
+- [ ] 提交代码到 GitHub
