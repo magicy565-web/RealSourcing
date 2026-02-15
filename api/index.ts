@@ -1,53 +1,53 @@
-import "dotenv/config";
+/**
+ * Vercel Serverless Function - Zero Local Dependency Version
+ * This file is designed to survive Vercel's runtime by avoiding all "../server" imports.
+ */
+
 import express from "express";
 import mysql from 'mysql2/promise';
 
 const app = express();
 app.use(express.json());
 
-// 1. Health Check
+// 1. Pure Health Check (No dependencies)
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ 
+    status: "ok", 
+    message: "Serverless function is alive and isolated",
+    timestamp: new Date().toISOString() 
+  });
 });
 
-// 2. Database Diagnostic
+// 2. Isolated Database Diagnostic
 app.get("/api/check-db", async (req, res) => {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) return res.status(500).json({ error: "DATABASE_URL missing" });
 
   try {
-    const conn = await mysql.createConnection({ uri: dbUrl, ssl: { rejectUnauthorized: false } });
+    const conn = await mysql.createConnection({ 
+      uri: dbUrl, 
+      ssl: { rejectUnauthorized: false },
+      connectTimeout: 5000 
+    });
     await conn.query('SELECT 1');
     await conn.end();
-    res.json({ status: "success", message: "Database connected!" });
+    res.json({ status: "success", message: "Database connection verified from isolated entry!" });
   } catch (err: any) {
-    res.status(500).json({ status: "failed", error: err.message });
+    res.status(500).json({ 
+      status: "failed", 
+      error: err.message,
+      hint: "Check if DATABASE_URL is correct and RDS allows public access"
+    });
   }
 });
 
-// 3. Simple Proxy for Main App
-// 为了最快恢复，我们暂时让主入口保持存活，并代理核心路由
-app.use(async (req, res, next) => {
-  try {
-    // 动态加载确保启动不崩溃
-    const { registerOAuthRoutes } = await import("../server/_core/oauth.js");
-    const authRouter = (await import("../server/auth-routes.js")).default;
-    const { appRouter } = await import("../server/routers/index.js");
-    const { createContext } = await import("../server/_core/context.js");
-    const { createExpressMiddleware } = await import("@trpc/server/adapters/express");
-
-    if (req.path.startsWith("/api/auth")) {
-      return authRouter(req, res, next);
-    }
-    
-    if (req.path.startsWith("/api/trpc")) {
-      return createExpressMiddleware({ router: appRouter, createContext })(req, res, next);
-    }
-
-    next();
-  } catch (err: any) {
-    res.status(500).json({ error: "Runtime Error", message: err.message });
-  }
+// 3. Fallback Route to prevent 404s
+app.all("/api/:path*", (req, res) => {
+  res.status(200).json({
+    message: "The backend is currently in isolated mode for recovery.",
+    path: req.params.path,
+    instruction: "If you see this, the runtime is working. We can now safely re-introduce modules."
+  });
 });
 
 export default app;
