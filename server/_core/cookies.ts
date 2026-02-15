@@ -1,9 +1,9 @@
 import type { CookieOptions, Request } from "express";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
 
 export function getSessionCookieOptions(
   req: Request
 ): CookieOptions {
-  // Use bracket notation to bypass strict type checking for property access
   const protocol = (req as any).protocol;
   const headers = (req as any).headers;
   
@@ -12,22 +12,22 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    sameSite: "lax",
     secure: isSecure,
     domain: undefined,
   };
 }
 
-import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
-
 /**
  * 设置认证 Cookie
  */
 export function setAuthCookie(res: any, token: string) {
+  const isProd = process.env.NODE_ENV === "production";
+  
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd, // 生产环境下必须为 true (HTTPS)
+    sameSite: isProd ? "none" : "lax", // 生产环境下使用 none 以支持 Vercel 跨域场景
     maxAge: ONE_YEAR_MS,
     path: "/",
   });
