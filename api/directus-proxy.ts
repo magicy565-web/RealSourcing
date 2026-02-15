@@ -21,11 +21,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 构建完整的 Directus URL
     const directusUrl = `https://admin.cnsubscribe.xyz${path.startsWith('/') ? path : '/' + path}`;
     
-    // 添加查询参数
+    // 添加查询参数 - 直接从原始 URL 中提取
     const url = new URL(directusUrl);
-    Object.keys(req.query).forEach(key => {
+    const originalUrl = new URL(req.url || '', `http://${req.headers.host}`);
+    originalUrl.searchParams.forEach((value, key) => {
       if (key !== 'path') {
-        url.searchParams.append(key, req.query[key] as string);
+        url.searchParams.append(key, value);
       }
     });
 
