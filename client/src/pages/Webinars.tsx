@@ -1,432 +1,257 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus, Search, Calendar, Users, MoreHorizontal, Circle, Clock,
-  Building2, Globe, Video, Trash2, Eye
+  Plus,
+  Search,
+  Calendar,
+  Users,
+  Clock,
+  Video,
+  Eye,
+  Play,
+  Loader2,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { mockStore, type MockWebinar } from "@/lib/mock-data";
-import { CreateWebinarModal } from "@/components/CreateWebinarModal";
-import { WebinarTypeLabel } from "@/components/WebinarTypeLabel";
-import { WebinarScenarioLabel } from "@/components/WebinarScenarioLabel";
+import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
-  const [webinars, setWebinars] = useState<MockWebinar[]>([]);
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [scenarioFilter, setScenarioFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  useEffect(() => {
-    setWebinars(mockStore.getWebinars());
-  }, []);
+  // 获取 Webinar 列表
+  const { data: webinars, isLoading, refetch } = trpc.webinarEnhanced.list.useQuery({
+    status: statusFilter === "all" ? undefined : statusFilter as any,
+  });
 
-  const refreshWebinars = () => {
-    setWebinars(mockStore.getWebinars());
-  };
+  // 删除 Webinar
+  const deleteWebinar = trpc.webinarEnhanced.delete.useMutation({
+    onSuccess: () => {
+      toast({ title: "Webinar 已删除" });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "删除失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  const filteredWebinars = webinars.filter(w => {
-    // Search filter
+  // 过滤 Webinars
+  const filteredWebinars = webinars?.filter((w) => {
     if (searchQuery) {
-      const matchesSearch = w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchesSearch =
+        w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (w.description && w.description.toLowerCase().includes(searchQuery.toLowerCase()));
       if (!matchesSearch) return false;
     }
-    
-    // Type filter
-    if (typeFilter !== "all" && w.type !== typeFilter) return false;
-    
-    // Scenario filter
-    if (scenarioFilter !== "all" && w.scenario !== scenarioFilter) return false;
-    
     return true;
   });
 
+  // 获取状态Badge
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { color: string; label: string; dot?: boolean }> = {
-      live: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "Live", dot: true },
-      scheduled: { color: "bg-blue-500/10 text-blue-400 border-blue-500/20", label: "Scheduled" },
-      draft: { color: "bg-gray-500/10 text-gray-400 border-gray-500/20", label: "Draft" },
-      completed: { color: "bg-green-500/10 text-green-400 border-green-500/20", label: "Completed" },
-      cancelled: { color: "bg-orange-500/10 text-orange-400 border-orange-500/20", label: "Cancelled" },
+    const statusConfig = {
+      scheduled: { label: "已安排", variant: "secondary" as const },
+      live: { label: "直播中", variant: "default" as const },
+      ended: { label: "已结束", variant: "outline" as const },
+      cancelled: { label: "已取消", variant: "destructive" as const },
     };
-    const c = config[status] || config.draft;
-    return (
-      <Badge className={cn("text-xs font-light", c.color)}>
-        {c.dot && <Circle className="h-2 w-2 fill-current mr-1 animate-pulse" />}
-        {c.label}
-      </Badge>
-    );
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.scheduled;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getCategoryLabel = (category: string) => {
-    const labels: Record<string, string> = {
-      electronics: "Electronics",
-      "smart-home": "Smart Home",
-      "consumer-goods": "Consumer Goods",
-      textiles: "Textiles",
-      furniture: "Furniture",
-      automotive: "Automotive",
-      packaging: "Packaging",
-      other: "Other",
-    };
-    return labels[category] || category;
+  // 格式化时间
+  const formatDateTime = (date: Date) => {
+    return format(new Date(date), "yyyy年MM月dd日 HH:mm", { locale: zhCN });
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  // 计算时长显示
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
   };
 
-  const handleDelete = (id: number) => {
-    mockStore.deleteWebinar(id);
-    refreshWebinars();
-    toast.success("Webinar deleted");
-  };
-
-  const filterByStatus = (status: string) => {
-    if (status === "all") return filteredWebinars;
-    return filteredWebinars.filter(w => w.status === status);
-  };
-
-  const renderWebinarList = (items: MockWebinar[]) => {
-    if (items.length === 0) {
-      return (
-        <div className="text-center py-20">
-          <Video className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-          <p className="text-muted-foreground font-light">No webinars found</p>
-          <p className="text-xs text-muted-foreground/60 font-light mt-1">Create your first webinar to get started</p>
+  return (
+    <div className="container py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Webinar 管理</h1>
+          <p className="text-muted-foreground mt-1">
+            创建和管理您的产品展示会议
+          </p>
         </div>
-      );
-    }
+        <Button onClick={() => setLocation("/webinars/create")} size="lg">
+          <Plus className="h-4 w-4 mr-2" />
+          创建 Webinar
+        </Button>
+      </div>
 
-    return (
-      <div className="space-y-3">
-        {items.map((webinar) => {
-          const regs = mockStore.getRegistrations(webinar.id);
-          const approvedCount = regs.filter(r => r.status === "approved").length;
-          const factoryCount = regs.filter(r => r.role === "factory" && r.status === "approved").length;
-          const buyerCount = regs.filter(r => r.role === "buyer" && r.status === "approved").length;
-          const pendingCount = regs.filter(r => r.status === "pending").length;
+      {/* Search and Filters */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="搜索 Webinar..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
-          return (
-            <Card
-              key={webinar.id}
-              className="bg-[#141414] border-[#262626] hover:border-[#404040] transition-all cursor-pointer group"
-              onClick={() => setLocation(`/webinars/${webinar.id}`)}
-            >
-              <CardContent className="p-0">
-                <div className="flex items-start gap-4">
-                  {/* Cover Image */}
-                  {webinar.cover_image && (
-                    <div className="relative w-48 h-32 flex-shrink-0 overflow-hidden rounded-l-lg">
-                      <img
-                        src={webinar.cover_image}
-                        alt={webinar.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {webinar.status === "live" && (
-                        <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500/90 text-white px-2 py-0.5 rounded text-xs font-medium">
-                          <Circle className="h-1.5 w-1.5 fill-current animate-pulse" />
-                          LIVE
-                        </div>
-                      )}
+        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-auto">
+          <TabsList>
+            <TabsTrigger value="all">全部</TabsTrigger>
+            <TabsTrigger value="scheduled">已安排</TabsTrigger>
+            <TabsTrigger value="live">直播中</TabsTrigger>
+            <TabsTrigger value="ended">已结束</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && filteredWebinars?.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Video className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">还没有 Webinar</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              创建您的第一场产品展示会议，开始与全球买家互动
+            </p>
+            <Button onClick={() => setLocation("/webinars/create")}>
+              <Plus className="h-4 w-4 mr-2" />
+              创建 Webinar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Webinar List */}
+      {!isLoading && filteredWebinars && filteredWebinars.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredWebinars.map((webinar) => (
+            <Card key={webinar.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Cover Image */}
+              {webinar.coverImage && (
+                <div className="aspect-video bg-muted relative overflow-hidden">
+                  <img
+                    src={webinar.coverImage}
+                    alt={webinar.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {webinar.status === "live" && (
+                    <div className="absolute top-4 left-4">
+                      <Badge variant="destructive" className="animate-pulse">
+                        <span className="relative flex h-2 w-2 mr-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                        </span>
+                        直播中
+                      </Badge>
                     </div>
                   )}
-                  
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 py-5 pr-5">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <h3 className="text-lg font-light text-white group-hover:text-violet-400 transition-colors truncate">
-                        {webinar.title}
-                      </h3>
-                      {getStatusBadge(webinar.status)}
-                      {webinar.type && <WebinarTypeLabel type={webinar.type} />}
-                      {webinar.scenario && <WebinarScenarioLabel scenario={webinar.scenario} />}
-                      {pendingCount > 0 && (
-                        <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-xs font-light">
-                          {pendingCount} pending
-                        </Badge>
-                      )}
-                    </div>
-                    {webinar.description && (
-                      <p className="text-sm text-muted-foreground font-light line-clamp-1 mb-3 max-w-2xl">
-                        {webinar.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-5 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(webinar.scheduled_at)}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="h-3 w-3" />
-                        {webinar.duration} min
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Users className="h-3 w-3" />
-                        {approvedCount} / {webinar.max_participants}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Building2 className="h-3 w-3" />
-                        {factoryCount} factories
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Globe className="h-3 w-3" />
-                        {buyerCount} buyers
-                      </span>
-                      {webinar.category && (
-                        <Badge variant="outline" className="text-[10px] border-[#262626] text-muted-foreground font-light">
-                          {getCategoryLabel(webinar.category)}
-                        </Badge>
-                      )}
-                    </div>
+                </div>
+              )}
+
+              <CardHeader>
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="line-clamp-2">{webinar.title}</CardTitle>
+                  {getStatusBadge(webinar.status)}
+                </div>
+                {webinar.description && (
+                  <CardDescription className="line-clamp-2">
+                    {webinar.description}
+                  </CardDescription>
+                )}
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {/* Info */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDateTime(webinar.scheduledAt)}</span>
                   </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 py-5 pr-5" onClick={(e) => e.stopPropagation()}>
-                    {webinar.status === "live" && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDuration(webinar.duration)}</span>
+                  </div>
+                  {webinar.maxParticipants && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>最多 {webinar.maxParticipants} 人</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  {webinar.status === "live" && (
+                    <Button
+                      className="flex-1"
+                      onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      加入直播
+                    </Button>
+                  )}
+
+                  {webinar.status === "scheduled" && (
+                    <>
                       <Button
-                        size="sm"
-                        onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
-                        className="bg-violet-600 hover:bg-violet-700 text-white font-light"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setLocation(`/webinars/${webinar.id}`)}
                       >
-                        <Video className="mr-1.5 h-3.5 w-3.5" />
-                        Join Room
+                        <Eye className="h-4 w-4 mr-2" />
+                        查看详情
                       </Button>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white hover:bg-white/5">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#141414] border-[#262626] text-white">
-                        <DropdownMenuItem
-                          onClick={() => setLocation(`/webinars/${webinar.id}`)}
-                          className="focus:bg-white/5 cursor-pointer font-light"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        {webinar.status === "live" && (
-                          <DropdownMenuItem
-                            onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
-                            className="focus:bg-white/5 cursor-pointer font-light"
-                          >
-                            <Video className="mr-2 h-4 w-4" />
-                            Enter Room
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator className="bg-[#262626]" />
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(webinar.id)}
-                          className="focus:bg-red-500/10 text-red-400 cursor-pointer font-light"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                      <Button
+                        className="flex-1"
+                        onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        开始直播
+                      </Button>
+                    </>
+                  )}
+
+                  {webinar.status === "ended" && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setLocation(`/webinars/${webinar.id}/replay`)}
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      查看回放
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
-    );
-  };
-
-  return (<>
-    <DashboardLayout>
-      <div className="h-full overflow-auto">
-        <div className="p-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-light tracking-tight text-white">Webinars</h1>
-              <p className="text-muted-foreground mt-1 font-light text-sm">
-                Manage your online sourcing exhibitions and live events
-              </p>
-            </div>
-            <Button
-              onClick={() => setCreateModalOpen(true)}
-              className="bg-violet-600 hover:bg-violet-700 text-white font-light"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Webinar
-            </Button>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="mb-6 space-y-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search webinars..."
-                className="pl-10 bg-[#141414] border-[#262626] text-white focus:ring-violet-600 font-light"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            {/* Type and Scenario Filters */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Type:</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTypeFilter("all")}
-                    className={cn(
-                      "h-8 text-xs",
-                      typeFilter === "all" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTypeFilter("one_on_one")}
-                    className={cn(
-                      "h-8 text-xs",
-                      typeFilter === "one_on_one" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    💬 1对1
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTypeFilter("small_group")}
-                    className={cn(
-                      "h-8 text-xs",
-                      typeFilter === "small_group" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    👥 小组
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTypeFilter("large")}
-                    className={cn(
-                      "h-8 text-xs",
-                      typeFilter === "large" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    🎪 大型
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Scenario:</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setScenarioFilter("all")}
-                    className={cn(
-                      "h-8 text-xs",
-                      scenarioFilter === "all" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setScenarioFilter("tiktok_dropshipper")}
-                    className={cn(
-                      "h-8 text-xs",
-                      scenarioFilter === "tiktok_dropshipper" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    🎵 TikTok
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setScenarioFilter("influencer_selection")}
-                    className={cn(
-                      "h-8 text-xs",
-                      scenarioFilter === "influencer_selection" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    ⭐ 网红
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setScenarioFilter("negotiation")}
-                    className={cn(
-                      "h-8 text-xs",
-                      scenarioFilter === "negotiation" ? "bg-violet-600/20 border-violet-600 text-violet-400" : "border-[#262626]"
-                    )}
-                  >
-                    💼 谈判
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <Tabs defaultValue="all" className="space-y-6">
-            <TabsList className="bg-[#141414] border border-[#262626]">
-              <TabsTrigger value="all" className="font-light data-[state=active]:bg-violet-600/10 data-[state=active]:text-violet-400">
-                All ({filteredWebinars.length})
-              </TabsTrigger>
-              <TabsTrigger value="live" className="font-light data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400">
-                Live ({filterByStatus("live").length})
-              </TabsTrigger>
-              <TabsTrigger value="scheduled" className="font-light data-[state=active]:bg-blue-500/10 data-[state=active]:text-blue-400">
-                Scheduled ({filterByStatus("scheduled").length})
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="font-light data-[state=active]:bg-green-500/10 data-[state=active]:text-green-400">
-                Completed ({filterByStatus("completed").length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all">{renderWebinarList(filteredWebinars)}</TabsContent>
-            <TabsContent value="live">{renderWebinarList(filterByStatus("live"))}</TabsContent>
-            <TabsContent value="scheduled">{renderWebinarList(filterByStatus("scheduled"))}</TabsContent>
-            <TabsContent value="completed">{renderWebinarList(filterByStatus("completed"))}</TabsContent>
-          </Tabs>
+          ))}
         </div>
-      </div>
-    </DashboardLayout>
-    
-    {/* Create Webinar Modal */}
-    <CreateWebinarModal
-      open={createModalOpen}
-      onClose={() => setCreateModalOpen(false)}
-      onSuccess={refreshWebinars}
-    />
-  </>);
+      )}
+    </div>
+  );
 }
