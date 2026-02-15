@@ -35,7 +35,7 @@ export default function Webinars() {
       setIsLoading(true);
       try {
         // 构建代理 API URL
-        let url = "/api/directus-proxy?path=/items/webinars&limit=100&sort=-created_at";
+        let url = "/api/directus-proxy?path=/items/webinars&limit=100";
         
         // 状态筛选
         if (statusFilter !== "all") {

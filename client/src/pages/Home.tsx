@@ -51,7 +51,7 @@ export default function Home() {
         });
 
         // 获取最近的 4 个 Webinar
-        const recentRes = await fetch("/api/directus-proxy?path=/items/webinars&sort=-created_at&limit=4");
+        const recentRes = await fetch("/api/directus-proxy?path=/items/webinars&limit=4");
         const recentData = await recentRes.json();
         setRecentWebinars(recentData.data as Webinar[]);
       } catch (error) {
