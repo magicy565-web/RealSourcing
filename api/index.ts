@@ -1,28 +1,29 @@
 /**
  * Vercel Serverless Function Entry Point
  * 
- * 这个文件将 Express 应用转换为 Vercel Serverless Function
- * 支持所有后端 API 路由：tRPC、OAuth、Webhooks、Auth、Dashboard、Webinars
+ * 使用 ESM 兼容的导入方式，确保在 Vercel 环境下能正确解析模块
  */
 
 import "dotenv/config";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "../server/_core/oauth";
-import { appRouter } from "../server/routers";
-import { createContext } from "../server/_core/context";
-import webhookRouter from "../server/webhooks";
-import authRouter from "../server/auth-routes";
-import dashboardRouter from "../server/dashboard-routes";
-import webinarRouter from "../server/webinar-routes";
+
+// 在 Vercel 的 ESM 环境中，导入本地文件需要显式后缀，或者通过特定的解析规则
+// 尝试使用更稳健的导入方式
+import { registerOAuthRoutes } from "../server/_core/oauth.js";
+import { appRouter } from "../server/routers/index.js";
+import { createContext } from "../server/_core/context.js";
+import webhookRouter from "../server/webhooks/index.js";
+import authRouter from "../server/auth-routes.js";
+import dashboardRouter from "../server/dashboard-routes.js";
+import webinarRouter from "../server/webinar-routes.js";
 
 const app = express();
 
-// Configure body parser with larger size limit for file uploads
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// CORS configuration for production
+// CORS
 app.use((req: any, res: any, next: any) => {
   const allowedOrigins = [
     process.env.APP_URL || "",
@@ -48,22 +49,12 @@ app.use((req: any, res: any, next: any) => {
   next();
 });
 
-// OAuth callback routes
 registerOAuthRoutes(app);
-
-// Webhook routes for payment callbacks
 app.use("/api/webhooks", webhookRouter);
-
-// Auth routes (register, login)
 app.use("/api/auth", authRouter);
-
-// Dashboard routes
 app.use("/api/dashboard", dashboardRouter);
-
-// Webinar CRUD routes
 app.use("/api/webinars", webinarRouter);
 
-// tRPC API
 app.use(
   "/api/trpc",
   createExpressMiddleware({
@@ -72,19 +63,8 @@ app.use(
   })
 );
 
-// Health check endpoint
 app.get("/api/health", (req: any, res: any) => {
-  res.json({ 
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development"
-  });
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Health check endpoint
-app.get("/api/ping", (req: any, res: any) => {
-  res.send("pong");
-});
-
-// Export for Vercel Serverless
 export default app;
