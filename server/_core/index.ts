@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import webhookRouter from "../webhooks";
 import authRouter from "../auth-routes";
 import dashboardRouter from "../dashboard-routes";
+import webinarRouter from "../webinar-routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +45,8 @@ async function startServer() {
   app.use("/api/auth", authRouter);
   // Dashboard routes
   app.use("/api/dashboard", dashboardRouter);
+  // Webinar CRUD routes
+  app.use("/api/webinars", webinarRouter);
   // tRPC API
   app.use(
     "/api/trpc",
