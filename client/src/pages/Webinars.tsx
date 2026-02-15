@@ -34,13 +34,8 @@ export default function Webinars() {
     const fetchWebinars = async () => {
       setIsLoading(true);
       try {
-        // 构建代理 API URL
-        let url = "/api/directus-proxy?path=/items/webinars&limit=100";
-        
-        // 状态筛选
-        if (statusFilter !== "all") {
-          url += `&filter[status][_eq]=${statusFilter}`;
-        }
+        // 直接加载所有数据，不带 filter 参数
+        const url = "/api/directus-proxy?path=/items/webinars&limit=100";
 
         const response = await fetch(url, {
           method: "GET",
@@ -54,6 +49,7 @@ export default function Webinars() {
         }
 
         const data = await response.json();
+        console.log("Webinars loaded:", data.data?.length || 0);
         setWebinars(data.data as Webinar[]);
       } catch (error: any) {
         console.error("Failed to fetch webinars:", error);
@@ -64,10 +60,16 @@ export default function Webinars() {
     };
 
     fetchWebinars();
-  }, [statusFilter]);
+  }, []);
 
   // 过滤 Webinars
   const filteredWebinars = webinars.filter((w) => {
+    // 状态筛选
+    if (statusFilter !== "all" && w.status !== statusFilter) {
+      return false;
+    }
+    
+    // 搜索筛选
     if (searchQuery) {
       const matchesSearch =
         w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
