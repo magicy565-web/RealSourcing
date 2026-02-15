@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     console.log('Proxying request to:', url.toString());
-
+    
     // 转发请求到 Directus
     const response = await fetch(url.toString(), {
       method: req.method,
@@ -46,7 +46,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(req.body && { body: JSON.stringify(req.body) }),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      const text = await response.text();
+      console.error('Failed to parse JSON response:', text);
+      return res.status(500).json({ error: 'Invalid JSON response from Directus', details: text });
+    }
 
     if (!response.ok) {
       console.error('Directus error:', response.status, data);
