@@ -309,10 +309,7 @@ export default function LandingPage() {
                 <Globe className="w-3.5 h-3.5" />
                 {lang === 'zh' ? 'EN' : '中文'}
               </button>
-              <Link href="/signin" className="text-sm font-medium hover:text-white transition-colors">
-                {t.nav.login}
-              </Link>
-              <Link href="/signin" className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-sm font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all flex items-center gap-2 group">
+              <Link href="/login" className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-sm font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all flex items-center gap-2 group">
                 {t.nav.getStarted}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
@@ -351,7 +348,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Link href="/signin" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-lg font-bold hover:shadow-2xl hover:shadow-purple-500/40 transition-all flex items-center justify-center gap-3 group">
+              <Link href="/login" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-lg font-bold hover:shadow-2xl hover:shadow-purple-500/40 transition-all flex items-center justify-center gap-3 group">
                 {t.hero.cta}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -494,7 +491,7 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/signin" className={`w-full py-4 rounded-xl text-center font-bold transition-all ${plan.popular ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:shadow-purple-500/25' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
+                <Link href="/login" className={`w-full py-4 rounded-xl text-center font-bold transition-all ${plan.popular ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:shadow-lg hover:shadow-purple-500/25' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
                   立即开启
                 </Link>
               </GlassCard>
@@ -509,7 +506,7 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-6xl font-serif mb-10">准备好开启海外订单了吗？</h2>
           <p className="text-xl text-white/50 mb-12">加入 500+ 领先工厂，用最现代化的方式连接全球买家。</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <Link href="/signin" className="px-10 py-5 bg-white text-black rounded-full text-lg font-bold hover:bg-white/90 transition-all">
+            <Link href="/login" className="px-10 py-5 bg-white text-black rounded-full text-lg font-bold hover:bg-white/90 transition-all">
               立即免费试用
             </Link>
             <button className="px-10 py-5 bg-white/5 border border-white/10 rounded-full text-lg font-bold hover:bg-white/10 transition-all">
