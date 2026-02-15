@@ -12,6 +12,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// CORS Middleware
 app.use((req: any, res: any, next: any) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -21,6 +22,7 @@ app.use((req: any, res: any, next: any) => {
   next();
 });
 
+// Register all routes statically
 registerOAuthRoutes(app);
 app.use("/api/auth", authRouter);
 app.use("/api/dashboard", dashboardRouter);
@@ -31,8 +33,13 @@ app.use("/api/trpc", createExpressMiddleware({
   createContext,
 }));
 
+// Health check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", mode: "bundled", timestamp: new Date().toISOString() });
+  res.json({ 
+    status: "ok", 
+    mode: "fully-bundled", 
+    timestamp: new Date().toISOString() 
+  });
 });
 
 export default app;
