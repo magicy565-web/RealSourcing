@@ -33,11 +33,13 @@ export async function getDb() {
 
 // ============ USER OPERATIONS ============
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+export async function upsertUser(user: InsertUser) {
   if (!user.openId) throw new Error('User openId is required');
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not available');
   await db.insert(users).values(user).onDuplicateKeyUpdate({ set: user });
+  // Return the created/updated user
+  return await getUserByOpenId(user.openId);
 }
 
 export async function getUserByOpenId(openId: string) {

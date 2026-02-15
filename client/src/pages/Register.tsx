@@ -31,8 +31,10 @@ export default function Register() {
       });
       
       if (response.ok) {
-        toast.success("注册成功！请登录");
-        setLocation("/login");
+        const data = await response.json();
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success("注册成功！");
+        setLocation("/home");
       } else {
         toast.error("注册失败，请稍后重试");
       }

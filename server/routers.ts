@@ -35,6 +35,42 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    register: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        name: z.string().min(1),
+        role: z.enum(['buyer', 'factory', 'user']).default('user'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { email, password, name, role } = input;
+        
+        // Check if user already exists
+        const existingUser = await getUserByOpenId(email);
+        if (existingUser) {
+          throw new Error('User with this email already exists');
+        }
+        
+        // Hash password
+        const passwordHash = hashPassword(password);
+        
+        // Create user
+        const user = await upsertUser({
+          openId: email,
+          email,
+          name,
+          role,
+          passwordHash,
+          status: 'active',
+          emailVerified: 0,
+        });
+        
+        // Generate token and set cookie
+        const token = signToken({ userId: user.id, role: user.role });
+        setAuthCookie(ctx.res as any, token);
+        
+        return { success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } };
+      }),
     login: publicProcedure
       .input(z.object({
         email: z.string().email(),

@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import webhookRouter from "../webhooks";
+import authRouter from "../auth-routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +39,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Webhook routes for payment callbacks
   app.use("/api/webhooks", webhookRouter);
+  // Auth routes (register, login)
+  app.use("/api/auth", authRouter);
   // tRPC API
   app.use(
     "/api/trpc",

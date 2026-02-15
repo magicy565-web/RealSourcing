@@ -34,6 +34,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/signin" component={SignIn} />
+      <Route path="/home" component={Home} />
+      <Route path="/dashboard" component={Home} />
       <Route path="/" component={LandingPage} />
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
