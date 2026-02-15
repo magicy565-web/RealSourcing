@@ -1,109 +1,75 @@
 /**
- * Vercel Serverless Function Entry Point
- * 
- * 使用 ESM 兼容的导入方式，确保在 Vercel 环境下能正确解析模块
+ * Vercel Serverless Function Entry Point (Robust Version)
  */
 
-import "dotenv/config";
 import express from "express";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-
-// 在 Vercel 的 ESM 环境中，导入本地文件需要显式后缀
-import { registerOAuthRoutes } from "../server/_core/oauth.js";
-import { appRouter } from "../server/routers/index.js";
-import { createContext } from "../server/_core/context.js";
-import webhookRouter from "../server/webhooks/index.js";
-import authRouter from "../server/auth-routes.js";
-import dashboardRouter from "../server/dashboard-routes.js";
-import webinarRouter from "../server/webinar-routes.js";
-import { getDb } from "../server/db.js";
 
 const app = express();
-
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// CORS
+// CORS Middleware
 app.use((req: any, res: any, next: any) => {
-  const allowedOrigins = [
-    process.env.APP_URL || "",
-    process.env.CORS_ORIGIN || "",
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ].filter(Boolean);
-
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
-  }
-
+  if (req.method === "OPTIONS") return res.status(200).end();
   next();
 });
 
-// Debug DB Endpoint
-app.get("/api/debug-db", async (req: any, res: any) => {
+// Health check available immediately
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", env: process.env.NODE_ENV });
+});
+
+/**
+ * Lazy load routes to prevent startup crashes
+ */
+const initRoutes = async () => {
   try {
-    console.log("[Debug] Testing DB connection...");
-    const db = await getDb();
-    if (!db) {
-      return res.status(500).json({ status: "error", message: "Database initialization failed (db is null)" });
-    }
+    const { registerOAuthRoutes } = await import("../server/_core/oauth.js");
+    const { default: authRouter } = await import("../server/auth-routes.js");
+    const { default: dashboardRouter } = await import("../server/dashboard-routes.js");
+    const { default: webinarRouter } = await import("../server/webinar-routes.js");
+    const { appRouter } = await import("../server/routers/index.js");
+    const { createContext } = await import("../server/_core/context.js");
+    const { createExpressMiddleware } = await import("@trpc/server/adapters/express");
+
+    registerOAuthRoutes(app);
+    app.use("/api/auth", authRouter);
+    app.use("/api/dashboard", dashboardRouter);
+    app.use("/api/webinars", webinarRouter);
     
-    // Execute a simple query
-    const result = await db.execute("SELECT 1 as connected");
-    res.json({ 
-      status: "ok", 
-      message: "Database connected successfully", 
-      result,
-      env: {
-        hasDbUrl: !!process.env.DATABASE_URL,
-        nodeEnv: process.env.NODE_ENV
-      }
-    });
-  } catch (error: any) {
-    console.error("[Debug] DB connection failed:", error);
-    res.status(500).json({ 
-      status: "error", 
-      message: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
-    });
+    app.use("/api/trpc", createExpressMiddleware({
+      router: appRouter,
+      createContext,
+    }));
+
+    console.log("[Server] Routes initialized successfully");
+  } catch (err) {
+    console.error("[Server] Critical initialization error:", err);
+    throw err;
   }
-});
+};
 
-registerOAuthRoutes(app);
-app.use("/api/webhooks", webhookRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/dashboard", dashboardRouter);
-app.use("/api/webinars", webinarRouter);
+// Vercel handles the export, but we need to ensure routes are registered
+// We use a middleware to ensure routes are loaded on the first request
+let initialized = false;
+let initError: any = null;
 
-app.use(
-  "/api/trpc",
-  createExpressMiddleware({
-    router: appRouter,
-    createContext,
-  })
-);
-
-app.get("/api/health", (req: any, res: any) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// Global Error Handler
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error("[Global Error]", err);
-  res.status(500).json({
-    message: "Internal Server Error",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined
-  });
+app.use(async (req, res, next) => {
+  if (initialized) return next();
+  if (initError) return res.status(500).json({ error: "Initialization failed", details: initError.message });
+  
+  try {
+    await initRoutes();
+    initialized = true;
+    next();
+  } catch (err: any) {
+    initError = err;
+    res.status(500).json({ error: "Initialization failed during startup", details: err.message });
+  }
 });
 
 export default app;
