@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 转发请求到 Directus
     // 添加超时和重试机制来处理 HTTP/2 协议问题
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
     
     try {
       const response = await fetch(url.toString(), {
@@ -56,12 +56,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       clearTimeout(timeoutId);
 
       let data;
+      const contentType = response.headers.get('content-type');
+      console.log('Response status:', response.status, 'Content-Type:', contentType);
+      
       try {
-        data = await response.json();
-      } catch (e) {
         const text = await response.text();
-        console.error('Failed to parse JSON response:', text);
-        return res.status(500).json({ error: 'Invalid JSON response from Directus', details: text });
+        console.log('Response text length:', text.length);
+        data = JSON.parse(text);
+      } catch (e: any) {
+        console.error('Failed to parse JSON response:', e.message);
+        return res.status(500).json({ error: 'Invalid JSON response from Directus', details: e.message });
       }
 
       if (!response.ok) {
@@ -72,11 +76,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(data);
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
+      console.error('Fetch error:', fetchError.name, fetchError.message);
       if (fetchError.name === 'AbortError') {
-        console.error('Request timeout');
-        return res.status(504).json({ error: 'Request timeout' });
+        return res.status(504).json({ error: 'Request timeout after 30s' });
       }
-      throw fetchError;
+      return res.status(500).json({ error: 'Network error', message: fetchError.message });
     }
   } catch (error: any) {
     console.error('Proxy error:', error);
