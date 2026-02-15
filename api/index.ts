@@ -2,7 +2,7 @@
  * Vercel Serverless Function Entry Point
  * 
  * 这个文件将 Express 应用转换为 Vercel Serverless Function
- * 支持所有后端 API 路由：tRPC、OAuth、Webhooks
+ * 支持所有后端 API 路由：tRPC、OAuth、Webhooks、Auth、Dashboard、Webinars
  */
 
 import "dotenv/config";
@@ -12,6 +12,9 @@ import { registerOAuthRoutes } from "../server/_core/oauth";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 import webhookRouter from "../server/webhooks";
+import authRouter from "../server/auth-routes";
+import dashboardRouter from "../server/dashboard-routes";
+import webinarRouter from "../server/webinar-routes";
 
 const app = express();
 
@@ -50,6 +53,15 @@ registerOAuthRoutes(app);
 
 // Webhook routes for payment callbacks
 app.use("/api/webhooks", webhookRouter);
+
+// Auth routes (register, login)
+app.use("/api/auth", authRouter);
+
+// Dashboard routes
+app.use("/api/dashboard", dashboardRouter);
+
+// Webinar CRUD routes
+app.use("/api/webinars", webinarRouter);
 
 // tRPC API
 app.use(
