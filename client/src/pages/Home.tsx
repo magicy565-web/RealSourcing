@@ -27,11 +27,15 @@ export default function Home() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
+        // 直接连接服务器 API，绕过 Vercel Proxy 以解决 HTTP/2 协议错误
+        const baseUrl = "http://47.99.205.136:8055/items";
+        const fetchOptions = { mode: "cors" as RequestMode };
+
         // 并行获取所有数据
         const [webinarsRes, factoriesRes, participantsRes] = await Promise.all([
-          fetch("/api/directus-proxy?path=/items/webinars&limit=-1").then(r => r.json()),
-          fetch("/api/directus-proxy?path=/items/factories&limit=-1").then(r => r.json()).catch(() => ({ data: [] })),
-          fetch("/api/directus-proxy?path=/items/webinar_participants&limit=-1").then(r => r.json()).catch(() => ({ data: [] })),
+          fetch(`${baseUrl}/webinars?limit=-1`, fetchOptions).then(r => r.json()),
+          fetch(`${baseUrl}/factories?limit=-1`, fetchOptions).then(r => r.json()).catch(() => ({ data: [] })),
+          fetch(`${baseUrl}/webinar_participants?limit=-1`, fetchOptions).then(r => r.json()).catch(() => ({ data: [] })),
         ]);
         
         // 过滤掉软删除的数据
@@ -52,7 +56,7 @@ export default function Home() {
         });
 
         // 获取最近的 4 个 Webinar（过滤软删除）
-        const recentRes = await fetch("/api/directus-proxy?path=/items/webinars&limit=4");
+        const recentRes = await fetch(`${baseUrl}/webinars?limit=4`, fetchOptions);
         const recentData = await recentRes.json();
         const validRecent = (recentData.data || []).filter((w: any) => !w.deletedAt);
         setRecentWebinars(validRecent as Webinar[]);
