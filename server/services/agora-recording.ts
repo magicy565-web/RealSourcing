@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ENV } from '../_core/env';
+import { ENV } from '../_core/env.js';
 
 // 声网云端录制 API 基础 URL
 const AGORA_RECORDING_API_BASE = 'https://api.agora.io/v1/apps';

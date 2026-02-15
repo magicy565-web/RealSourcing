@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ENV } from '../_core/env';
+import { ENV } from '../_core/env.js';
 
 // 声网实时转录翻译 API 基础 URL
 const AGORA_STT_API_BASE = 'https://api.sd-rtn.com/api/speech-to-text/v1';

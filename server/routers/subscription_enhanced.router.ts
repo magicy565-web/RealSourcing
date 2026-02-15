@@ -4,12 +4,12 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc.js";
 import {
   getSubscriptionPlans,
   getSubscriptionPlanById,
   getUserSubscription,
-} from "../db";
+} from "../db.js";
 import {
   initializeUserSubscription,
   upgradeSubscription,
@@ -19,7 +19,7 @@ import {
   getUserQuotaUsage,
   getUserSubscriptionDetails,
   checkQuota,
-} from "../saas-core";
+} from "../saas-core.js";
 
 export const subscriptionEnhancedRouter = router({
   // ============================================================================

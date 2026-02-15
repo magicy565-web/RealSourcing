@@ -6,7 +6,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import { getUserSubscription, getSubscriptionPlanById } from "../db";
+import { getUserSubscription, getSubscriptionPlanById } from "../db.js";
 
 export type UserRole = "user" | "admin" | "buyer" | "factory";
 

@@ -3,7 +3,7 @@
  * Run this script once to populate the subscription_plans table
  */
 
-import { createSubscriptionPlan } from "../db";
+import { createSubscriptionPlan } from "../db.js";
 
 const plans = [
   {

@@ -1,6 +1,6 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc.js";
 import { z } from "zod";
-import { recordUsage, getMonthlyUsage } from "../db";
+import { recordUsage, getMonthlyUsage } from "../db.js";
 
 export const usageRouter = router({
   // Record usage

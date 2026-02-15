@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
-import { generateRtcToken, generateRtmToken, generateDualTokens } from "../lib/agora-token";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc.js";
+import { generateRtcToken, generateRtmToken, generateDualTokens } from "../lib/agora-token.js";
 import {
   generateWhiteboardSDKToken,
   generateWhiteboardRoomToken,
@@ -10,18 +10,18 @@ import {
   getWhiteboardRoomInfo,
   startDocumentConversion,
   queryDocumentConversion,
-} from "../services/agora-whiteboard";
+} from "../services/agora-whiteboard.js";
 import {
   startCloudRecording,
   queryCloudRecording,
   stopCloudRecording,
-} from "../services/agora-recording";
+} from "../services/agora-recording.js";
 import {
   startSpeechToText,
   querySpeechToText,
   updateSpeechToText,
   stopSpeechToText,
-} from "../services/agora-speech-to-text";
+} from "../services/agora-speech-to-text.js";
 
 const WHITEBOARD_AK = process.env.WHITEBOARD_AK || "";
 const WHITEBOARD_SK = process.env.WHITEBOARD_SK || "";

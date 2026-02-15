@@ -1,26 +1,26 @@
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions, setAuthCookie } from "./_core/cookies";
-import { hashPassword, verifyPassword } from "./_core/password";
-import { signToken } from "./_core/auth";
-import { getUserByOpenId, upsertUser } from "./db";
+import { getSessionCookieOptions, setAuthCookie } from "./_core/cookies.js";
+import { hashPassword, verifyPassword } from "./_core/password.js";
+import { signToken } from "./_core/auth.js";
+import { getUserByOpenId, upsertUser } from "./db.js";
 import { eq } from "drizzle-orm";
-import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { systemRouter } from "./_core/systemRouter.js";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc.js";
 import { z } from "zod";
 
-import { checkQuota, recordResourceUsage } from "./middleware/quota";
-import { triggerWebinarStatusEvent } from "./middleware/auto-events";
-import { generateAIReport, type ReportType } from "./lib/ai-report-generator";
-import { subscriptionRouter } from "./routers/subscription.router";
-import { paymentRouter } from "./routers/payment.router";
-import { usageRouter } from "./routers/usage.router";
-import { aiRouter } from "./routers/ai.router";
-import { rtmRouter } from "./routers/rtm.router";
-import { factoryRouter } from "./routers/factory.router";
-import { orderRouter } from "./routers/order.router";
-import { subscriptionEnhancedRouter } from "./routers/subscription_enhanced.router";
-import { agoraRouter } from "./routers/agora.router";
-import { webinarRouter } from "./routers/webinar.router";
+import { checkQuota, recordResourceUsage } from "./middleware/quota.js";
+import { triggerWebinarStatusEvent } from "./middleware/auto-events.js";
+import { generateAIReport, type ReportType } from "./lib/ai-report-generator.js";
+import { subscriptionRouter } from "./routers/subscription.router.js";
+import { paymentRouter } from "./routers/payment.router.js";
+import { usageRouter } from "./routers/usage.router.js";
+import { aiRouter } from "./routers/ai.router.js";
+import { rtmRouter } from "./routers/rtm.router.js";
+import { factoryRouter } from "./routers/factory.router.js";
+import { orderRouter } from "./routers/order.router.js";
+import { subscriptionEnhancedRouter } from "./routers/subscription_enhanced.router.js";
+import { agoraRouter } from "./routers/agora.router.js";
+import { webinarRouter } from "./routers/webinar.router.js";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -29,7 +29,7 @@ import {
   addNegotiationEvent, getWebinarTimeline,
   getFactoryOrders,
   getDashboardStats,
-} from "./db";
+} from "./db.js";
 
 export const appRouter = router({
   system: systemRouter,

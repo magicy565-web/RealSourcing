@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { getWebinarById, getWebinarFactories, getWebinarTimeline } from "../db";
+import { getWebinarById, getWebinarFactories, getWebinarTimeline } from "../db.js";
 
 // Initialize OpenAI client with third-party API
 const openai = new OpenAI({

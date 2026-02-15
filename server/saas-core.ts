@@ -3,8 +3,8 @@ import {
   getUserSubscription, 
   createSubscription, 
   getDefaultQuotaLimits 
-} from "./db";
-import { type QuotaLimits, type QuotaUsage } from "./types";
+} from "./db.js";
+import { type QuotaLimits, type QuotaUsage } from "./types.js";
 
 /**
  * 初始化用户的 SaaS 订阅

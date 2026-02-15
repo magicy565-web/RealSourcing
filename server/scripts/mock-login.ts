@@ -1,5 +1,5 @@
-import { getDb, upsertUser, getUserByOpenId } from "../db";
-import { users } from "../../drizzle/schema";
+import { getDb, upsertUser, getUserByOpenId } from "../db.js";
+import { users } from "../../drizzle/schema.js";
 import { SignJWT } from "jose";
 import "dotenv/config";
 

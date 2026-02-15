@@ -1,6 +1,6 @@
 import { 
   getDb, 
-} from "./db";
+} from "./db.js";
 import {
   orders, 
   orderItems, 
@@ -10,7 +10,7 @@ import {
   factoryProducts,
   auditLogs,
   type InsertAuditLog
-} from "../drizzle/schema";
+} from "../drizzle/schema.js";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 /**

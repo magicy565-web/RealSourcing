@@ -1,6 +1,6 @@
-import { getUserByOpenId, upsertUser } from '../db';
-import { signToken } from './auth';
-import { setAuthCookie } from './cookies';
+import { getUserByOpenId, upsertUser } from '../db.js';
+import { signToken } from './auth.js';
+import { setAuthCookie } from './cookies.js';
 
 export function registerOAuthRoutes(app: any) {
   // GitHub OAuth Callback

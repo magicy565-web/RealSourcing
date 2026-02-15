@@ -3,13 +3,13 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc.js";
 import {
   getFactories,
   getFactoryById,
   createFactory,
   updateFactory,
-} from "../db";
+} from "../db.js";
 import {
   getFactoryCertifications,
   createFactoryCertification,
@@ -25,8 +25,8 @@ import {
   createFactoryReview,
   replyToReview,
   createAuditLog,
-} from "../db_extended";
-import { checkAndTrackUsage } from "../saas-core";
+} from "../db_extended.js";
+import { checkAndTrackUsage } from "../saas-core.js";
 
 export const factoryRouter = router({
   // ============================================================================

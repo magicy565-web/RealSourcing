@@ -1,4 +1,4 @@
-import { sdk } from './sdk';
+import { sdk } from './sdk.js';
 
 /**
  * 为用户生成 JWT 会话令牌

@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc.js";
 import { z } from "zod";
 import {
   getSubscriptionPlans,
@@ -8,7 +8,7 @@ import {
   updateSubscription,
   cancelSubscription,
   getMonthlyUsage,
-} from "../db";
+} from "../db.js";
 import { TRPCError } from "@trpc/server";
 
 export const subscriptionRouter = router({

@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { hashPassword, verifyPassword } from './_core/password';
-import { signToken } from './_core/auth';
-import { setAuthCookie } from './_core/cookies';
-import { getUserByEmail, upsertUser } from './db';
-import { requireAuth } from './middleware/auth';
+import { hashPassword, verifyPassword } from './_core/password.js';
+import { signToken } from './_core/auth.js';
+import { setAuthCookie } from './_core/cookies.js';
+import { getUserByEmail, upsertUser } from './db.js';
+import { requireAuth } from './middleware/auth.js';
 import { COOKIE_NAME } from '@shared/const';
 
 const router = Router();

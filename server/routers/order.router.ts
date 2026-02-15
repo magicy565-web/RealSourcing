@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc.js";
 import { 
   getOrders, 
   getOrderById, 
@@ -10,7 +10,7 @@ import {
   getQuotations,
   getQuotationById,
   createOrderItem
-} from "../db_extended";
+} from "../db_extended.js";
 
 export const orderRouter = router({
   // 获取订单列表

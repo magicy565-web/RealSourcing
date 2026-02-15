@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ENV } from '../_core/env';
+import { ENV } from '../_core/env.js';
 import crypto from 'crypto';
 
 // 白板API基础URL

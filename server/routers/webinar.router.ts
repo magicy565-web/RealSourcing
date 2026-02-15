@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import { webinars, webinarParticipants, subscriptions, subscriptionPlans } from "../../drizzle/schema";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc.js";
+import { getDb } from "../db.js";
+import { webinars, webinarParticipants, subscriptions, subscriptionPlans } from "../../drizzle/schema.js";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 // 订阅套餐的时长限制（分钟）

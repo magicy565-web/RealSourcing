@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc.js";
 import {
   saveRtmMessage,
   getPrivateMessages,
@@ -11,8 +11,8 @@ import {
   clearConversationUnread,
   toggleConversationPin,
   toggleConversationMute,
-} from "../db";
-import { createAuditLog } from "../db_extended";
+} from "../db.js";
+import { createAuditLog } from "../db_extended.js";
 
 export const rtmRouter = router({
   /**

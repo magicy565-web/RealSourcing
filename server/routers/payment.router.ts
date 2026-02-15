@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc.js";
 import { z } from "zod";
 import {
   createPaymentOrder,
@@ -8,11 +8,11 @@ import {
   getSubscriptionPlanById,
   createSubscription,
   getUserSubscription,
-} from "../db";
+} from "../db.js";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
-import { createAlipayOrder } from "../lib/alipay";
-import { createWechatPayOrder } from "../lib/wechatpay";
+import { createAlipayOrder } from "../lib/alipay.js";
+import { createWechatPayOrder } from "../lib/wechatpay.js";
 
 export const paymentRouter = router({
   // Create a payment order

@@ -5,7 +5,7 @@
  *   pnpm exec tsx server/scripts/test-agora-token.ts
  */
 
-import { generateRtcToken } from "../lib/agora-token";
+import { generateRtcToken } from "../lib/agora-token.js";
 
 console.log("🧪 Testing Agora Token Generation...\n");
 

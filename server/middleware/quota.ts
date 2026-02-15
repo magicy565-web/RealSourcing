@@ -11,7 +11,7 @@ import {
   getSubscriptionPlanById,
   getMonthlyUsage,
   recordUsage,
-} from "../db";
+} from "../db.js";
 
 export type ResourceType = "webinar_created" | "product_uploaded" | "inquiry_received";
 

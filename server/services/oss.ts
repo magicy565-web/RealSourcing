@@ -1,5 +1,5 @@
 import OSS from 'ali-oss';
-import { ENV } from '../_core/env';
+import { ENV } from '../_core/env.js';
 
 // 阿里云 OSS 客户端配置
 const ossClient = new OSS({

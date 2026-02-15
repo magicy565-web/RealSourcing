@@ -1,4 +1,4 @@
-import { addNegotiationEvent } from '../db';
+import { addNegotiationEvent } from '../db.js';
 
 /**
  * 自动记录谈判事件的中间件/工具函数

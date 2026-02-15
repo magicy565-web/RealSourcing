@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { requireAuth } from './middleware/auth';
-import { getDb } from './db';
-import { webinars, factories } from '../drizzle/schema';
+import { requireAuth } from './middleware/auth.js';
+import { getDb } from './db.js';
+import { webinars, factories } from '../drizzle/schema.js';
 import { sql, count, eq } from 'drizzle-orm';
 
 const router = Router();

@@ -5,14 +5,14 @@
  */
 
 import { Router } from "express";
-import { verifyAlipayNotify } from "./lib/alipay";
-import { verifyWechatPayNotify, decryptWechatPayResource } from "./lib/wechatpay";
+import { verifyAlipayNotify } from "./lib/alipay.js";
+import { verifyWechatPayNotify, decryptWechatPayResource } from "./lib/wechatpay.js";
 import {
   getPaymentOrderByNo,
   updatePaymentOrder,
   createSubscription,
   getUserSubscription,
-} from "./db";
+} from "./db.js";
 
 const webhooksRouter = Router();
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { sdk } from '../_core/sdk';
+import { sdk } from '../_core/sdk.js';
 
 /**
  * 认证中间件 - 要求用户必须登录

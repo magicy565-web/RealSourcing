@@ -8,8 +8,7 @@ import "dotenv/config";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
-// 在 Vercel 的 ESM 环境中，导入本地文件需要显式后缀，或者通过特定的解析规则
-// 尝试使用更稳健的导入方式
+// 在 Vercel 的 ESM 环境中，导入本地文件需要显式后缀
 import { registerOAuthRoutes } from "../server/_core/oauth.js";
 import { appRouter } from "../server/routers/index.js";
 import { createContext } from "../server/_core/context.js";

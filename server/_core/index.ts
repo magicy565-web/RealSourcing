@@ -3,14 +3,14 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
-import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
-import webhookRouter from "../webhooks";
-import authRouter from "../auth-routes";
-import dashboardRouter from "../dashboard-routes";
-import webinarRouter from "../webinar-routes";
+import { registerOAuthRoutes } from "./oauth.js";
+import { appRouter } from "../routers.js";
+import { createContext } from "./context.js";
+import { serveStatic, setupVite } from "./vite.js";
+import webhookRouter from "../webhooks.js";
+import authRouter from "../auth-routes.js";
+import dashboardRouter from "../dashboard-routes.js";
+import webinarRouter from "../webinar-routes.js";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {

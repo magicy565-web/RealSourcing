@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc.js";
 import { OpenAI } from "openai";
 import {
   extractPurchaseInfo,
   generateIntentContract,
   assistConversation,
   translateText,
-} from '../services/ai-conversation';
+} from '../services/ai-conversation.js';
 
 // AI Configuration from environment or user provided defaults
 const AI_CONFIG = {

@@ -5,7 +5,7 @@
  *   tsx server/scripts/test-ai-report.ts
  */
 
-import { generateAIReport } from "../lib/ai-report-generator";
+import { generateAIReport } from "../lib/ai-report-generator.js";
 
 async function testAIReport() {
   console.log("🧪 Testing AI Report Generation...\n");
