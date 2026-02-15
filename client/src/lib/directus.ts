@@ -5,23 +5,36 @@ export interface Webinar {
   id: number;
   title: string;
   description?: string;
-  type: 'one_on_one' | 'small_group' | 'medium' | 'large' | 'extra_large';
+  type: 'one_on_one' | 'small_group' | 'medium' | 'large' | 'extra_large' | 'webinar' | 'group';
   scenario?: 'general' | 'tiktok_dropshipper' | 'influencer_selection' | 'negotiation' | 'small_batch' | 'product_launch' | 'factory_tour' | 'industry_summit';
   visibility?: 'public' | 'semi_public' | 'private';
   status: 'draft' | 'scheduled' | 'live' | 'completed' | 'cancelled';
+  // 支持两种命名风格：camelCase (从 Directus API) 和 snake_case (旧版本)
+  scheduledAt?: string;
   scheduled_at?: string;
   duration?: number;
   category?: string;
   language?: string;
+  agoraChannelName?: string;
   agora_channel_name?: string;
+  agoraToken?: string;
   agora_token?: string;
+  coverImage?: string;
   cover_image?: string;
+  maxParticipants?: number;
   max_participants?: number;
+  currentParticipants?: number;
   actual_participants?: number;
+  participants_count?: number;
+  hostType?: 'factory' | 'buyer';
   host_type?: 'factory' | 'buyer';
+  creatorId?: number;
   creator_id?: number;
-  created_at: string;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
   updated_at?: string;
+  deletedAt?: string | null;
 }
 
 export interface Factory {

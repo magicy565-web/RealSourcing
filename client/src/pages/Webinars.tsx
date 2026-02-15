@@ -55,8 +55,10 @@ export default function Webinars() {
         }
 
         const data = await response.json();
-        console.log("Webinars loaded:", data.data?.length || 0);
-        setWebinars(data.data as Webinar[]);
+        // 过滤掉软删除的数据
+        const validWebinars = (data.data || []).filter((w: any) => !w.deletedAt);
+        console.log("Webinars loaded:", validWebinars.length);
+        setWebinars(validWebinars as Webinar[]);
       } catch (error: any) {
         console.error("Failed to fetch webinars after retries:", error);
         setWebinars([]);
@@ -236,9 +238,9 @@ export default function Webinars() {
                 >
                   {/* Cover Image */}
                   <div className="aspect-video bg-[#1a1a1a] relative overflow-hidden">
-                    {webinar.cover_image ? (
+                    {(webinar.coverImage || webinar.cover_image) ? (
                       <img
-                        src={`https://admin.cnsubscribe.xyz/assets/${webinar.cover_image}`}
+                        src={`https://admin.cnsubscribe.xyz/assets/${webinar.coverImage || webinar.cover_image}`}
                         alt={webinar.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
@@ -261,13 +263,13 @@ export default function Webinars() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground font-light">
                         <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(webinar.scheduled_at)}
+                        {formatDate(webinar.scheduledAt || webinar.scheduled_at)}
                       </div>
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-light">
                             <Users className="h-3 w-3" />
-                            {webinar.participants_count || 0}
+                            {webinar.currentParticipants || webinar.participants_count || 0}
                           </div>
                           {webinar.category && (
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-light">

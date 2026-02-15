@@ -34,7 +34,8 @@ export default function Home() {
           fetch("/api/directus-proxy?path=/items/webinar_participants&limit=-1").then(r => r.json()).catch(() => ({ data: [] })),
         ]);
         
-        const allWebinars = webinarsRes.data || [];
+        // 过滤掉软删除的数据
+        const allWebinars = (webinarsRes.data || []).filter((w: any) => !w.deletedAt);
         const factories = factoriesRes.data || [];
         const participants = participantsRes.data || [];
 
@@ -50,10 +51,11 @@ export default function Home() {
           pendingReviews: 0, // 暂时设为 0
         });
 
-        // 获取最近的 4 个 Webinar
+        // 获取最近的 4 个 Webinar（过滤软删除）
         const recentRes = await fetch("/api/directus-proxy?path=/items/webinars&limit=4");
         const recentData = await recentRes.json();
-        setRecentWebinars(recentData.data as Webinar[]);
+        const validRecent = (recentData.data || []).filter((w: any) => !w.deletedAt);
+        setRecentWebinars(validRecent as Webinar[]);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -216,10 +218,10 @@ export default function Home() {
                         >
                           <div className="flex items-center gap-3 flex-1">
                             {/* Cover Thumbnail */}
-                            {webinar.cover_image ? (
+                            {(webinar.coverImage || webinar.cover_image) ? (
                               <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
                                 <img
-                                  src={`https://admin.cnsubscribe.xyz/assets/${webinar.cover_image}`}
+                                  src={`https://admin.cnsubscribe.xyz/assets/${webinar.coverImage || webinar.cover_image}`}
                                   alt={webinar.title}
                                   className="w-full h-full object-cover"
                                 />
@@ -240,7 +242,7 @@ export default function Home() {
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  {formatDate(webinar.scheduled_at)}
+                                  {formatDate(webinar.scheduledAt || webinar.scheduled_at)}
                                 </span>
                                 {webinar.category && (
                                   <span className="flex items-center gap-1">
