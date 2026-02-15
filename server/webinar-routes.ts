@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { requireAuth } from './middleware/auth.js';
 import { getDb } from './db.js';
 import { webinars } from '../drizzle/schema.js';
@@ -7,9 +7,10 @@ import { eq } from 'drizzle-orm';
 const router = Router();
 
 // Create a new webinar
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const db = await getDb();
+    if (!db) throw new Error('Database connection failed');
     const user = (req as any).user;
     
     const {
@@ -62,9 +63,10 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Get all webinars
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const db = await getDb();
+    if (!db) throw new Error('Database connection failed');
     const allWebinars = await db.select().from(webinars);
 
     res.json({
@@ -81,9 +83,10 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // Get a single webinar by ID
-router.get('/:id', requireAuth, async (req, res) => {
+router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const db = await getDb();
+    if (!db) throw new Error('Database connection failed');
     const webinarId = parseInt(req.params.id);
 
     const [webinar] = await db
@@ -112,9 +115,10 @@ router.get('/:id', requireAuth, async (req, res) => {
 });
 
 // Update a webinar
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const db = await getDb();
+    if (!db) throw new Error('Database connection failed');
     const user = (req as any).user;
     const webinarId = parseInt(req.params.id);
 
@@ -190,9 +194,10 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Delete a webinar (soft delete)
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const db = await getDb();
+    if (!db) throw new Error('Database connection failed');
     const user = (req as any).user;
     const webinarId = parseInt(req.params.id);
 

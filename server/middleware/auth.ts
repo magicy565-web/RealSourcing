@@ -4,7 +4,7 @@ import { sdk } from '../_core/sdk.js';
 /**
  * 认证中间件 - 要求用户必须登录
  */
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await sdk.authenticateRequest(req);
     
@@ -19,12 +19,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     console.error('Auth middleware error:', error);
     return res.status(401).json({ error: 'Invalid or expired session' });
   }
-}
+};
 
 /**
  * 可选认证中间件 - 如果有token则验证，但不强制要求登录
  */
-export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await sdk.authenticateRequest(req);
     (req as any).user = user || null;
@@ -32,4 +32,4 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
     (req as any).user = null;
   }
   next();
-}
+};

@@ -64,7 +64,7 @@ export function registerOAuthRoutes(app: any) {
       }
 
       // 4. Sign token and set cookie
-      const token = await signToken({ userId: user.id, role: user.role });
+      const token = await signToken({ openId: user.openId, name: user.name || undefined });
       setAuthCookie(res, token);
 
       // 5. Redirect back to frontend
