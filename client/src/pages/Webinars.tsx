@@ -19,8 +19,6 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
-import { directus } from "../lib/directus";
-import { readItems } from "@directus/sdk";
 import type { Webinar } from "../lib/directus";
 import DashboardLayout from "../components/DashboardLayout";
 
@@ -36,22 +34,27 @@ export default function Webinars() {
     const fetchWebinars = async () => {
       setIsLoading(true);
       try {
-        const filter: any = {};
+        // 构建查询参数
+        let url = "https://admin.cnsubscribe.xyz/items/webinars?limit=100&sort=-created_at";
         
         // 状态筛选
         if (statusFilter !== "all") {
-          filter.status = { _eq: statusFilter };
+          url += `&filter[status][_eq]=${statusFilter}`;
         }
 
-        const result = await directus.request(
-          readItems("webinars", {
-            filter,
-            sort: ["-created_at"],
-            limit: 100,
-          })
-        );
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-        setWebinars(result as Webinar[]);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setWebinars(data.data as Webinar[]);
       } catch (error: any) {
         console.error("Failed to fetch webinars:", error);
         setWebinars([]);
