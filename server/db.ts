@@ -21,11 +21,23 @@ let _pool: mysql.Pool | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _pool = mysql.createPool(process.env.DATABASE_URL);
+      const isProd = process.env.NODE_ENV === 'production';
+      
+      console.log('[Database] Initializing pool, production:', isProd);
+      
+      _pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        // 生产环境下强制开启 SSL，通常云数据库（如 TiDB, RDS）需要此配置
+        ssl: isProd ? { rejectUnauthorized: false } : undefined,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
+      });
+      
       _db = drizzle(_pool);
       console.log('[Database] Connection pool initialized');
     } catch (error) {
-      console.error('[Database] Failed to connect:', error);
+      console.error('[Database] Failed to create pool:', error);
       _db = null;
     }
   }

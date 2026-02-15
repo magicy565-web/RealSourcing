@@ -16,6 +16,7 @@ import webhookRouter from "../server/webhooks/index.js";
 import authRouter from "../server/auth-routes.js";
 import dashboardRouter from "../server/dashboard-routes.js";
 import webinarRouter from "../server/webinar-routes.js";
+import { getDb } from "../server/db.js";
 
 const app = express();
 
@@ -48,6 +49,36 @@ app.use((req: any, res: any, next: any) => {
   next();
 });
 
+// Debug DB Endpoint
+app.get("/api/debug-db", async (req: any, res: any) => {
+  try {
+    console.log("[Debug] Testing DB connection...");
+    const db = await getDb();
+    if (!db) {
+      return res.status(500).json({ status: "error", message: "Database initialization failed (db is null)" });
+    }
+    
+    // Execute a simple query
+    const result = await db.execute("SELECT 1 as connected");
+    res.json({ 
+      status: "ok", 
+      message: "Database connected successfully", 
+      result,
+      env: {
+        hasDbUrl: !!process.env.DATABASE_URL,
+        nodeEnv: process.env.NODE_ENV
+      }
+    });
+  } catch (error: any) {
+    console.error("[Debug] DB connection failed:", error);
+    res.status(500).json({ 
+      status: "error", 
+      message: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    });
+  }
+});
+
 registerOAuthRoutes(app);
 app.use("/api/webhooks", webhookRouter);
 app.use("/api/auth", authRouter);
@@ -64,6 +95,15 @@ app.use(
 
 app.get("/api/health", (req: any, res: any) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Global Error Handler
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error("[Global Error]", err);
+  res.status(500).json({
+    message: "Internal Server Error",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined
+  });
 });
 
 export default app;
