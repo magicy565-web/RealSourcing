@@ -1,4 +1,4 @@
-import { eq, desc, sql, and, like, or } from 'drizzle-orm';
+import { eq, desc, sql, and, like } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 import {
@@ -9,24 +9,18 @@ import {
   reports, InsertReport,
   negotiationEvents,
   orders,
-  subscriptionPlans, InsertSubscriptionPlan,
+  subscriptionPlans,
   subscriptions, InsertSubscription,
   paymentOrders, InsertPaymentOrder,
-  usageRecords, InsertUsageRecord,
-  rtmMessages, InsertRtmMessage,
-  rtmConversations, InsertRtmConversation,
+  usageRecords,
 } from '../drizzle/schema.js';
-import { ENV } from './_core/env.js';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: any = null;
 let _pool: mysql.Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      // 在生产环境（如 Vercel）中，使用连接池更稳定
-      // 阿里云 RDS 通常需要 SSL 连接，可以通过 DATABASE_URL 的 query 参数传递
-      // 或者在这里显式配置
       _pool = mysql.createPool(process.env.DATABASE_URL);
       _db = drizzle(_pool);
       console.log('[Database] Connection pool initialized');
@@ -45,7 +39,6 @@ export async function upsertUser(user: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   await db.insert(users).values(user).onDuplicateKeyUpdate({ set: user });
-  // Return the created/updated user
   return await getUserByOpenId(user.openId);
 }
 
@@ -256,10 +249,6 @@ export async function cancelSubscription(userId: number) {
   await db.update(subscriptions).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(subscriptions.userId, userId));
 }
 
-export function getDefaultQuotaLimits() {
-  return { webinarCreatedMonthly: 2, productsMax: 10, inquiriesMonthly: 50, storageGB: 1, videoRecordingHours: 0, aiReportsMonthly: 1, webinarDurationMinutes: 60, priorityListing: false, verifiedBadge: false, multiFactoryManagement: false, apiAccess: false, dedicatedSupport: false };
-}
-
 // ============ PAYMENT QUERIES ============
 
 export async function createPaymentOrder(data: InsertPaymentOrder) {
@@ -306,30 +295,4 @@ export async function getMonthlyUsage(userId: number, resourceType: string) {
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const result = await db.select({ total: sql`sum(count)` }).from(usageRecords).where(and(eq(usageRecords.userId, userId), eq(usageRecords.resourceType, resourceType), sql`periodStart >= ${periodStart}`));
   return Number(result[0]?.total ?? 0);
-}
-
-// ============ RTM MESSAGES ============
-
-export async function saveRtmMessage(data: InsertRtmMessage) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  await db.insert(rtmMessages).values(data);
-}
-
-export async function getRtmMessages(conversationId: string, limit: number = 50) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(rtmMessages).where(eq(rtmMessages.conversationId, conversationId)).orderBy(desc(rtmMessages.timestamp)).limit(limit);
-}
-
-export async function upsertRtmConversation(data: InsertRtmConversation) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  await db.insert(rtmConversations).values(data).onDuplicateKeyUpdate({ set: data });
-}
-
-export async function getUserConversations(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(rtmConversations).where(or(eq(rtmConversations.user1Id, userId), eq(rtmConversations.user2Id, userId))).orderBy(desc(rtmConversations.lastMessageAt));
 }

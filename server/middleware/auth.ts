@@ -9,15 +9,15 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     const user = await sdk.authenticateRequest(req);
     
     if (!user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return (res as any).status(401).json({ error: 'Authentication required' });
     }
     
     // 将用户信息附加到request对象上
     (req as any).user = user;
-    next();
+    (next as any)();
   } catch (error: any) {
     console.error('Auth middleware error:', error);
-    return res.status(401).json({ error: 'Invalid or expired session' });
+    return (res as any).status(401).json({ error: 'Invalid or expired session' });
   }
 };
 
@@ -31,5 +31,5 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
   } catch (error) {
     (req as any).user = null;
   }
-  next();
+  (next as any)();
 };
