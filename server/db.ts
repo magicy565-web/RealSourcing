@@ -7,26 +7,42 @@ let _db: any = null;
 let _pool: any = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      console.error('[Database] ERROR: DATABASE_URL environment variable is missing!');
+      return null;
+    }
+
     try {
       const isProd = process.env.NODE_ENV === 'production';
+      console.log('[Database] Connecting to database...', { 
+        urlLength: dbUrl.length,
+        isProd 
+      });
       
-      // 使用更通用的配置方式
       _pool = mysql.createPool({
-        uri: process.env.DATABASE_URL,
+        uri: dbUrl,
         ssl: isProd ? { rejectUnauthorized: false } : undefined,
         waitForConnections: true,
-        connectionLimit: 1, // Serverless 环境建议限制连接数
+        connectionLimit: 1,
         queueLimit: 0,
-        enableKeepAlive: true,
-        keepAliveInitialDelay: 10000,
+        connectTimeout: 10000, // 10s timeout
       });
       
       _db = drizzle(_pool, { schema });
-      console.log('[Database] Connection pool initialized');
-    } catch (error) {
-      console.error('[Database] Failed to create pool:', error);
+      
+      // Test connection immediately
+      await _pool.query('SELECT 1');
+      console.log('[Database] Connection test successful');
+    } catch (error: any) {
+      console.error('[Database] Connection failed:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno
+      });
       _db = null;
+      throw error; // Re-throw to be caught by the route handler
     }
   }
   return _db;
@@ -37,9 +53,16 @@ export async function getDb() {
 export async function upsertUser(user: any) {
   if (!user.openId) throw new Error('User openId is required');
   const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  await db.insert(schema.users).values(user).onDuplicateKeyUpdate({ set: user });
-  return await getUserByOpenId(user.openId);
+  if (!db) throw new Error('Database connection not initialized');
+  
+  try {
+    console.log('[Database] Upserting user:', user.email);
+    await db.insert(schema.users).values(user).onDuplicateKeyUpdate({ set: user });
+    return await getUserByOpenId(user.openId);
+  } catch (error: any) {
+    console.error('[Database] Upsert user failed:', error.message);
+    throw error;
+  }
 }
 
 export async function getUserByOpenId(openId: string) {
