@@ -117,9 +117,9 @@ export default function Webinars() {
     if (coverImage.startsWith("http")) return coverImage;
     if (coverImage.startsWith("/")) {
       // 相对路径，使用 Directus assets endpoint
-      return `http://47.99.205.136:8055/assets${coverImage}`;
+      return `https://admin.cnsubscribe.xyz/assets${coverImage}`;
     }
-    return `http://47.99.205.136:8055/assets/${coverImage}`;
+    return `https://admin.cnsubscribe.xyz/assets/${coverImage}`;
   };
 
   return (
