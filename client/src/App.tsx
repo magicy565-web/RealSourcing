@@ -12,6 +12,8 @@ import WebinarCreate from "./pages/CreateWebinar";
 import WebinarDetail from "./pages/WebinarDetail";
 import WebinarReplay from "./pages/WebinarReplay";
 import WebinarRoom from "./pages/WebinarRoom";
+import ProductShowcase from "./pages/ProductShowcase";
+import MyFavorites from "./pages/MyFavorites";
 import NegotiationRoom from "./pages/NegotiationRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
@@ -40,6 +42,8 @@ function Router() {
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
       <Route path="/webinars/:id/room" component={WebinarRoom} />
+      <Route path="/webinars/:id/showcase" component={ProductShowcase} />
+      <Route path="/webinars/:id/favorites" component={MyFavorites} />
       <Route path="/webinars/:id">{(params) => <WebinarDetail params={params} />}</Route>
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
       <Route path="/factories" component={Factories} />

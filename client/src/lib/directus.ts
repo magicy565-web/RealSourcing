@@ -9,6 +9,9 @@ export interface Webinar {
   scenario?: 'general' | 'tiktok_dropshipper' | 'influencer_selection' | 'negotiation' | 'small_batch' | 'product_launch' | 'factory_tour' | 'industry_summit';
   visibility?: 'public' | 'semi_public' | 'private';
   status: 'draft' | 'scheduled' | 'live' | 'completed' | 'cancelled';
+  // TikTok 选品会议相关字段
+  meeting_type?: 'standard' | 'sourcing'; // 区分传统会议和选品会议
+  product_count?: number; // 产品数量
   // 支持两种命名风格：camelCase (从 Directus API) 和 snake_case (旧版本)
   scheduledAt?: string;
   scheduled_at?: string;
@@ -129,6 +132,39 @@ export interface Report {
   created_at: string;
 }
 
+// TikTok 选品会议 - 产品相关类型
+export interface Product {
+  id: number;
+  webinar_id: number;
+  name: string;
+  price: number;
+  currency: string;
+  moq: number; // 最小起订量
+  lead_time: string; // 交期（如 "7-10 days"）
+  images: string[]; // 产品图片 URL 数组
+  description?: string;
+  specs?: any; // 产品规格（JSON 对象）
+  category?: string;
+  stock?: number;
+  favorite_count: number; // 收藏数
+  inquiry_count: number; // 询价数
+  view_count: number; // 浏览数
+  created_at: string;
+  updated_at?: string;
+}
+
+// 产品互动记录（收藏、询价、浏览）
+export interface ProductInteraction {
+  id: number;
+  webinar_id: number;
+  product_id: number;
+  user_id: string; // 用户 ID（卖家）
+  user_name?: string; // 用户名称
+  type: 'view' | 'favorite' | 'inquiry'; // 互动类型
+  metadata?: any; // 额外信息（如询价数量、目标价格等）
+  created_at: string;
+}
+
 export interface Schema {
   webinars: Webinar[];
   factories: Factory[];
@@ -138,6 +174,8 @@ export interface Schema {
   webinar_participants: WebinarParticipant[];
   messages: Message[];
   reports: Report[];
+  products: Product[]; // TikTok 选品会议产品
+  product_interactions: ProductInteraction[]; // 产品互动记录
 }
 
 // Mock Data for Fallback (when CORS or Connection fails)
