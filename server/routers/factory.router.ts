@@ -3,7 +3,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc.js";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc.js";
 import {
   getFactories,
   getFactoryById,
@@ -37,7 +37,7 @@ export const factoryRouter = router({
   /**
    * 获取工厂列表
    */
-  list: protectedProcedure
+  list: publicProcedure
     .input(z.object({
       search: z.string().optional(),
     }))
@@ -48,7 +48,7 @@ export const factoryRouter = router({
   /**
    * 获取工厂详情
    */
-  getById: protectedProcedure
+  getById: publicProcedure
     .input(z.object({
       id: z.number(),
     }))
