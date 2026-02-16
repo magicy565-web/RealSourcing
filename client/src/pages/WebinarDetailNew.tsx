@@ -80,10 +80,11 @@ export default function WebinarDetailNew({ params }: WebinarDetailProps) {
   const getCoverImageUrl = (coverImage: string | null) => {
     if (!coverImage) return null;
     if (coverImage.startsWith("http")) return coverImage;
+    const assetsUrl = `${import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz'}/assets`;
     if (coverImage.startsWith("/")) {
-      return `https://admin.cnsubscribe.xyz/assets${coverImage}`;
+      return `${assetsUrl}${coverImage}`;
     }
-    return `https://admin.cnsubscribe.xyz/assets/${coverImage}`;
+    return `${assetsUrl}/${coverImage}`;
   };
 
   const getStatusBadge = (status: string) => {

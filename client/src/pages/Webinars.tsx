@@ -21,6 +21,7 @@ import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import type { Webinar } from "../lib/directus";
 import DashboardLayout from "../components/DashboardLayout";
+import { API_ENDPOINTS, getAssetUrl } from "../lib/config";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
@@ -34,8 +35,8 @@ export default function Webinars() {
     const fetchWebinars = async (retryCount = 0) => {
       setIsLoading(true);
       try {
-        // 直接使用 Nginx 反向代理的 HTTPS 域名，绕过 Vercel Proxy 的网络问题
-        const url = "https://admin.cnsubscribe.xyz/items/webinars?limit=100";
+        // 使用配置的API端点
+        const url = `${API_ENDPOINTS.webinars}?limit=100`;
 
         const response = await fetch(url, {
           method: "GET",
@@ -249,7 +250,7 @@ export default function Webinars() {
                   <div className="aspect-video bg-[#1a1a1a] relative overflow-hidden">
                     {(webinar.coverImage || webinar.cover_image) ? (
                       <img
-                        src={`https://admin.cnsubscribe.xyz/assets/${webinar.coverImage || webinar.cover_image}`}
+                        src={getAssetUrl(webinar.coverImage || webinar.cover_image)}
                         alt={webinar.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />

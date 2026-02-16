@@ -44,7 +44,7 @@ export default function AdminProductManagement() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://47.99.205.136:8055/items/products?fields=*,supplier_id.name&sort=-id&limit=100');
+      const response = await fetch('https://admin.cnsubscribe.xyz/items/products?fields=*,supplier_id.name&sort=-id&limit=100');
       const data = await response.json();
       setProducts(data.data);
     } catch (error) {
@@ -58,7 +58,7 @@ export default function AdminProductManagement() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const response = await fetch(`http://47.99.205.136:8055/items/products/${id}`, {
+      const response = await fetch(`https://admin.cnsubscribe.xyz/items/products/${id}`, {
         method: 'DELETE',
       });
 

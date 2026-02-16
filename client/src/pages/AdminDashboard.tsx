@@ -42,7 +42,7 @@ export default function AdminDashboard() {
   const fetchWebinars = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://47.99.205.136:8055/items/webinars?fields=*,webinar_products.id&sort=-id');
+      const response = await fetch('https://admin.cnsubscribe.xyz/items/webinars?fields=*,webinar_products.id&sort=-id');
       const data = await response.json();
       const webinarsWithCount = data.data.map((webinar: any) => ({
         ...webinar,

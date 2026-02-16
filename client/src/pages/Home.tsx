@@ -11,6 +11,7 @@ import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/utils";
 import type { Webinar } from "../lib/directus";
+import { DIRECTUS_URL, getAssetUrl } from "../lib/config";
 import ActivityCalendar from "../components/ActivityCalendar";
 import DataChart from "../components/DataChart";
 import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
@@ -47,7 +48,7 @@ export default function Home() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const baseUrl = "https://admin.cnsubscribe.xyz/items";
+        const baseUrl = `${DIRECTUS_URL}/items`;
 
         const [webinarsRes, factoriesRes, participantsRes] = await Promise.all([
           fetch(`${baseUrl}/webinars?limit=-1`, { mode: "cors" }).then(r => r.json()),
@@ -319,7 +320,7 @@ export default function Home() {
                         {(webinar.coverImage || webinar.cover_image) ? (
                           <div className="w-9 h-9 flex-shrink-0 rounded-md overflow-hidden ring-1 ring-white/5">
                             <img
-                              src={`https://admin.cnsubscribe.xyz/assets/${webinar.coverImage || webinar.cover_image}`}
+                              src={getAssetUrl(webinar.coverImage || webinar.cover_image)}
                               alt=""
                               className="w-full h-full object-cover"
                             />
