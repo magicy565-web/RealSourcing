@@ -1,0 +1,49 @@
+[
+  {
+    "title": "CHINAPLAS 2026 国际橡塑展 - 注塑机采购专区",
+    "description": "CHINAPLAS 2026 国际橡塑展是亚洲最大的塑料橡胶工业展览会，汇聚全球4600+参展商。本次展会特设注塑机采购专区，展示海天、震雄、伊之密等国内外知名品牌的最新注塑设备。展会将举办供需对接会，为采购商提供一站式采购解决方案。\n\n**展会亮点**：\n- 390,000+ 平方米展览面积\n- 4,600+ 国际参展商\n- 320,000 预计观众\n- 专业采购对接服务\n\n**适合人群**：注塑机采购商、工厂采购经理、设备投资决策者",
+    "category": "Injection Molding",
+    "type": "webinar",
+    "language": "zh",
+    "scheduledAt": "2026-04-21T09:00:00.000Z",
+    "duration": 240,
+    "maxParticipants": 5000,
+    "tags": ["注塑机", "采购对接", "CHINAPLAS", "橡塑展", "设备展会", "供应商"],
+    "coverImageKeyword": "injection molding exhibition",
+    "videoSource": "pexels",
+    "videoKeyword": "injection molding factory",
+    "organizer": "雅式展览服务有限公司",
+    "registrationUrl": "https://www.chinaplasonline.com/CPS/idx/simp"
+  },
+  {
+    "title": "2026 华东地区注塑机供需对接会",
+    "description": "RealSourcing 平台联合长三角注塑机制造商协会，举办华东地区注塑机供需线上对接会。本次活动邀请20+优质注塑机供应商在线展示产品，提供实时报价和技术咨询服务。\n\n**活动内容**：\n- 供应商产品在线展示\n- 一对一采购洽谈\n- 实时报价与技术支持\n- 采购合同在线签署\n\n**参展品牌**：包括精密注塑机、大型注塑机、全电动注塑机等多种类型设备供应商。\n\n**适合人群**：华东地区制造企业、注塑加工厂、设备采购负责人",
+    "category": "Injection Molding",
+    "type": "webinar",
+    "language": "zh",
+    "scheduledAt": "2026-03-15T14:00:00.000Z",
+    "duration": 180,
+    "maxParticipants": 500,
+    "tags": ["注塑机", "供需对接", "华东地区", "在线采购", "供应商展示"],
+    "coverImageKeyword": "injection molding machine",
+    "videoSource": "none",
+    "organizer": "RealSourcing 平台",
+    "registrationUrl": null
+  },
+  {
+    "title": "智能注塑设备采购指南线上研讨会",
+    "description": "本次研讨会由 RealSourcing 平台主办，邀请行业专家分享智能注塑设备选型指南，帮助采购商了解如何选择适合自己工厂的注塑机设备。\n\n**研讨内容**：\n- 注塑机选型关键参数解析\n- 全电动 vs 液压注塑机对比\n- 智能化功能与投资回报分析\n- 供应商评估标准与采购流程\n- 设备维护与售后服务要点\n\n**特邀嘉宾**：资深注塑行业顾问、设备工程师、采购专家\n\n**活动形式**：专家分享 + 互动问答 + 供应商推荐\n\n**适合人群**：注塑设备采购新手、工厂技术负责人、投资决策者",
+    "category": "Injection Molding",
+    "type": "webinar",
+    "language": "zh",
+    "scheduledAt": "2026-03-25T15:00:00.000Z",
+    "duration": 120,
+    "maxParticipants": 300,
+    "tags": ["注塑机", "采购指南", "设备选型", "智能制造", "在线研讨会"],
+    "coverImageKeyword": "smart injection molding",
+    "videoSource": "youtube",
+    "youtubeVideoId": "h5bkDqqYP4M",
+    "organizer": "RealSourcing 平台",
+    "registrationUrl": null
+  }
+]
