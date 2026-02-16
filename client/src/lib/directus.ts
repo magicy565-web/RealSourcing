@@ -221,7 +221,7 @@ const MOCK_DATA = {
 // In production, use environment variable or fallback to remote
 const getDirectusUrl = () => {
   // 优先使用环境变量，否则使用阿里云服务器地址
-  return import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz';
+  return import.meta.env.VITE_DIRECTUS_URL || 'http://47.99.205.136:8055';
 };
 
 export const directus = createDirectus<Schema>(getDirectusUrl())
