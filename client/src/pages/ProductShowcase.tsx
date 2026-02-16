@@ -15,9 +15,11 @@ import {
   Sparkles
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import EnhancedProductCard, { EnhancedProduct } from '../components/EnhancedProductCard';
 import ProductDetailModal from '../components/ProductDetailModal';
 import InquiryModal, { InquiryData } from '../components/InquiryModal';
 import { Product } from '../lib/directus';
+import { mockProducts } from '../data/mockProducts';
 
 interface ChatMessage {
   id: number;
@@ -31,6 +33,8 @@ export default function ProductShowcase() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [products, setProducts] = useState<Product[]>([]);
+  const [enhancedProducts, setEnhancedProducts] = useState<EnhancedProduct[]>(mockProducts);
+  const [selectedEnhancedProduct, setSelectedEnhancedProduct] = useState<EnhancedProduct | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [inquiryProduct, setInquiryProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<'chat' | 'favorites' | 'stats'>('chat');
@@ -56,38 +60,14 @@ export default function ProductShowcase() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const aiChatEndRef = useRef<HTMLDivElement>(null);
 
-  // 从 Directus 获取产品数据
+  // 使用模拟数据
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `http://47.99.205.136:8055/items/webinar_products?filter[webinar_id][_eq]=${id}&fields=*,product_id.*`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
-        }
-
-        const data = await response.json();
-        const productList = data.data.map((item: any) => item.product_id);
-        setProducts(productList);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        setProducts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchProducts();
-    }
+    setIsLoading(true);
+    // 模拟加载延迟
+    setTimeout(() => {
+      setEnhancedProducts(mockProducts);
+      setIsLoading(false);
+    }, 500);
   }, [id]);
 
   // 自动滚动到最新消息
@@ -180,7 +160,10 @@ export default function ProductShowcase() {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-xl font-semibold">TikTok Hot Products Sourcing</h1>
+          <div>
+            <h1 className="text-xl font-semibold">TikTok Hot Products Sourcing 2025</h1>
+            <p className="text-sm text-gray-400 mt-1">Spring Season Trending Products Showcase</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -242,7 +225,7 @@ export default function ProductShowcase() {
                     </div>
                     <div className="flex justify-between">
                       <span>Products:</span>
-                      <span className="text-white">{products.length}</span>
+                      <span className="text-white">{enhancedProducts.length}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Duration:</span>
@@ -263,7 +246,7 @@ export default function ProductShowcase() {
           {!isProductCollapsed && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Products ({products.length})</h2>
+                <h2 className="text-lg font-semibold">Products ({enhancedProducts.length})</h2>
               </div>
 
               {isLoading ? (
@@ -280,16 +263,23 @@ export default function ProductShowcase() {
                     <p className="text-sm text-gray-500">The host hasn't added any products yet</p>
                   </div>
                 </div>
+              ) : enhancedProducts.length === 0 ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <p className="text-gray-400 mb-2">No products available</p>
+                    <p className="text-sm text-gray-500">The host hasn't added any products yet</p>
+                  </div>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {products.map((product) => (
-                    <ProductCard
+                  {enhancedProducts.map((product) => (
+                    <EnhancedProductCard
                       key={product.id}
                       product={product}
                       isFavorited={favorites.has(product.id)}
                       onFavorite={() => handleFavorite(product.id)}
-                      onInquiry={() => setInquiryProduct(product)}
-                      onViewDetails={() => setSelectedProduct(product)}
+                      onInquiry={() => setSelectedEnhancedProduct(product)}
+                      onViewDetails={() => setSelectedEnhancedProduct(product)}
                     />
                   ))}
                 </div>
@@ -494,17 +484,37 @@ export default function ProductShowcase() {
             {activeTab === 'stats' && (
               <div className="space-y-2">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-[#2A2A3E] rounded-lg p-3">
-                    <p className="text-xs text-gray-400 mb-1">Total Views</p>
-                    <p className="text-2xl font-bold text-violet-400">1,234</p>
+                  <div className="bg-[#2A2A3E] rounded-lg p-4">
+                    <p className="text-xs text-gray-400 mb-1">Total TikTok Views</p>
+                    <p className="text-2xl font-bold text-violet-400">425.2M</p>
+                    <p className="text-xs text-green-400 mt-1">+28.5% vs last week</p>
                   </div>
-                  <div className="bg-[#2A2A3E] rounded-lg p-3">
-                    <p className="text-xs text-gray-400 mb-1">Inquiries</p>
-                    <p className="text-2xl font-bold text-violet-400">56</p>
+                  <div className="bg-[#2A2A3E] rounded-lg p-4">
+                    <p className="text-xs text-gray-400 mb-1">Total GMV</p>
+                    <p className="text-2xl font-bold text-violet-400">$182.6M</p>
+                    <p className="text-xs text-green-400 mt-1">+15.2% growth</p>
                   </div>
-                  <div className="bg-[#2A2A3E] rounded-lg p-3">
+                  <div className="bg-[#2A2A3E] rounded-lg p-4">
+                    <p className="text-xs text-gray-400 mb-1">Avg. Conversion</p>
+                    <p className="text-2xl font-bold text-violet-400">11.8%</p>
+                    <p className="text-xs text-gray-400 mt-1">Industry leading</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="bg-[#2A2A3E] rounded-lg p-4">
+                    <p className="text-xs text-gray-400 mb-1">Total Sales Volume</p>
+                    <p className="text-2xl font-bold text-orange-400">12.8M</p>
+                    <p className="text-xs text-gray-400 mt-1">Units sold</p>
+                  </div>
+                  <div className="bg-[#2A2A3E] rounded-lg p-4">
+                    <p className="text-xs text-gray-400 mb-1">Live Participants</p>
+                    <p className="text-2xl font-bold text-blue-400">8/20</p>
+                    <p className="text-xs text-gray-400 mt-1">Active buyers</p>
+                  </div>
+                  <div className="bg-[#2A2A3E] rounded-lg p-4">
                     <p className="text-xs text-gray-400 mb-1">Favorites</p>
-                    <p className="text-2xl font-bold text-violet-400">{favorites.size}</p>
+                    <p className="text-2xl font-bold text-red-400">{favorites.size}</p>
+                    <p className="text-xs text-gray-400 mt-1">Saved products</p>
                   </div>
                 </div>
               </div>
