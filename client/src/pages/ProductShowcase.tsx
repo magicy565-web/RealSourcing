@@ -254,18 +254,6 @@ export default function ProductShowcase() {
             </>
           )}
           
-          {/* Collapse/Expand Button */}
-          <button
-            onClick={() => setIsVideoCollapsed(!isVideoCollapsed)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 bg-[#2A2A3E] hover:bg-[#3A3A4E] p-2 rounded-full border border-[#3A3A4E] transition-colors shadow-lg"
-            title={isVideoCollapsed ? 'Expand video' : 'Collapse video'}
-          >
-            {isVideoCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
         </div>
 
         {/* Product Area */}
@@ -309,19 +297,62 @@ export default function ProductShowcase() {
             </div>
           )}
           
-          {/* Collapse/Expand Button */}
-          <button
-            onClick={() => setIsProductCollapsed(!isProductCollapsed)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 bg-[#2A2A3E] hover:bg-[#3A3A4E] p-2 rounded-full border border-[#3A3A4E] transition-colors shadow-lg"
-            title={isProductCollapsed ? 'Expand products' : 'Collapse products'}
-          >
-            {isProductCollapsed ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </button>
         </div>
+
+        {/* Collapse/Expand Buttons - Fixed Position */}
+        {/* Video Panel Button */}
+        <button
+          onClick={() => {
+            if (isVideoCollapsed) {
+              // 展开视频，恢复到 Split View
+              setIsVideoCollapsed(false);
+              setIsProductCollapsed(false);
+            } else {
+              // 收起视频
+              setIsVideoCollapsed(true);
+            }
+          }}
+          className="fixed z-30 bg-[#2A2A3E] hover:bg-[#3A3A4E] p-2 rounded-full border border-[#3A3A4E] transition-colors shadow-lg"
+          style={{
+            left: isVideoCollapsed ? '0' : isProductCollapsed ? 'calc(100% - 20px)' : 'calc(50% - 20px)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
+          title={isVideoCollapsed ? 'Expand video' : 'Collapse video'}
+        >
+          {isVideoCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
+
+        {/* Product Panel Button */}
+        <button
+          onClick={() => {
+            if (isProductCollapsed) {
+              // 展开产品，恢复到 Split View
+              setIsProductCollapsed(false);
+              setIsVideoCollapsed(false);
+            } else {
+              // 收起产品
+              setIsProductCollapsed(true);
+            }
+          }}
+          className="fixed z-30 bg-[#2A2A3E] hover:bg-[#3A3A4E] p-2 rounded-full border border-[#3A3A4E] transition-colors shadow-lg"
+          style={{
+            left: isProductCollapsed ? 'calc(100% - 40px)' : isVideoCollapsed ? '20px' : 'calc(50% + 20px)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
+          title={isProductCollapsed ? 'Expand products' : 'Collapse products'}
+        >
+          {isProductCollapsed ? (
+            <ChevronLeft className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </button>
 
         {/* AI Chat Sidebar */}
         {isAIChatOpen && (
