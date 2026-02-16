@@ -20,6 +20,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AddProduct from "./pages/admin/AddProduct";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminWebinarForm from "./pages/AdminWebinarForm";
+import AdminProductForm from "./pages/AdminProductForm";
 import NegotiationRoom from "./pages/NegotiationRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
@@ -62,6 +63,7 @@ function Router() {
       </Route>
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/webinars/:id/edit" component={AdminWebinarForm} />
+      <Route path="/admin/products/:id/edit" component={AdminProductForm} />
       <Route path="/webinars/:id">{(params) => <WebinarDetail params={params} />}</Route>
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
       <Route path="/factories" component={Factories} />
