@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../lib/utils";
 import ScoreRadarChart from "../components/ScoreRadarChart";
 import AIAnalysisCard from "../components/AIAnalysisCard";
+import { ImageLightbox } from "../components/ImageLightbox";
 
 const defaultFactoryData = {
   id: 1,
@@ -85,6 +86,8 @@ export default function FactoryDetail() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/factories/:id");
   const [factoryData, setFactoryData] = useState(defaultFactoryData);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     if (params?.id) {
@@ -287,8 +290,8 @@ export default function FactoryDetail() {
                               factoryData.images.length === 1 ? "h-96" : "h-64"
                             )}
                             onClick={() => {
-                              // TODO: Open lightbox
-                              console.log("Open image", img);
+                              setLightboxIndex(idx);
+                              setLightboxOpen(true);
                             }}
                           >
                             <img
@@ -583,6 +586,15 @@ export default function FactoryDetail() {
           </div>
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      {lightboxOpen && factoryData.images && factoryData.images.length > 0 && (
+        <ImageLightbox
+          images={factoryData.images}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </DashboardLayout>
   );
 }
