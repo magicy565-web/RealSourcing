@@ -43,6 +43,7 @@ const defaultFactoryData = {
   website: "www.szelectronics.cn",
   phone: "+86 755 8888 9999",
   email: "sales@szelectronics.cn",
+  images: [] as string[],
   certifications: ["ISO 9001", "ISO 14001", "CE", "FCC", "RoHS"],
   specialties: ["LED Controllers", "Smart Switches", "IoT Sensors", "Power Adapters"],
   scoreBreakdown: {
@@ -97,6 +98,7 @@ export default function FactoryDetail() {
           category: factory.category,
           score: factory.score,
           logo: factory.logo,
+          images: factory.images || [],
           phone: factory.contact_phone,
           email: factory.contact_email,
           employees: `${factory.employee_count}`,
@@ -261,6 +263,51 @@ export default function FactoryDetail() {
 
               {/* Overview */}
               <TabsContent value="overview" className="space-y-6">
+                {/* Image Gallery */}
+                {factoryData.images && factoryData.images.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Factory & Products</CardTitle>
+                      <CardDescription>Browse through our facilities and product showcase</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className={cn(
+                        "grid gap-4",
+                        factoryData.images.length === 1 ? "grid-cols-1" :
+                        factoryData.images.length === 2 ? "grid-cols-2" :
+                        "grid-cols-2"
+                      )}>
+                        {factoryData.images.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              "relative rounded-xl overflow-hidden border-2 border-muted-foreground/20",
+                              "hover:scale-[1.02] hover:shadow-2xl hover:border-primary/50",
+                              "transition-all duration-300 cursor-pointer group",
+                              factoryData.images.length === 1 ? "h-96" : "h-64"
+                            )}
+                            onClick={() => {
+                              // TODO: Open lightbox
+                              console.log("Open image", img);
+                            }}
+                          >
+                            <img
+                              src={img}
+                              alt={`Factory image ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              Click to enlarge
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Company Information</CardTitle>
