@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { 
   ArrowLeft, 
@@ -7,22 +7,25 @@ import {
   Heart, 
   BarChart3, 
   Video,
-  Maximize2,
-  Minimize2,
-  Grid3x3,
-  MonitorPlay,
-  Columns,
-  Expand,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Send,
+  Sparkles
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductDetailModal from '../components/ProductDetailModal';
 import InquiryModal, { InquiryData } from '../components/InquiryModal';
 import { Product } from '../lib/directus';
-import { colors, borderRadius } from '../lib/design-system';
 
-type ViewMode = 'product-focus' | 'video-focus' | 'split' | 'product-only' | 'video-only';
+interface ChatMessage {
+  id: number;
+  user: string;
+  message: string;
+  timestamp: Date;
+  isAI?: boolean;
+}
 
 export default function ProductShowcase() {
   const { id } = useParams();
@@ -33,14 +36,25 @@ export default function ProductShowcase() {
   const [activeTab, setActiveTab] = useState<'chat' | 'favorites' | 'stats'>('chat');
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('product-focus');
   const [isTabExpanded, setIsTabExpanded] = useState(false);
-  const [videoPosition, setVideoPosition] = useState({ x: 20, y: 20 });
-  const [videoSize, setVideoSize] = useState({ width: 320, height: 180 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isVideoFloating, setIsVideoFloating] = useState(false);
+  
+  // 展开/收放状态
+  const [isVideoCollapsed, setIsVideoCollapsed] = useState(false);
+  const [isProductCollapsed, setIsProductCollapsed] = useState(false);
+  
+  // 聊天相关状态
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: 1, user: 'System', message: 'Welcome to the sourcing meeting!', timestamp: new Date(), isAI: false },
+    { id: 2, user: 'John', message: 'Hi everyone! Excited to see these products.', timestamp: new Date(), isAI: false },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [aiChatInput, setAIChatInput] = useState('');
+  const [aiMessages, setAIMessages] = useState<ChatMessage[]>([
+    { id: 1, user: 'AI Assistant', message: 'Hello! I can help you with product information, pricing, and sourcing questions. How can I assist you today?', timestamp: new Date(), isAI: true },
+  ]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const aiChatEndRef = useRef<HTMLDivElement>(null);
 
   // 从 Directus 获取产品数据
   useEffect(() => {
@@ -76,6 +90,15 @@ export default function ProductShowcase() {
     }
   }, [id]);
 
+  // 自动滚动到最新消息
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  useEffect(() => {
+    aiChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [aiMessages]);
+
   const handleFavorite = (productId: number) => {
     setFavorites((prev) => {
       const newFavorites = new Set(prev);
@@ -93,236 +116,57 @@ export default function ProductShowcase() {
     setInquiryProduct(null);
   };
 
+  const handleSendMessage = () => {
+    if (chatInput.trim()) {
+      const newMessage: ChatMessage = {
+        id: chatMessages.length + 1,
+        user: 'You',
+        message: chatInput,
+        timestamp: new Date(),
+      };
+      setChatMessages([...chatMessages, newMessage]);
+      setChatInput('');
+    }
+  };
+
+  const handleSendAIMessage = async () => {
+    if (aiChatInput.trim()) {
+      const userMessage: ChatMessage = {
+        id: aiMessages.length + 1,
+        user: 'You',
+        message: aiChatInput,
+        timestamp: new Date(),
+      };
+      setAIMessages([...aiMessages, userMessage]);
+      setAIChatInput('');
+
+      // 模拟 AI 回复
+      setTimeout(() => {
+        const aiResponse: ChatMessage = {
+          id: aiMessages.length + 2,
+          user: 'AI Assistant',
+          message: `I understand you're asking about "${aiChatInput}". Let me help you with that. Based on the products in this meeting, I can provide detailed information about specifications, pricing, and MOQ requirements.`,
+          timestamp: new Date(),
+          isAI: true,
+        };
+        setAIMessages((prev) => [...prev, aiResponse]);
+      }, 1000);
+    }
+  };
+
   const favoriteProducts = products.filter((p) => favorites.has(p.id));
 
-  // 拖拽功能
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isVideoFloating) return;
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - videoPosition.x,
-      y: e.clientY - videoPosition.y,
-    });
+  // 计算视频和产品区域的宽度
+  const getVideoWidth = () => {
+    if (isVideoCollapsed) return 'w-0';
+    if (isProductCollapsed) return 'flex-1';
+    return 'w-1/2';
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      setVideoPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragStart]);
-
-  // 切换浮动模式
-  const toggleFloatingVideo = () => {
-    setIsVideoFloating(!isVideoFloating);
-    if (!isVideoFloating) {
-      setVideoPosition({ x: window.innerWidth - 360, y: 80 });
-      setVideoSize({ width: 320, height: 180 });
-    }
-  };
-
-  // 视角切换按钮
-  const ViewModeButton = ({ mode, icon: Icon, label }: { mode: ViewMode; icon: any; label: string }) => (
-    <button
-      onClick={() => setViewMode(mode)}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-        viewMode === mode
-          ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/50'
-          : 'bg-[#2A2A3E] text-gray-400 hover:text-white hover:bg-[#3A3A4E]'
-      }`}
-      title={label}
-    >
-      <Icon className="h-4 w-4" />
-      <span className="text-xs font-medium hidden lg:inline">{label}</span>
-    </button>
-  );
-
-  // 渲染视频区域
-  const renderVideoArea = () => {
-    if (viewMode === 'product-only') return null;
-
-    const isMinimized = viewMode === 'product-focus';
-    const isMaximized = viewMode === 'video-only';
-
-    // 浮动视频窗口
-    if (isVideoFloating) {
-      return (
-        <div
-          className="fixed z-50 bg-[#1A1A2E] border border-[#2A2A3E] rounded-lg shadow-2xl overflow-hidden"
-          style={{
-            left: `${videoPosition.x}px`,
-            top: `${videoPosition.y}px`,
-            width: `${videoSize.width}px`,
-            cursor: isDragging ? 'grabbing' : 'grab',
-          }}
-          onMouseDown={handleMouseDown}
-        >
-          <div className="aspect-video bg-[#0F0F1E] relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Video className="h-12 w-12 text-violet-500/30" />
-            </div>
-            <div className="absolute top-2 left-2">
-              <span className="px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded">
-                🔴 LIVE
-              </span>
-            </div>
-            <div className="absolute top-2 right-2 flex gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFloatingVideo();
-                }}
-                className="p-1 bg-black/60 hover:bg-black/80 rounded transition-colors"
-              >
-                <Minimize2 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setViewMode('product-only');
-                  setIsVideoFloating(false);
-                }}
-                className="p-1 bg-black/60 hover:bg-black/80 rounded transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className={`bg-[#1A1A2E] border-r border-[#2A2A3E] transition-all duration-300 ${
-          isMaximized
-            ? 'flex-1'
-            : isMinimized
-            ? 'w-80'
-            : viewMode === 'split'
-            ? 'w-1/2'
-            : 'w-96'
-        } flex flex-col p-4`}
-      >
-        {/* Video Feed */}
-        <div className="aspect-video bg-[#0F0F1E] rounded-lg overflow-hidden mb-4 relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Video className="h-16 w-16 text-violet-500/30" />
-          </div>
-          <div className="absolute top-3 left-3">
-            <span className="px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded">
-              🔴 LIVE
-            </span>
-          </div>
-          <div className="absolute top-3 right-3 flex gap-2">
-            <button
-              onClick={toggleFloatingVideo}
-              className="p-2 bg-black/60 hover:bg-black/80 rounded transition-colors"
-              title="Float video"
-            >
-              <Expand className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="absolute bottom-3 left-3 right-3">
-            <div className="bg-black/60 backdrop-blur-sm px-3 py-2 rounded">
-              <p className="text-sm font-medium">Presenter Feed</p>
-              <p className="text-xs text-gray-400">Factory Showcase</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Meeting Info */}
-        {!isMaximized && (
-          <div className="bg-[#0F0F1E] rounded-lg p-4">
-            <h3 className="text-sm font-semibold mb-2">Meeting Info</h3>
-            <div className="space-y-2 text-xs text-gray-400">
-              <div className="flex justify-between">
-                <span>Participants:</span>
-                <span className="text-white">8/20</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Products:</span>
-                <span className="text-white">{products.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Duration:</span>
-                <span className="text-white">25 min</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // 渲染产品区域
-  const renderProductArea = () => {
-    if (viewMode === 'video-only') return null;
-
-    return (
-      <div className="flex-1 flex flex-col">
-        {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Products ({products.length})</h2>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-                <p className="text-gray-400">Loading products...</p>
-              </div>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <p className="text-gray-400 mb-2">No products available</p>
-                <p className="text-sm text-gray-500">The host hasn't added any products yet</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              className={`grid gap-6 ${
-                viewMode === 'product-only'
-                  ? 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4'
-                  : viewMode === 'split'
-                  ? 'grid-cols-1 md:grid-cols-2'
-                  : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-              }`}
-            >
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  isFavorited={favorites.has(product.id)}
-                  onFavorite={() => handleFavorite(product.id)}
-                  onInquiry={() => setInquiryProduct(product)}
-                  onViewDetails={() => setSelectedProduct(product)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  const getProductWidth = () => {
+    if (isProductCollapsed) return 'w-0';
+    if (isVideoCollapsed) return 'flex-1';
+    return 'w-1/2';
   };
 
   return (
@@ -339,15 +183,18 @@ export default function ProductShowcase() {
           <h1 className="text-xl font-semibold">TikTok Hot Products Sourcing</h1>
         </div>
 
-        {/* View Mode Switcher */}
-        <div className="flex items-center gap-2">
-          <ViewModeButton mode="product-focus" icon={Grid3x3} label="Product Focus" />
-          <ViewModeButton mode="video-focus" icon={MonitorPlay} label="Video Focus" />
-          <ViewModeButton mode="split" icon={Columns} label="Split View" />
-          <ViewModeButton mode="product-only" icon={Grid3x3} label="Products Only" />
-          <ViewModeButton mode="video-only" icon={Video} label="Video Only" />
-          
-          <div className="w-px h-6 bg-[#2A2A3E] mx-2"></div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsAIChatOpen(!isAIChatOpen)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+              isAIChatOpen
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/50'
+                : 'bg-[#2A2A3E] text-gray-400 hover:text-white hover:bg-[#3A3A4E]'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="text-sm font-medium">AI Assistant</span>
+          </button>
           
           <button
             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
@@ -359,9 +206,191 @@ export default function ProductShowcase() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {renderVideoArea()}
-        {renderProductArea()}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Video Area */}
+        <div
+          className={`${getVideoWidth()} bg-[#1A1A2E] border-r border-[#2A2A3E] transition-all duration-300 flex flex-col overflow-hidden`}
+        >
+          {!isVideoCollapsed && (
+            <>
+              <div className="flex-1 p-4 flex flex-col">
+                {/* Video Feed */}
+                <div className="aspect-video bg-[#0F0F1E] rounded-lg overflow-hidden mb-4 relative flex-shrink-0">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Video className="h-16 w-16 text-violet-500/30" />
+                  </div>
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded">
+                      🔴 LIVE
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <div className="bg-black/60 backdrop-blur-sm px-3 py-2 rounded">
+                      <p className="text-sm font-medium">Presenter Feed</p>
+                      <p className="text-xs text-gray-400">Factory Showcase</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Meeting Info */}
+                <div className="bg-[#0F0F1E] rounded-lg p-4 flex-shrink-0">
+                  <h3 className="text-sm font-semibold mb-2">Meeting Info</h3>
+                  <div className="space-y-2 text-xs text-gray-400">
+                    <div className="flex justify-between">
+                      <span>Participants:</span>
+                      <span className="text-white">8/20</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Products:</span>
+                      <span className="text-white">{products.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Duration:</span>
+                      <span className="text-white">25 min</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          
+          {/* Collapse/Expand Button */}
+          <button
+            onClick={() => setIsVideoCollapsed(!isVideoCollapsed)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 bg-[#2A2A3E] hover:bg-[#3A3A4E] p-2 rounded-full border border-[#3A3A4E] transition-colors shadow-lg"
+            title={isVideoCollapsed ? 'Expand video' : 'Collapse video'}
+          >
+            {isVideoCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {/* Product Area */}
+        <div
+          className={`${getProductWidth()} bg-[#0F0F1E] transition-all duration-300 flex flex-col overflow-hidden relative`}
+        >
+          {!isProductCollapsed && (
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Products ({products.length})</h2>
+              </div>
+
+              {isLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading products...</p>
+                  </div>
+                </div>
+              ) : products.length === 0 ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <p className="text-gray-400 mb-2">No products available</p>
+                    <p className="text-sm text-gray-500">The host hasn't added any products yet</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isFavorited={favorites.has(product.id)}
+                      onFavorite={() => handleFavorite(product.id)}
+                      onInquiry={() => setInquiryProduct(product)}
+                      onViewDetails={() => setSelectedProduct(product)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Collapse/Expand Button */}
+          <button
+            onClick={() => setIsProductCollapsed(!isProductCollapsed)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 bg-[#2A2A3E] hover:bg-[#3A3A4E] p-2 rounded-full border border-[#3A3A4E] transition-colors shadow-lg"
+            title={isProductCollapsed ? 'Expand products' : 'Collapse products'}
+          >
+            {isProductCollapsed ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {/* AI Chat Sidebar */}
+        {isAIChatOpen && (
+          <div className="absolute right-0 top-0 bottom-0 w-96 bg-[#1A1A2E] border-l border-[#2A2A3E] shadow-2xl z-20 flex flex-col">
+            {/* AI Chat Header */}
+            <div className="px-4 py-3 border-b border-[#2A2A3E] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-violet-500" />
+                <h3 className="font-semibold">AI Assistant</h3>
+              </div>
+              <button
+                onClick={() => setIsAIChatOpen(false)}
+                className="p-1 hover:bg-[#2A2A3E] rounded transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* AI Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {aiMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.user === 'You' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                      msg.user === 'You'
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-[#2A2A3E] text-gray-200'
+                    }`}
+                  >
+                    {msg.isAI && (
+                      <div className="flex items-center gap-1 mb-1">
+                        <Sparkles className="h-3 w-3 text-violet-400" />
+                        <span className="text-xs text-violet-400 font-medium">AI</span>
+                      </div>
+                    )}
+                    <p className="text-sm">{msg.message}</p>
+                    <p className="text-xs opacity-60 mt-1">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <div ref={aiChatEndRef} />
+            </div>
+
+            {/* AI Chat Input */}
+            <div className="p-4 border-t border-[#2A2A3E]">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={aiChatInput}
+                  onChange={(e) => setAIChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendAIMessage()}
+                  placeholder="Ask AI about products..."
+                  className="flex-1 bg-[#2A2A3E] text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                <button
+                  onClick={handleSendAIMessage}
+                  className="p-2 bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Tab Bar */}
@@ -370,8 +399,40 @@ export default function ProductShowcase() {
         {isTabExpanded && (
           <div className="px-6 py-4 border-b border-[#2A2A3E] max-h-64 overflow-y-auto">
             {activeTab === 'chat' && (
-              <div className="space-y-2">
-                <p className="text-sm text-gray-400">Chat feature coming soon...</p>
+              <div className="space-y-3">
+                {/* Chat Messages */}
+                <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className="bg-[#2A2A3E] rounded-lg px-3 py-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-violet-400">{msg.user}</span>
+                        <span className="text-xs text-gray-500">
+                          {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-200">{msg.message}</p>
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Chat Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-[#2A2A3E] text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             )}
             {activeTab === 'favorites' && (
@@ -401,7 +462,20 @@ export default function ProductShowcase() {
             )}
             {activeTab === 'stats' && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-400">Live stats coming soon...</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-[#2A2A3E] rounded-lg p-3">
+                    <p className="text-xs text-gray-400 mb-1">Total Views</p>
+                    <p className="text-2xl font-bold text-violet-400">1,234</p>
+                  </div>
+                  <div className="bg-[#2A2A3E] rounded-lg p-3">
+                    <p className="text-xs text-gray-400 mb-1">Inquiries</p>
+                    <p className="text-2xl font-bold text-violet-400">56</p>
+                  </div>
+                  <div className="bg-[#2A2A3E] rounded-lg p-3">
+                    <p className="text-xs text-gray-400 mb-1">Favorites</p>
+                    <p className="text-2xl font-bold text-violet-400">{favorites.size}</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
