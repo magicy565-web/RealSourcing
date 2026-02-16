@@ -1,0 +1,46 @@
+Aliyun OSS Upload Report
+================================================================================
+
+Bucket: demand-os-discord
+Endpoint: oss-cn-hangzhou.aliyuncs.com
+Total uploaded: 9
+Total failed: 0
+
+Uploaded Files:
+--------------------------------------------------------------------------------
+helena_helmersson.jpg
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/helena_helmersson.jpg
+  Size: 39,173 bytes
+
+data_center_ai.jpg
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/data_center_ai.jpg
+  Size: 134,128 bytes
+
+supply_chain_ai.png
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/supply_chain_ai.png
+  Size: 137,866 bytes
+
+women_manufacturing.webp
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/women_manufacturing.webp
+  Size: 124,974 bytes
+
+climate_smart_agriculture.jpg
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/climate_smart_agriculture.jpg
+  Size: 72,795 bytes
+
+sustainable_fashion.webp
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/sustainable_fashion.webp
+  Size: 15,500 bytes
+
+global_trade.png
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/global_trade.png
+  Size: 2,368,093 bytes
+
+gartner_supply_chain.jpg
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/gartner_supply_chain.jpg
+  Size: 1,924,919 bytes
+
+textile_decarbonization.png
+  URL: https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com/webinar_assets/textile_decarbonization.png
+  Size: 208,566 bytes
+
