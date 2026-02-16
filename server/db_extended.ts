@@ -9,6 +9,7 @@ import {
   factoryCertifications, 
   factoryProducts,
   auditLogs,
+  webinarParticipants,
   type InsertAuditLog
 } from "../drizzle/schema.js";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -312,4 +313,59 @@ export async function replyToReview(reviewId: number, content: string) {
  */
 export async function getFactoryOrders(factoryId: number, status?: string) {
   return getOrders(undefined, factoryId, status);
+}
+
+/**
+ * 获取工厂参与的Webinar数量
+ */
+export async function getFactoryWebinarCount(factoryId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  try {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(webinarParticipants)
+      .where(eq(webinarParticipants.factoryId, factoryId));
+    
+    return result[0]?.count || 0;
+  } catch (error) {
+    console.error('[Database] Failed to get factory webinar count:', error);
+    return 0;
+  }
+}
+
+/**
+ * 计算工厂的准时率
+ */
+export async function calculateFactoryOnTimeRate(factoryId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 95; // 默认值
+  
+  try {
+    // 获取已完成的订单
+    const completedOrders = await db
+      .select()
+      .from(orders)
+      .where(
+        and(
+          eq(orders.factoryId, factoryId),
+          eq(orders.status, 'delivered')
+        )
+      );
+    
+    if (completedOrders.length === 0) return 95; // 无订单时返回默认值
+    
+    // 计算准时订单数量
+    const onTimeOrders = completedOrders.filter(order => {
+      if (!order.deliveryDate || !order.actualDeliveryDate) return false;
+      return new Date(order.actualDeliveryDate) <= new Date(order.deliveryDate);
+    });
+    
+    const onTimeRate = Math.round((onTimeOrders.length / completedOrders.length) * 100);
+    return onTimeRate;
+  } catch (error) {
+    console.error('[Database] Failed to calculate on-time rate:', error);
+    return 95; // 出错时返回默认值
+  }
 }

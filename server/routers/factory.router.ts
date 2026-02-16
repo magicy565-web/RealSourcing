@@ -25,6 +25,8 @@ import {
   createFactoryReview,
   replyToReview,
   createAuditLog,
+  getFactoryWebinarCount,
+  calculateFactoryOnTimeRate,
 } from "../db_extended.js";
 import { checkAndTrackUsage } from "../saas-core.js";
 import { getFactoryImages, createFactoryImage, deleteFactoryImage } from "../db_factory_images.js";
@@ -44,18 +46,32 @@ export const factoryRouter = router({
     .query(async ({ input }) => {
       const factories = await getFactories(input.search);
       
-      // 为每个工厂加载图片
-      const factoriesWithImages = await Promise.all(
+      // 为每个工厂加载关联数据
+      const factoriesWithData = await Promise.all(
         factories.map(async (factory) => {
-          const images = await getFactoryImages(factory.id);
+          const [images, certifications, webinarCount, onTimeRate] = await Promise.all([
+            getFactoryImages(factory.id),
+            getFactoryCertifications(factory.id),
+            getFactoryWebinarCount(factory.id),
+            calculateFactoryOnTimeRate(factory.id),
+          ]);
+          
           return {
             ...factory,
             images: images.map(img => img.url),
+            certifications: certifications.map(cert => ({
+              id: cert.id,
+              type: cert.certificationType,
+              number: cert.certificationNumber,
+              status: cert.status,
+            })),
+            webinarCount,
+            onTimeRate,
           };
         })
       );
       
-      return factoriesWithImages;
+      return factoriesWithData;
     }),
   
   /**

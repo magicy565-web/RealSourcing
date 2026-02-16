@@ -69,16 +69,16 @@ export default function Factories() {
         location: `${f.city}, ${f.province}`,
         score: parseFloat(f.overallScore) || 0,
         category: f.category || "Uncategorized",
-        webinars: 0, // TODO: 从数据库获取
+        webinars: f.webinarCount || 0,  // ✅ 从数据库获取
         orders: f.orderCount || 0,
         status: f.status,
         employees: f.employees || "N/A",
         logo: f.logo || "/logos/default.png",
         images: f.images || [],
-        certifications: [], // TODO: 从数据库获取
-        onTimeRate: 95, // TODO: 从数据库计算
+        certifications: f.certifications || [],  // ✅ 从数据库获取
+        onTimeRate: f.onTimeRate || 95,  // ✅ 从数据库计算
         yearsActive: f.established ? new Date().getFullYear() - f.established : 0,
-        isGoldMember: parseFloat(f.overallScore) >= 92,
+        isGoldMember: parseFloat(f.overallScore) >= 92,  // TODO: 从系统配置读取阈值
       }));
       setFactories(formattedFactories);
     }
