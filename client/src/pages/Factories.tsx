@@ -18,7 +18,8 @@ import {
   TrendingUp,
   CheckCircle2,
   Calendar,
-  Award
+  Award,
+  Image as ImageIcon
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ export default function Factories() {
       status: f.score >= 90 ? "verified" : f.score >= 80 ? "verified" : "pending",
       employees: `${f.employee_count}`,
       logo: f.logo,
+      images: f.images || [],
       certifications: f.certifications.split(", ").slice(0, 3),
       onTimeRate: Math.floor(Math.random() * 10) + 90,
       yearsActive: new Date().getFullYear() - f.year_established,
@@ -70,6 +72,55 @@ export default function Factories() {
     return filtered;
   };
 
+  const renderImageGallery = (images: string[]) => {
+    if (!images || images.length === 0) {
+      // Default placeholder images
+      return (
+        <div className="grid grid-cols-2 gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div 
+              key={i}
+              className="w-24 h-24 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted-foreground/10 flex items-center justify-center"
+            >
+              <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Render actual images
+    const displayImages = images.slice(0, 4);
+    return (
+      <div className={cn(
+        "grid gap-2",
+        displayImages.length === 1 ? "grid-cols-1" : "grid-cols-2"
+      )}>
+        {displayImages.map((img, idx) => (
+          <div 
+            key={idx}
+            className={cn(
+              "rounded-lg overflow-hidden border border-muted-foreground/20",
+              "hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer",
+              displayImages.length === 1 ? "w-48 h-48" : "w-24 h-24"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              toast("Image preview coming soon");
+            }}
+          >
+            <img 
+              src={img} 
+              alt={`Factory ${idx + 1}`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderFactoryList = (items: typeof factories) => {
     if (items.length === 0) {
       return (
@@ -95,19 +146,9 @@ export default function Factories() {
           >
             <CardContent className="p-6">
               <div className="flex items-start gap-6">
-                {/* Left: Logo */}
-                <div className="flex-shrink-0">
-                  {factory.logo ? (
-                    <img
-                      src={factory.logo}
-                      alt={factory.name}
-                      className="w-16 h-16 rounded-xl object-cover border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors">
-                      <Building2 className="h-8 w-8 text-primary" />
-                    </div>
-                  )}
+                {/* Left: Image Gallery */}
+                <div className="flex-shrink-0 p-3 rounded-xl bg-muted/20 border border-muted-foreground/10">
+                  {renderImageGallery(factory.images)}
                 </div>
 
                 {/* Middle: Info */}

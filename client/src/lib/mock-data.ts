@@ -36,6 +36,7 @@ export interface MockFactory {
   score: number;
   certifications: string;
   logo?: string;
+  images?: string[]; // Product/factory images (max 4)
   contact_email: string;
   contact_phone: string;
   employee_count: number;
@@ -231,6 +232,12 @@ export const mockFactories: MockFactory[] = [
     score: 92,
     certifications: "ISO 9001, ISO 14001, CE, FCC",
     logo: "/logos/shenzhen-electronics.png",
+    images: [
+      "/factory-images/electronics1.jpg",
+      "/factory-images/electronics2.webp",
+      "/factory-images/workshop2.jpg",
+      "/factory-images/workshop1.jpg"
+    ],
     contact_email: "export@szelectronics.cn",
     contact_phone: "+86-755-8888-0001",
     employee_count: 2500,
@@ -291,6 +298,11 @@ export const mockFactories: MockFactory[] = [
     score: 91,
     certifications: "ISO 9001, OEKO-TEX, GOTS",
     logo: "/logos/ningbo-textiles.png",
+    images: [
+      "/factory-images/workshop1.jpg",
+      "/factory-images/workshop2.jpg",
+      "/factory-images/electronics1.jpg"
+    ],
     contact_email: "trade@nbtextile.cn",
     contact_phone: "+86-574-8888-0005",
     employee_count: 4000,
@@ -306,6 +318,12 @@ export const mockFactories: MockFactory[] = [
     score: 94,
     certifications: "ISO 13485, CE, FDA",
     logo: "/logos/shanghai-medical.png",
+    images: [
+      "/factory-images/medical1.png",
+      "/factory-images/medical2.png",
+      "/factory-images/workshop1.jpg",
+      "/factory-images/workshop2.jpg"
+    ],
     contact_email: "info@shanghaimedical.cn",
     contact_phone: "+86-21-8888-0006",
     employee_count: 1200,
