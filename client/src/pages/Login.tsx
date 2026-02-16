@@ -3,9 +3,11 @@ import { GlassCard } from '../components/GlassCard';
 import { Factory, Github, Loader2 } from 'lucide-react';
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const [, setLocation] = useLocation();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,23 +27,24 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("登录成功！");
-        setLocation("/home");
-      } else {
-        const error = await response.json();
-        toast.error(error.message || "登录失败，请检查邮箱和密码");
-      }
-    } catch (error) {
-      toast.error("登录失败，请稍后重试");
+      await login(email, password);
+      toast.success("登录成功！");
+      setLocation("/home");
+    } catch (error: any) {
+      toast.error(error.message || "登录失败，请检查邮箱和密码");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const quickLogin = async (userEmail: string) => {
+    setIsLoading(true);
+    try {
+      await login(userEmail, 'password');
+      toast.success("登录成功！");
+      setLocation("/home");
+    } catch (error: any) {
+      toast.error(error.message || "登录失败");
     } finally {
       setIsLoading(false);
     }
@@ -235,6 +238,31 @@ export default function Login() {
                   Sign up
                 </a>
               </Link>
+            </div>
+
+            {/* Quick Login (Demo) */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <p className="text-xs text-center text-gray-400 mb-3">Quick Login (Demo)</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => quickLogin('admin@realsourcing.com')}
+                  className="w-full py-2 px-4 rounded-lg text-xs font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                >
+                  Login as Admin
+                </button>
+                <button
+                  onClick={() => quickLogin('factory@shenzhen.com')}
+                  className="w-full py-2 px-4 rounded-lg text-xs font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                >
+                  Login as Factory
+                </button>
+                <button
+                  onClick={() => quickLogin('buyer@tiktok.com')}
+                  className="w-full py-2 px-4 rounded-lg text-xs font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                >
+                  Login as Buyer
+                </button>
+              </div>
             </div>
           </div>
         </GlassCard>

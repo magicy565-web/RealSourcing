@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
-import { ArrowLeft, ArrowRight, Check, Upload, X, Building2, Calendar, FileText, Clock, Zap, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Upload, X, Building2, Calendar, FileText, Clock, Zap, AlertCircle, Package } from "lucide-react";
+import ProductSelector from "../components/ProductSelector";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
@@ -25,7 +26,8 @@ import { useToast } from "../hooks/use-toast";
 const steps = [
   { id: 1, name: "Basic Info", icon: Calendar, description: "Webinar details and schedule" },
   { id: 2, name: "Time & Duration", icon: Clock, description: "Set time and duration limits" },
-  { id: 3, name: "Advanced Settings", icon: FileText, description: "Recording, language, and more" },
+  { id: 3, name: "Select Products", icon: Package, description: "Choose products to showcase" },
+  { id: 4, name: "Advanced Settings", icon: FileText, description: "Recording, language, and more" },
 ];
 
 export default function WebinarCreate() {
@@ -46,6 +48,9 @@ export default function WebinarCreate() {
     recordingEnabled: true,
     requireApproval: false,
     tags: [] as string[],
+    meetingType: "sourcing" as "standard" | "sourcing",
+    factoryId: 1, // TODO: 从当前用户获取
+    productIds: [] as number[],
   });
 
   // 获取用户的时长限制
@@ -91,6 +96,9 @@ export default function WebinarCreate() {
     }
     if (currentStep === 2) {
       return formData.scheduledAt.length > 0 && formData.scheduledTime.length > 0;
+    }
+    if (currentStep === 3) {
+      return formData.productIds.length > 0; // 至少选择一个产品
     }
     return true;
   };
@@ -357,8 +365,26 @@ export default function WebinarCreate() {
               </>
             )}
 
-            {/* Step 3: Advanced Settings */}
+            {/* Step 3: Select Products */}
             {currentStep === 3 && (
+              <>
+                <div className="space-y-2">
+                  <Label>Select Products to Showcase *</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Choose products from your factory's product library to showcase in this webinar.
+                  </p>
+                </div>
+
+                <ProductSelector
+                  factoryId={formData.factoryId}
+                  selectedProductIds={formData.productIds}
+                  onSelectionChange={(productIds) => handleInputChange("productIds", productIds)}
+                />
+              </>
+            )}
+
+            {/* Step 4: Advanced Settings */}
+            {currentStep === 4 && (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>

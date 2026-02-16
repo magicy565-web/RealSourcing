@@ -2,6 +2,8 @@ import { Toaster } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import NotFound from "./pages/NotFound";
 import { Route, Switch } from "wouter";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -14,6 +16,8 @@ import WebinarReplay from "./pages/WebinarReplay";
 import WebinarRoom from "./pages/WebinarRoom";
 import ProductShowcase from "./pages/ProductShowcase";
 import MyFavorites from "./pages/MyFavorites";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AddProduct from "./pages/admin/AddProduct";
 import NegotiationRoom from "./pages/NegotiationRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
@@ -44,6 +48,16 @@ function Router() {
       <Route path="/webinars/:id/room" component={WebinarRoom} />
       <Route path="/webinars/:id/showcase" component={ProductShowcase} />
       <Route path="/webinars/:id/favorites" component={MyFavorites} />
+      <Route path="/admin/products">
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminProducts />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/products/new">
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AddProduct />
+        </ProtectedRoute>
+      </Route>
       <Route path="/webinars/:id">{(params) => <WebinarDetail params={params} />}</Route>
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
       <Route path="/factories" component={Factories} />
@@ -65,13 +79,15 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
-        <TooltipProvider>
-          <Toaster position="top-right" />
-          <CommandPalette />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="dark">
+          <TooltipProvider>
+            <Toaster position="top-right" />
+            <CommandPalette />
+            <Router />
+          </TooltipProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
