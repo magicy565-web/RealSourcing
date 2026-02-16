@@ -3,7 +3,6 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Progress } from "../components/ui/progress";
 import { Separator } from "../components/ui/separator";
 import {
   ArrowLeft,
@@ -13,7 +12,6 @@ import {
   Shield,
   Calendar,
   TrendingUp,
-  FileText,
   Users,
   CheckCircle2,
   AlertTriangle,
@@ -21,11 +19,16 @@ import {
   Phone,
   Mail,
   Award,
+  MessageSquare,
+  Heart,
+  Share2,
 } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { mockStore } from "../lib/mock-data";
 import { useEffect, useState } from "react";
 import { cn } from "../lib/utils";
+import ScoreRadarChart from "../components/ScoreRadarChart";
+import AIAnalysisCard from "../components/AIAnalysisCard";
 
 const defaultFactoryData = {
   id: 1,
@@ -60,6 +63,21 @@ const defaultFactoryData = {
     { id: 3, product: "IoT Temperature Sensor", quantity: 3000, value: "$6,000", date: "2025-09-10", status: "delivered" },
   ],
   aiSummary: "Shenzhen Electronics Co. is a highly reliable supplier with consistent quality metrics across 15+ orders. Their LED controller line shows strong innovation with 3 new SKUs in the past quarter. Production capacity is currently at 70% utilization, suggesting room for larger orders. Key strength: competitive pricing with above-average quality. Risk factor: single-source dependency on Broadcom chips for IoT products.",
+  aiStrengths: [
+    "Competitive pricing with above-average quality",
+    "Strong innovation in LED controller line",
+    "70% capacity utilization (room for growth)",
+  ],
+  aiRisks: [
+    "Single-source chip dependency (Broadcom)",
+    "Limited international shipping experience",
+    "No UL certification for US market",
+  ],
+  aiRecommendations: [
+    "Suitable for medium-batch orders (1,000-5,000 units)",
+    "Recommend 60-day lead time for custom orders",
+    "Consider for customized product development",
+  ],
 };
 
 export default function FactoryDetail() {
@@ -96,61 +114,94 @@ export default function FactoryDetail() {
     return "text-red-400";
   };
 
-  const getProgressColor = (score: number) => {
-    if (score >= 90) return "[&>div]:bg-green-400";
-    if (score >= 80) return "[&>div]:bg-blue-400";
-    if (score >= 70) return "[&>div]:bg-yellow-400";
-    return "[&>div]:bg-red-400";
+  const getScoreBgColor = (score: number) => {
+    if (score >= 90) return "bg-green-500/10 border-green-500/30";
+    if (score >= 80) return "bg-blue-500/10 border-blue-500/30";
+    if (score >= 70) return "bg-yellow-500/10 border-yellow-500/30";
+    return "bg-red-500/10 border-red-500/30";
   };
 
   return (
     <DashboardLayout>
       <div className="p-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/factories")}>
-            <ArrowLeft className="h-4 w-4" />
+        <div className="mb-8">
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/factories")} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Factories
           </Button>
-          <div className="flex items-start gap-4 flex-1">
-            {/* Company Logo */}
-            {factoryData.logo ? (
-              <img
-                src={factoryData.logo}
-                alt={factoryData.name}
-                className="w-20 h-20 rounded-xl object-cover border border-[#262626] flex-shrink-0"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-xl bg-orange-500/10 flex items-center justify-center border border-[#262626] flex-shrink-0">
-                <Building2 className="h-9 w-9 text-orange-400" />
+          
+          <Card className="overflow-hidden">
+            <div className="h-32 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-green-500/20" />
+            <CardContent className="relative -mt-16 pb-6">
+              <div className="flex items-start gap-6">
+                {/* Company Logo */}
+                {factoryData.logo ? (
+                  <img
+                    src={factoryData.logo}
+                    alt={factoryData.name}
+                    className="w-32 h-32 rounded-2xl object-cover border-4 border-background shadow-xl flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-2xl bg-orange-500/10 flex items-center justify-center border-4 border-background shadow-xl flex-shrink-0">
+                    <Building2 className="h-16 w-16 text-orange-400" />
+                  </div>
+                )}
+                
+                <div className="flex-1 mt-16">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h1 className="text-3xl font-bold tracking-tight">{factoryData.name}</h1>
+                        <Badge variant="default" className="bg-green-500/20 text-green-400 border-green-500/30">
+                          Verified
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {factoryData.location}
+                        </span>
+                        <span>·</span>
+                        <span>{factoryData.category}</span>
+                        <span>·</span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          Est. {factoryData.established}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="icon">
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="icon">
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button size="lg">
+                        Invite to Webinar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold tracking-tight truncate">{factoryData.name}</h1>
-                <Badge variant="default">Verified</Badge>
-              </div>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {factoryData.location}
-              </span>
-              <span>·</span>
-              <span>{factoryData.category}</span>
-              <span>·</span>
-              <span>Est. {factoryData.established}</span>
-              </div>
-            </div>
-          </div>
-          <Button>Invite to Webinar</Button>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Score Overview */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        {/* Key Metrics */}
+        <div className="grid grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Star className={`h-6 w-6 mx-auto mb-2 ${getScoreColor(factoryData.score)}`} />
-                <p className={`text-3xl font-bold ${getScoreColor(factoryData.score)}`}>
+                <div className={cn(
+                  "w-16 h-16 rounded-full flex items-center justify-center border-2 mx-auto mb-3",
+                  getScoreBgColor(factoryData.score)
+                )}>
+                  <Star className={cn("h-6 w-6", getScoreColor(factoryData.score))} />
+                </div>
+                <p className={cn("text-3xl font-bold", getScoreColor(factoryData.score))}>
                   {factoryData.score}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Overall Score</p>
@@ -160,7 +211,7 @@ export default function FactoryDetail() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Users className="h-6 w-6 mx-auto mb-2 text-blue-400" />
+                <Users className="h-8 w-8 mx-auto mb-3 text-blue-400" />
                 <p className="text-3xl font-bold">{factoryData.webinarHistory.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">Webinars</p>
               </div>
@@ -169,7 +220,7 @@ export default function FactoryDetail() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-400" />
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-3 text-green-400" />
                 <p className="text-3xl font-bold">{factoryData.orders.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">Orders</p>
               </div>
@@ -178,237 +229,312 @@ export default function FactoryDetail() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Award className="h-6 w-6 mx-auto mb-2 text-purple-400" />
+                <Award className="h-8 w-8 mx-auto mb-3 text-purple-400" />
                 <p className="text-3xl font-bold">{factoryData.certifications.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">Certifications</p>
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <TrendingUp className="h-8 w-8 mx-auto mb-3 text-yellow-400" />
+                <p className="text-3xl font-bold">95%</p>
+                <p className="text-xs text-muted-foreground mt-1">On-Time Rate</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="scores">Score Breakdown</TabsTrigger>
-            <TabsTrigger value="history">Webinar History</TabsTrigger>
-            <TabsTrigger value="orders">Order History</TabsTrigger>
-            <TabsTrigger value="ai">AI Analysis</TabsTrigger>
-          </TabsList>
+        {/* Main Content */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Left Column - Main Content */}
+          <div className="col-span-2 space-y-6">
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="scores">Scores</TabsTrigger>
+                <TabsTrigger value="history">Webinars</TabsTrigger>
+                <TabsTrigger value="orders">Orders</TabsTrigger>
+                <TabsTrigger value="ai">AI Analysis</TabsTrigger>
+              </TabsList>
 
-          {/* Overview */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Company Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Building2 className="h-4 w-4" /> Employees
-                    </span>
-                    <span className="text-sm font-medium">{factoryData.employees}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" /> Annual Revenue
-                    </span>
-                    <span className="text-sm font-medium">{factoryData.annualRevenue}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Globe className="h-4 w-4" /> Website
-                    </span>
-                    <span className="text-sm font-medium">{factoryData.website}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Phone className="h-4 w-4" /> Phone
-                    </span>
-                    <span className="text-sm font-medium">{factoryData.phone}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Mail className="h-4 w-4" /> Email
-                    </span>
-                    <span className="text-sm font-medium">{factoryData.email}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Certifications & Specialties</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-3">Certifications</p>
-                    <div className="flex flex-wrap gap-2">
-                      {factoryData.certifications.map((cert) => (
-                        <Badge key={cert} variant="secondary" className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          {cert}
-                        </Badge>
-                      ))}
+              {/* Overview */}
+              <TabsContent value="overview" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Company Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Building2 className="h-4 w-4" /> Employees
+                        </span>
+                        <span className="text-sm font-medium">{factoryData.employees}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" /> Annual Revenue
+                        </span>
+                        <span className="text-sm font-medium">{factoryData.annualRevenue}</span>
+                      </div>
                     </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-3">Product Specialties</p>
-                    <div className="flex flex-wrap gap-2">
-                      {factoryData.specialties.map((spec) => (
-                        <Badge key={spec} variant="outline">
-                          {spec}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                  </CardContent>
+                </Card>
 
-          {/* Score Breakdown */}
-          <TabsContent value="scores">
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Score Breakdown</CardTitle>
-                <CardDescription>
-                  Detailed scoring across key performance indicators
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {Object.entries(factoryData.scoreBreakdown).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize">{key}</span>
-                      <span className={`text-sm font-bold ${getScoreColor(value)}`}>{value}</span>
-                    </div>
-                    <Progress value={value} className={`h-2 ${getProgressColor(value)}`} />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Performance Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScoreRadarChart scores={factoryData.scoreBreakdown} showIndustryAverage={true} />
+                  </CardContent>
+                </Card>
 
-          {/* Webinar History */}
-          <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>Webinar Participation History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {factoryData.webinarHistory.map((webinar) => (
-                    <div
-                      key={webinar.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Calendar className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{webinar.title}</p>
-                          <p className="text-xs text-muted-foreground">{webinar.date}</p>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Certifications & Specialties</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-3">Certifications</p>
+                      <div className="flex flex-wrap gap-2">
+                        {factoryData.certifications.map((cert) => (
+                          <Badge key={cert} variant="secondary" className="flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            {cert}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Separator />
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-3">Product Specialties</p>
+                      <div className="flex flex-wrap gap-2">
+                        {factoryData.specialties.map((spec) => (
+                          <Badge key={spec} variant="outline">
+                            {spec}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Score Breakdown */}
+              <TabsContent value="scores">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Performance Score Breakdown</CardTitle>
+                    <CardDescription>
+                      Detailed scoring across key performance indicators
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ScoreRadarChart scores={factoryData.scoreBreakdown} showIndustryAverage={true} />
+                    
+                    <div className="mt-8 space-y-4">
+                      {Object.entries(factoryData.scoreBreakdown).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                          <span className="text-sm font-medium capitalize">{key}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={cn(
+                                  "h-full",
+                                  value >= 90 ? "bg-green-400" : value >= 80 ? "bg-blue-400" : "bg-yellow-400"
+                                )}
+                                style={{ width: `${value}%` }}
+                              />
+                            </div>
+                            <span className={cn("text-sm font-bold w-8 text-right", getScoreColor(value))}>
+                              {value}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline">{webinar.role}</Badge>
-                        <Badge
-                          variant={webinar.status === "live" ? "default" : "secondary"}
-                        >
-                          {webinar.status.charAt(0).toUpperCase() + webinar.status.slice(1)}
-                        </Badge>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          {/* Order History */}
-          <TabsContent value="orders">
+              {/* Webinar History */}
+              <TabsContent value="history">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Webinar Participation History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {factoryData.webinarHistory.map((webinar) => (
+                        <div
+                          key={webinar.id}
+                          className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Calendar className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">{webinar.title}</p>
+                              <p className="text-xs text-muted-foreground">{webinar.date}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline">{webinar.role}</Badge>
+                            <Badge
+                              variant={webinar.status === "live" ? "default" : "secondary"}
+                            >
+                              {webinar.status.charAt(0).toUpperCase() + webinar.status.slice(1)}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Order History */}
+              <TabsContent value="orders">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Order History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {factoryData.orders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/30 transition-colors"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{order.product}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {order.quantity} units · {order.date}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold">{order.value}</span>
+                            <Badge
+                              variant={order.status === "shipped" ? "default" : "secondary"}
+                            >
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* AI Analysis */}
+              <TabsContent value="ai">
+                <AIAnalysisCard
+                  summary={factoryData.aiSummary}
+                  strengths={factoryData.aiStrengths}
+                  risks={factoryData.aiRisks}
+                  recommendations={factoryData.aiRecommendations}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Right Column - Contact & Quick Actions */}
+          <div className="space-y-6">
+            {/* Contact Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Order History</CardTitle>
+                <CardTitle className="text-lg">Contact Information</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {factoryData.orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{order.product}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {order.quantity} units · {order.date}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold">{order.value}</span>
-                        <Badge
-                          variant={order.status === "shipped" ? "default" : "secondary"}
-                        >
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </Badge>
-                      </div>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <Mail className="h-3 w-3" />
+                      Email
                     </div>
-                  ))}
+                    <p className="text-sm font-medium">{factoryData.email}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" className="flex-1">Copy</Button>
+                      <Button size="sm" className="flex-1">Send</Button>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <Phone className="h-3 w-3" />
+                      Phone
+                    </div>
+                    <p className="text-sm font-medium">{factoryData.phone}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" className="flex-1">Copy</Button>
+                      <Button size="sm" className="flex-1">Call</Button>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <Globe className="h-3 w-3" />
+                      Website
+                    </div>
+                    <p className="text-sm font-medium">{factoryData.website}</p>
+                    <Button size="sm" variant="outline" className="w-full mt-2">Visit</Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* AI Analysis */}
-          <TabsContent value="ai">
+            {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-purple-400" />
-                  AI Supplier Analysis
-                </CardTitle>
-                <CardDescription>
-                  Automated intelligence report based on historical data and market analysis
-                </CardDescription>
+                <CardTitle className="text-lg">Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="p-4 rounded-lg bg-muted/30 border border-purple-400/20">
-                  <p className="text-sm leading-relaxed">{factoryData.aiSummary}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div className="p-4 rounded-lg border border-green-400/20 bg-green-400/5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-400" />
-                      <span className="text-sm font-medium text-green-400">Strengths</span>
-                    </div>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Competitive pricing with above-average quality</li>
-                      <li>• Strong innovation in LED controller line</li>
-                      <li>• 70% capacity utilization (room for growth)</li>
-                    </ul>
+              <CardContent className="space-y-2">
+                <Button className="w-full justify-start" variant="outline">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Message
+                </Button>
+                <Button className="w-full justify-start" variant="outline">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Request Quote
+                </Button>
+                <Button className="w-full justify-start" variant="outline">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Schedule Visit
+                </Button>
+                <Button className="w-full justify-start" variant="outline">
+                  <Heart className="h-4 w-4 mr-2" />
+                  Add to Favorites
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Similar Factories */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Similar Factories</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer">
+                  <p className="text-sm font-medium">Guangzhou Smart Home Ltd.</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary" className="text-xs">88 Score</Badge>
+                    <span className="text-xs text-muted-foreground">Smart Home</span>
                   </div>
-                  <div className="p-4 rounded-lg border border-orange-400/20 bg-orange-400/5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-4 w-4 text-orange-400" />
-                      <span className="text-sm font-medium text-orange-400">Risk Factors</span>
-                    </div>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Single-source chip dependency (Broadcom)</li>
-                      <li>• Limited international shipping experience</li>
-                      <li>• No UL certification for US market</li>
-                    </ul>
+                </div>
+                <div className="p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer">
+                  <p className="text-sm font-medium">Dongguan Manufacturing</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary" className="text-xs">85 Score</Badge>
+                    <span className="text-xs text-muted-foreground">Electronics</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
