@@ -42,7 +42,20 @@ export const factoryRouter = router({
       search: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      return await getFactories(input.search);
+      const factories = await getFactories(input.search);
+      
+      // 为每个工厂加载图片
+      const factoriesWithImages = await Promise.all(
+        factories.map(async (factory) => {
+          const images = await getFactoryImages(factory.id);
+          return {
+            ...factory,
+            images: images.map(img => img.url),
+          };
+        })
+      );
+      
+      return factoriesWithImages;
     }),
   
   /**
