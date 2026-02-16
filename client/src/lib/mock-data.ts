@@ -253,6 +253,12 @@ export const mockFactories: MockFactory[] = [
     score: 88,
     certifications: "ISO 9001, CE, UL",
     logo: "/logos/guangzhou-smarthome.png",
+    images: [
+      "/factory-images/smarthome-1.jpg",
+      "/factory-images/smarthome-2.jpg",
+      "/factory-images/smarthome-3.png",
+      "/factory-images/smarthome-4.jpg"
+    ],
     contact_email: "sales@gzsmarthome.cn",
     contact_phone: "+86-20-8888-0002",
     employee_count: 800,
@@ -268,6 +274,12 @@ export const mockFactories: MockFactory[] = [
     score: 85,
     certifications: "ISO 9001, BSCI, FDA",
     logo: "/logos/dongguan-manufacturing.png",
+    images: [
+      "/factory-images/consumer-1.jpg",
+      "/factory-images/consumer-2.jpg",
+      "/factory-images/consumer-3.jpg",
+      "/factory-images/consumer-4.jpg"
+    ],
     contact_email: "inquiry@dgmanufacturing.cn",
     contact_phone: "+86-769-8888-0003",
     employee_count: 3200,
@@ -283,6 +295,12 @@ export const mockFactories: MockFactory[] = [
     score: 79,
     certifications: "ISO 9001, FSC, CARB",
     logo: "/logos/foshan-furniture.png",
+    images: [
+      "/factory-images/furniture-1.jpg",
+      "/factory-images/furniture-2.jpg",
+      "/factory-images/furniture-3.jpg",
+      "/factory-images/furniture-4.jpeg"
+    ],
     contact_email: "export@foshanfurniture.cn",
     contact_phone: "+86-757-8888-0004",
     employee_count: 1500,
