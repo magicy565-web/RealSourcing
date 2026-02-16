@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { trpc } from "../lib/trpc";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,26 +58,35 @@ export default function Factories() {
   const [selectedForComparison, setSelectedForComparison] = useState<number[]>([]);
   const [showComparison, setShowComparison] = useState(false);
 
+  // 使用tRPC获取工厂数据
+  const { data: factoriesData, isLoading, error } = trpc.factory.list.useQuery({ search: searchQuery });
+
   useEffect(() => {
-    const factoriesData = mockStore.getFactories().map(f => ({
-      id: f.id,
-      name: f.name,
-      location: f.location,
-      score: f.score,
-      category: f.category,
-      webinars: Math.floor(Math.random() * 8) + 2,
-      orders: Math.floor(Math.random() * 25) + 5,
-      status: f.score >= 90 ? "verified" : f.score >= 80 ? "verified" : "pending",
-      employees: `${f.employee_count}`,
-      logo: f.logo,
-      images: f.images || [],
-      certifications: f.certifications.split(", ").slice(0, 3),
-      onTimeRate: Math.floor(Math.random() * 10) + 90,
-      yearsActive: new Date().getFullYear() - f.year_established,
-      isGoldMember: f.score >= 92,
-    }));
-    setFactories(factoriesData);
-  }, []);
+    if (factoriesData) {
+      const formattedFactories = factoriesData.map((f: any) => ({
+        id: f.id,
+        name: f.name,
+        location: `${f.city}, ${f.province}`,
+        score: parseFloat(f.overallScore) || 0,
+        category: f.category || "Uncategorized",
+        webinars: 0, // TODO: 从数据库获取
+        orders: f.orderCount || 0,
+        status: f.status,
+        employees: f.employees || "N/A",
+        logo: f.logo || "/logos/default.png",
+        images: f.images || [],
+        certifications: [], // TODO: 从数据库获取
+        onTimeRate: 95, // TODO: 从数据库计算
+        yearsActive: f.established ? new Date().getFullYear() - f.established : 0,
+        isGoldMember: parseFloat(f.overallScore) >= 92,
+      }));
+      setFactories(formattedFactories);
+    }
+  }, [factoriesData]);
+
+  if (error) {
+    toast.error("加载工厂数据失败");
+  }
 
   // Get unique categories and locations
   const categories = ["all", ...Array.from(new Set(factories.map(f => f.category)))];

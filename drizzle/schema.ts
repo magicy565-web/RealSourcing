@@ -169,6 +169,26 @@ export const factoryProducts = mysqlTable("factory_products", {
 export type FactoryProduct = InferSelectModel<typeof factoryProducts>;
 export type InsertFactoryProduct = InferInsertModel<typeof factoryProducts>;
 
+export const factoryImages = mysqlTable("factory_images", {
+  id: int("id").autoincrement().primaryKey(),
+  factoryId: int("factoryId").notNull(),
+  url: varchar("url", { length: 500 }).notNull(),
+  type: mysqlEnum("type", ["factory", "product", "certification"]).default("factory").notNull(),
+  category: varchar("category", { length: 50 }),
+  displayOrder: int("displayOrder").default(0),
+  isPrimary: tinyint("isPrimary").default(0),
+  caption: varchar("caption", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  factoryIdIdx: index("idx_factoryId").on(table.factoryId),
+  typeIdx: index("idx_type").on(table.type),
+  displayOrderIdx: index("idx_displayOrder").on(table.displayOrder),
+}));
+
+export type FactoryImage = InferSelectModel<typeof factoryImages>;
+export type InsertFactoryImage = InferInsertModel<typeof factoryImages>;
+
 // ============================================================================
 // 3. 采购会议域 (Webinar)
 // ============================================================================

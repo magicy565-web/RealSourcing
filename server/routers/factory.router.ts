@@ -27,6 +27,7 @@ import {
   createAuditLog,
 } from "../db_extended.js";
 import { checkAndTrackUsage } from "../saas-core.js";
+import { getFactoryImages, createFactoryImage, deleteFactoryImage } from "../db_factory_images.js";
 
 export const factoryRouter = router({
   // ============================================================================
@@ -52,7 +53,57 @@ export const factoryRouter = router({
       id: z.number(),
     }))
     .query(async ({ input }) => {
-      return await getFactoryById(input.id);
+      const factory = await getFactoryById(input.id);
+      if (!factory) return null;
+      
+      // 获取工厂图片
+      const images = await getFactoryImages(input.id);
+      
+      return {
+        ...factory,
+        images: images.map(img => img.url),
+      };
+    }),
+  
+  /**
+   * 获取工厂图片
+   */
+  getImages: protectedProcedure
+    .input(z.object({
+      factoryId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      return await getFactoryImages(input.factoryId);
+    }),
+  
+  /**
+   * 添加工厂图片
+   */
+  addImage: protectedProcedure
+    .input(z.object({
+      factoryId: z.number(),
+      url: z.string(),
+      type: z.enum(["factory", "product", "certification"]).optional(),
+      category: z.string().optional(),
+      displayOrder: z.number().optional(),
+      isPrimary: z.number().optional(),
+      caption: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const imageId = await createFactoryImage(input);
+      return { id: imageId };
+    }),
+  
+  /**
+   * 删除工厂图片
+   */
+  deleteImage: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      await deleteFactoryImage(input.id);
+      return { success: true };
     }),
   
   /**

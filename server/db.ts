@@ -23,14 +23,16 @@ export async function getDb() {
       
       _pool = mysql.createPool({
         uri: dbUrl,
-        ssl: isProd ? { rejectUnauthorized: false } : undefined,
+        ssl: false,
         waitForConnections: true,
-        connectionLimit: 1,
+        connectionLimit: 10,
         queueLimit: 0,
-        connectTimeout: 10000, // 10s timeout
+        connectTimeout: 30000, // 30s timeout
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
       });
       
-      _db = drizzle(_pool, { schema });
+      _db = drizzle(_pool, { schema, mode: 'default' });
       
       // Test connection immediately
       await _pool.query('SELECT 1');
