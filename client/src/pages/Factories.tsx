@@ -11,23 +11,15 @@ import {
   Search, 
   MapPin, 
   Star, 
-  TrendingUp, 
-  MoreHorizontal, 
   Plus, 
   Building2,
-  Users,
-  CheckCircle2,
   Shield,
-  Award,
+  ArrowRight,
+  TrendingUp,
+  CheckCircle2,
   Calendar,
-  Sparkles
+  Award
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -51,47 +43,16 @@ export default function Factories() {
       certifications: f.certifications.split(", ").slice(0, 3),
       onTimeRate: Math.floor(Math.random() * 10) + 90,
       yearsActive: new Date().getFullYear() - f.year_established,
-      scoreBreakdown: {
-        quality: Math.floor(Math.random() * 10) + 90,
-        delivery: Math.floor(Math.random() * 10) + 85,
-        communication: Math.floor(Math.random() * 10) + 80,
-      }
+      isGoldMember: f.score >= 92,
     }));
     setFactories(factoriesData);
   }, []);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-400";
-    if (score >= 80) return "text-blue-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
-  };
-
-  const getScoreBgGradient = (score: number) => {
-    if (score >= 90) return "bg-gradient-to-r from-green-500/30 via-green-500/10 to-transparent";
-    if (score >= 80) return "bg-gradient-to-r from-blue-500/30 via-blue-500/10 to-transparent";
-    if (score >= 70) return "bg-gradient-to-r from-yellow-500/30 via-yellow-500/10 to-transparent";
-    return "bg-gradient-to-r from-red-500/30 via-red-500/10 to-transparent";
-  };
-
-  const getScoreBadgeBg = (score: number) => {
-    if (score >= 90) return "bg-gradient-to-br from-green-500 to-emerald-600";
-    if (score >= 80) return "bg-gradient-to-br from-blue-500 to-cyan-600";
-    if (score >= 70) return "bg-gradient-to-br from-yellow-500 to-orange-500";
-    return "bg-gradient-to-br from-red-500 to-rose-600";
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "verified":
-        return <Badge variant="default" className="bg-green-500/20 text-green-400 border-green-500/30 backdrop-blur-sm">✓ Verified</Badge>;
-      case "pending":
-        return <Badge variant="secondary" className="backdrop-blur-sm">⏳ Pending</Badge>;
-      case "suspended":
-        return <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30 backdrop-blur-sm">⚠ Suspended</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  const getScoreBadgeStyle = (score: number) => {
+    if (score >= 90) return "bg-gradient-to-br from-yellow-400 to-orange-500 text-white";
+    if (score >= 80) return "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-900";
+    if (score >= 70) return "bg-gradient-to-br from-amber-600 to-amber-700 text-white";
+    return "bg-gradient-to-br from-gray-500 to-gray-600 text-white";
   };
 
   const filterFactories = (status: string) => {
@@ -120,212 +81,146 @@ export default function Factories() {
     }
 
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         {items.map((factory) => (
           <Card 
             key={factory.id} 
             className={cn(
-              "group relative overflow-hidden border-muted-foreground/10 shadow-lg shadow-black/20",
-              "hover:border-muted-foreground/30 hover:shadow-2xl hover:shadow-black/50",
-              "transition-all duration-300 cursor-pointer hover:-translate-y-2 hover:scale-[1.01]"
+              "group relative overflow-hidden border-muted-foreground/10",
+              "hover:border-primary/30 hover:shadow-xl hover:shadow-black/30",
+              "transition-all duration-200 cursor-pointer hover:-translate-y-1",
+              "bg-card/50 backdrop-blur-sm"
             )}
             onClick={() => setLocation(`/factories/${factory.id}`)}
           >
-            {/* Score Gradient Banner */}
-            <div className={cn("absolute top-0 left-0 right-0 h-2", getScoreBgGradient(factory.score))} />
-            
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-6">
                 {/* Left: Logo */}
-                <div className="relative flex-shrink-0">
+                <div className="flex-shrink-0">
                   {factory.logo ? (
                     <img
                       src={factory.logo}
                       alt={factory.name}
-                      className="w-16 h-16 rounded-lg object-cover border border-muted-foreground/20 group-hover:border-muted-foreground/40 transition-colors"
+                      className="w-16 h-16 rounded-xl object-cover border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-orange-500/20 to-pink-500/20 flex items-center justify-center border border-muted-foreground/20 group-hover:border-orange-500/40 transition-colors">
-                      <Building2 className="h-8 w-8 text-orange-400" />
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors">
+                      <Building2 className="h-8 w-8 text-primary" />
                     </div>
                   )}
-                  {/* Score Badge Overlay */}
-                  <div className={cn(
-                    "absolute -bottom-2 -right-2 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shadow-xl ring-2 ring-background",
-                    getScoreBadgeBg(factory.score)
-                  )}>
-                    {factory.score}
-                  </div>
                 </div>
 
                 {/* Middle: Info */}
-                <div className="flex-1 min-w-0 space-y-2">
-                  {/* Name & Status */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate">
-                      {factory.name}
-                    </h3>
-                    {getStatusBadge(factory.status)}
+                <div className="flex-1 min-w-0 space-y-3">
+                  {/* Name, Location & Score */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors truncate">
+                        {factory.name}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {factory.location}
+                        </span>
+                        <span>•</span>
+                        <span>{factory.category}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Score Badge */}
+                    <div className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg flex-shrink-0",
+                      getScoreBadgeStyle(factory.score)
+                    )}>
+                      <Star className="h-4 w-4 fill-current" />
+                      <span className="font-bold text-base">{factory.score}</span>
+                    </div>
                   </div>
-                  
-                  {/* Location & Category */}
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {factory.location}
-                    </span>
-                    <span>•</span>
-                    <span>{factory.category}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5" />
-                      {factory.employees} employees
-                    </span>
+
+                  {/* Status Badges */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {factory.status === "verified" && (
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Verified Supplier
+                      </Badge>
+                    )}
+                    {factory.status === "pending" && (
+                      <Badge variant="secondary">
+                        Pending Review
+                      </Badge>
+                    )}
+                    {factory.isGoldMember && (
+                      <Badge className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30">
+                        <Award className="h-3 w-3 mr-1" />
+                        Gold Member
+                      </Badge>
+                    )}
                   </div>
                   
                   {/* Certifications */}
                   <div className="flex items-center gap-2 flex-wrap">
                     {factory.certifications.map((cert: string) => (
-                      <Badge 
+                      <div 
                         key={cert} 
-                        variant="outline" 
-                        className="text-xs bg-muted/30 border-muted-foreground/20 backdrop-blur-sm"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/30 border border-muted-foreground/20 text-sm"
                       >
-                        <Shield className="h-3 w-3 mr-1" />
-                        {cert}
-                      </Badge>
+                        <Shield className="h-3.5 w-3.5 text-blue-400" />
+                        <span className="font-medium">{cert}</span>
+                      </div>
                     ))}
                   </div>
 
-                  {/* Key Metrics Grid */}
-                  <div className="grid grid-cols-4 gap-3 pt-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-8 h-8 rounded-md bg-blue-500/10 flex items-center justify-center">
-                        <TrendingUp className="h-4 w-4 text-blue-400" />
+                  {/* Key Metrics */}
+                  <div className="grid grid-cols-3 gap-4 pt-2">
+                    <div className="flex flex-col items-center p-3 rounded-lg bg-muted/20 border border-muted-foreground/10">
+                      <div className="flex items-center gap-1.5 text-primary mb-1">
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="text-xl font-bold">{factory.orders}</span>
                       </div>
-                      <div>
-                        <div className="font-bold">{factory.webinars}</div>
-                        <div className="text-xs text-muted-foreground">Webinars</div>
-                      </div>
+                      <span className="text-xs text-muted-foreground">Orders</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-8 h-8 rounded-md bg-green-500/10 flex items-center justify-center">
-                        <CheckCircle2 className="h-4 w-4 text-green-400" />
+                    <div className="flex flex-col items-center p-3 rounded-lg bg-muted/20 border border-muted-foreground/10">
+                      <div className="flex items-center gap-1.5 text-green-400 mb-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="text-xl font-bold">{factory.onTimeRate}%</span>
                       </div>
-                      <div>
-                        <div className="font-bold">{factory.orders}</div>
-                        <div className="text-xs text-muted-foreground">Orders</div>
-                      </div>
+                      <span className="text-xs text-muted-foreground">On-Time</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-8 h-8 rounded-md bg-purple-500/10 flex items-center justify-center">
-                        <Award className="h-4 w-4 text-purple-400" />
+                    <div className="flex flex-col items-center p-3 rounded-lg bg-muted/20 border border-muted-foreground/10">
+                      <div className="flex items-center gap-1.5 text-blue-400 mb-1">
+                        <Calendar className="h-4 w-4" />
+                        <span className="text-xl font-bold">{factory.yearsActive}y</span>
                       </div>
-                      <div>
-                        <div className="font-bold">{factory.onTimeRate}%</div>
-                        <div className="text-xs text-muted-foreground">On-Time</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="w-8 h-8 rounded-md bg-yellow-500/10 flex items-center justify-center">
-                        <Calendar className="h-4 w-4 text-yellow-400" />
-                      </div>
-                      <div>
-                        <div className="font-bold">{factory.yearsActive}y</div>
-                        <div className="text-xs text-muted-foreground">Active</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Score Breakdown Mini Bars */}
-                  <div className="grid grid-cols-3 gap-3 pt-2">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Quality</span>
-                        <span className={getScoreColor(factory.scoreBreakdown.quality)}>{factory.scoreBreakdown.quality}</span>
-                      </div>
-                      <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all",
-                            factory.scoreBreakdown.quality >= 90 ? "bg-green-400" : "bg-blue-400"
-                          )}
-                          style={{ width: `${factory.scoreBreakdown.quality}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Delivery</span>
-                        <span className={getScoreColor(factory.scoreBreakdown.delivery)}>{factory.scoreBreakdown.delivery}</span>
-                      </div>
-                      <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all",
-                            factory.scoreBreakdown.delivery >= 90 ? "bg-green-400" : "bg-blue-400"
-                          )}
-                          style={{ width: `${factory.scoreBreakdown.delivery}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Communication</span>
-                        <span className={getScoreColor(factory.scoreBreakdown.communication)}>{factory.scoreBreakdown.communication}</span>
-                      </div>
-                      <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all",
-                            factory.scoreBreakdown.communication >= 90 ? "bg-green-400" : "bg-blue-400"
-                          )}
-                          style={{ width: `${factory.scoreBreakdown.communication}%` }}
-                        />
-                      </div>
+                      <span className="text-xs text-muted-foreground">Active</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/factories/${factory.id}`); }}>
-                        View Profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toast("Feature coming soon"); }}>
-                        Invite to Webinar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toast("Feature coming soon"); }}>
-                        Add to Favorites
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); toast("Feature coming soon"); }}>
-                        Remove
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
+                <div className="flex flex-col gap-3 flex-shrink-0">
                   <Button 
-                    size="sm" 
-                    className="mt-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                    variant="outline"
+                    size="sm"
+                    className="min-w-[120px]"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setLocation(`/factories/${factory.id}`); 
+                    }}
+                  >
+                    View Details
+                  </Button>
+                  <Button 
+                    size="sm"
+                    className="min-w-[120px] bg-gradient-to-r from-primary to-orange-600 hover:from-primary/90 hover:to-orange-600/90"
                     onClick={(e) => { 
                       e.stopPropagation(); 
                       toast("Feature coming soon"); 
                     }}
                   >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Invite
+                    Contact
+                    <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </div>
               </div>
@@ -348,7 +243,7 @@ export default function Factories() {
               Discover and connect with verified suppliers for your sourcing needs
             </p>
           </div>
-          <Button onClick={() => toast("Feature coming soon")} size="lg" className="bg-gradient-to-r from-primary to-primary/80">
+          <Button onClick={() => toast("Feature coming soon")} size="lg" className="bg-gradient-to-r from-primary to-orange-600">
             <Plus className="mr-2 h-4 w-4" />
             Add Factory
           </Button>
