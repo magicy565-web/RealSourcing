@@ -46,7 +46,7 @@ function Router() {
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
       <Route path="/webinars/:id/room" component={WebinarRoom} />
-      <Route path="/webinars/:id/showcase" component={ProductShowcase} />
+      <Route path="/webinars/:id/sourcing" component={ProductShowcase} />
       <Route path="/webinars/:id/favorites" component={MyFavorites} />
       <Route path="/admin/products">
         <ProtectedRoute allowedRoles={['admin']}>
