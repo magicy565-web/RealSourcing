@@ -61,9 +61,9 @@ export const factoryRouter = router({
             images: images.map(img => img.url),
             certifications: certifications.map(cert => ({
               id: cert.id,
-              type: cert.certificationType,
-              number: cert.certificationNumber,
-              status: cert.status,
+              type: cert.certificationType || 'Unknown',
+              number: cert.certificationNumber || '',
+              status: cert.status || 'pending',
             })),
             webinarCount,
             onTimeRate,
