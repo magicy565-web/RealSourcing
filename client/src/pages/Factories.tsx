@@ -125,14 +125,14 @@ export default function Factories() {
           <Card 
             key={factory.id} 
             className={cn(
-              "group relative overflow-hidden border-muted-foreground/10",
-              "hover:border-muted-foreground/30 hover:shadow-2xl hover:shadow-black/40",
-              "transition-all duration-300 cursor-pointer hover:-translate-y-1"
+              "group relative overflow-hidden border-muted-foreground/10 shadow-lg shadow-black/20",
+              "hover:border-muted-foreground/30 hover:shadow-2xl hover:shadow-black/50",
+              "transition-all duration-300 cursor-pointer hover:-translate-y-2 hover:scale-[1.01]"
             )}
             onClick={() => setLocation(`/factories/${factory.id}`)}
           >
             {/* Score Gradient Banner */}
-            <div className={cn("absolute top-0 left-0 right-0 h-1", getScoreBgGradient(factory.score))} />
+            <div className={cn("absolute top-0 left-0 right-0 h-2", getScoreBgGradient(factory.score))} />
             
             <CardContent className="p-5">
               <div className="flex items-start gap-4">
@@ -151,7 +151,7 @@ export default function Factories() {
                   )}
                   {/* Score Badge Overlay */}
                   <div className={cn(
-                    "absolute -bottom-2 -right-2 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg",
+                    "absolute -bottom-2 -right-2 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shadow-xl ring-2 ring-background",
                     getScoreBadgeBg(factory.score)
                   )}>
                     {factory.score}
