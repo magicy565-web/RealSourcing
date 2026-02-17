@@ -419,8 +419,12 @@ export default function WebinarDetailEnhanced() {
                 <Separator className="bg-gray-800" />
 
                 <div className="space-y-2">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Register Now
+                  <Button 
+                    className="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700"
+                    onClick={() => setLocation(`/webinars/${webinarId}/live`)}
+                  >
+                    <Video className="h-4 w-4 mr-2" />
+                    Join Live Webinar
                   </Button>
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1">

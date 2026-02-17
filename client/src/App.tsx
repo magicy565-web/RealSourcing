@@ -22,6 +22,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminWebinarForm from "./pages/AdminWebinarForm";
 import AdminProductForm from "./pages/AdminProductForm";
 import NegotiationRoom from "./pages/NegotiationRoom";
+import WebinarLiveRoom from "./pages/WebinarLiveRoom";
 import Factories from "./pages/Factories";
 import FactoryDetail from "./pages/FactoryDetail";
 import Reports from "./pages/Reports";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/create" component={WebinarCreate} />
       <Route path="/webinars/:id/room" component={WebinarRoom} />
+      <Route path="/webinars/:id/live" component={WebinarLiveRoom} />
       <Route path="/webinars/:id/sourcing" component={ProductShowcase} />
       <Route path="/webinars/:id/favorites" component={MyFavorites} />
       <Route path="/admin/products">
