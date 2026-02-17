@@ -69,16 +69,16 @@ export default function Factories() {
         location: `${f.city}, ${f.province}`,
         score: parseFloat(f.overallScore) || 0,
         category: f.category || "Uncategorized",
-        webinars: f.webinarCount || 0,  // ✅ 从数据库获取
+        webinars: f.webinarCount || 0,
         orders: f.orderCount || 0,
         status: f.status,
         employees: f.employees || "N/A",
         logo: f.logo || "/logos/default.png",
         images: f.images || [],
-        certifications: f.certifications || [],  // ✅ 从数据库获取
-        onTimeRate: f.onTimeRate || 95,  // ✅ 从数据库计算
+        certifications: f.certifications || [],
+        onTimeRate: f.onTimeRate || 95,
         yearsActive: f.established ? new Date().getFullYear() - f.established : 0,
-        isGoldMember: parseFloat(f.overallScore) >= 92,  // TODO: 从系统配置读取阈值
+        isGoldMember: parseFloat(f.overallScore) >= 92,
       }));
       setFactories(formattedFactories);
     }
@@ -124,12 +124,10 @@ export default function Factories() {
   const filterFactories = (status: string) => {
     let filtered = factories;
     
-    // Status filter
     if (status !== "all") {
       filtered = filtered.filter((f) => f.status === status);
     }
     
-    // Search filter
     if (searchQuery) {
       filtered = filtered.filter((f) => 
         f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,22 +136,18 @@ export default function Factories() {
       );
     }
     
-    // Category filter
     if (selectedCategory !== "all") {
       filtered = filtered.filter((f) => f.category === selectedCategory);
     }
     
-    // Location filter
     if (selectedLocation !== "all") {
       filtered = filtered.filter((f) => f.location.includes(selectedLocation));
     }
     
-    // Score filter
     if (minScore > 0) {
       filtered = filtered.filter((f) => f.score >= minScore);
     }
     
-    // Sort
     return sortFactories(filtered);
   };
 
@@ -222,7 +216,6 @@ export default function Factories() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -249,7 +242,6 @@ export default function Factories() {
           </div>
         </div>
 
-        {/* Search and Filters Bar */}
         <div className="flex gap-3 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -261,7 +253,6 @@ export default function Factories() {
             />
           </div>
 
-          {/* Sort Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2 min-w-[180px]">
@@ -285,11 +276,6 @@ export default function Factories() {
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Orders: Most First
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("orders-asc")}>
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Orders: Least First
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setSortBy("ontime-desc")}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 On-Time Rate: Highest
@@ -298,226 +284,219 @@ export default function Factories() {
                 <Calendar className="h-4 w-4 mr-2" />
                 Experience: Most Years
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setSortBy("name-asc")}>
-                <Building2 className="h-4 w-4 mr-2" />
+                <ArrowRight className="h-4 w-4 mr-2" />
                 Name: A to Z
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Filter Toggle */}
           <Button 
-            variant={showFilters ? "default" : "outline"} 
+            variant={showFilters ? "secondary" : "outline"}
             onClick={() => setShowFilters(!showFilters)}
             className="gap-2"
           >
             <Filter className="h-4 w-4" />
             Filters
             {hasActiveFilters && (
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5 min-w-5">
-                {[selectedCategory !== "all", selectedLocation !== "all", minScore > 0, searchQuery !== ""].filter(Boolean).length}
+              <Badge variant="secondary" className="ml-1 px-1 h-5 min-w-5 flex items-center justify-center">
+                !
               </Badge>
             )}
           </Button>
         </div>
 
-        {/* Advanced Filters Panel */}
         {showFilters && (
-          <Card className="mt-4 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Category Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat === "all" ? "All Categories" : cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          <Card className="mt-4 border-dashed bg-muted/20">
+            <CardContent className="p-4 flex flex-wrap gap-4 items-end">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Category</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat === "all" ? "All Categories" : cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Location Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Location</label>
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Locations" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((loc) => (
-                        <SelectItem key={loc} value={loc}>
-                          {loc === "all" ? "All Locations" : loc}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Location</label>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <SelectValue placeholder="Select Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map(loc => (
+                      <SelectItem key={loc} value={loc}>
+                        {loc === "all" ? "All Locations" : loc}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Score Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Minimum Score</label>
-                  <Select value={minScore.toString()} onValueChange={(v) => setMinScore(Number(v))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any Score" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Any Score</SelectItem>
-                      <SelectItem value="70">70+</SelectItem>
-                      <SelectItem value="80">80+</SelectItem>
-                      <SelectItem value="90">90+</SelectItem>
-                      <SelectItem value="95">95+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Clear Filters */}
-                <div className="flex items-end">
-                  <Button 
-                    variant="ghost" 
-                    onClick={clearFilters}
-                    disabled={!hasActiveFilters}
-                    className="w-full gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Clear All
-                  </Button>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Min Score: {minScore}</label>
+                <div className="flex items-center gap-2 w-[180px]">
+                  <Input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    step="5"
+                    value={minScore}
+                    onChange={(e) => setMinScore(parseInt(e.target.value))}
+                    className="h-9 px-0 accent-primary"
+                  />
                 </div>
               </div>
+
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearFilters}
+                className="h-9 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5 mr-2" />
+                Clear All
+              </Button>
             </CardContent>
           </Card>
         )}
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="all">
-            All ({filterFactories("all").length})
-          </TabsTrigger>
-          <TabsTrigger value="verified">
-            Verified ({filterFactories("verified").length})
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending ({filterFactories("pending").length})
-          </TabsTrigger>
-          <TabsTrigger value="suspended">
-            Suspended ({filterFactories("suspended").length})
-          </TabsTrigger>
+          <TabsTrigger value="all" className="px-6">All Factories</TabsTrigger>
+          <TabsTrigger value="verified" className="px-6">Verified Only</TabsTrigger>
+          <TabsTrigger value="new" className="px-6">New Suppliers</TabsTrigger>
         </TabsList>
 
-        {["all", "verified", "pending", "suspended"].map((status) => (
+        {["all", "verified", "new"].map((status) => (
           <TabsContent key={status} value={status} className="space-y-4">
-            {filterFactories(status).length === 0 ? (
-              <Card className="p-12">
-                <div className="text-center text-muted-foreground">
-                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p className="text-lg font-medium mb-2">No factories found</p>
-                  <p className="text-sm">Try adjusting your filters or search query</p>
-                </div>
-              </Card>
+            {isLoading ? (
+              <div className="grid gap-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="h-40 bg-muted/10" />
+                  </Card>
+                ))}
+              </div>
+            ) : filterFactories(status).length === 0 ? (
+              <div className="text-center py-20 border-2 border-dashed rounded-xl">
+                <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                <h3 className="text-lg font-medium">No factories found</h3>
+                <p className="text-muted-foreground">Try adjusting your search or filters</p>
+                {hasActiveFilters && (
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
             ) : (
               filterFactories(status).map((factory) => (
-                <Card 
-                  key={factory.id} 
-                  className={cn(
-                    "overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl border-border/50",
-                    selectedForComparison.includes(factory.id) && "ring-2 ring-purple-500"
-                  )}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex gap-6">
-                      {/* Comparison Checkbox */}
-                      <div className="flex-shrink-0 flex items-start pt-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedForComparison.includes(factory.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
+                <Card key={factory.id} className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/20">
+                  <CardContent className="p-0">
+                    <div className="flex flex-col md:flex-row gap-6 p-6">
+                      <div className="flex flex-col gap-4">
+                        <div className="relative">
+                          <div className="w-24 h-24 rounded-xl overflow-hidden bg-white p-2 border border-border/50 shadow-sm group-hover:shadow-md transition-shadow">
+                            <img 
+                              src={factory.logo} 
+                              alt={factory.name}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          {factory.isGoldMember && (
+                            <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 p-1 rounded-full shadow-lg">
+                              <Award className="h-4 w-4" />
+                            </div>
+                          )}
+                        </div>
+                        {renderImageGallery(factory.images)}
+                        <Button 
+                          variant={selectedForComparison.includes(factory.id) ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            if (selectedForComparison.includes(factory.id)) {
+                              setSelectedForComparison(selectedForComparison.filter(id => id !== factory.id));
+                            } else {
                               if (selectedForComparison.length >= 4) {
-                                toast.error("You can compare up to 4 factories at once");
+                                toast.error("You can compare up to 4 factories");
                                 return;
                               }
                               setSelectedForComparison([...selectedForComparison, factory.id]);
-                            } else {
-                              setSelectedForComparison(selectedForComparison.filter(id => id !== factory.id));
                             }
                           }}
-                          className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
-                        />
-                      </div>
-                      {/* Image Gallery */}
-                      <div className="flex-shrink-0">
-                        {renderImageGallery(factory.images)}
+                          className="w-full gap-2"
+                        >
+                          <GitCompare className="h-3.5 w-3.5" />
+                          {selectedForComparison.includes(factory.id) ? "Selected" : "Compare"}
+                        </Button>
                       </div>
 
-                      {/* Factory Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4 mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-semibold mb-1 truncate">{factory.name}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-4 w-4 flex-shrink-0" />
-                              <span>{factory.location}</span>
-                              <span className="text-muted-foreground/50">•</span>
-                              <span>{factory.category}</span>
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-xl font-bold group-hover:text-primary transition-colors truncate">
+                                {factory.name}
+                              </h3>
+                              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">
+                                {factory.category}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5" />
+                                {factory.location}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Building2 className="h-3.5 w-3.5" />
+                                {factory.employees} Employees
+                              </div>
                             </div>
                           </div>
-                          
-                          {/* Score Badge */}
                           <div className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-lg ring-2 ring-white/20",
+                            "px-4 py-2 rounded-xl text-center shadow-sm",
                             getScoreBadgeStyle(factory.score)
                           )}>
-                            <Star className="h-5 w-5 fill-current" />
-                            {factory.score}
+                            <div className="text-xs font-medium opacity-90">Score</div>
+                            <div className="text-2xl font-bold">{factory.score}</div>
                           </div>
                         </div>
 
-                        {/* Status Badges */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {factory.status === "verified" && (
-                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Verified Supplier
-                            </Badge>
-                          )}
-                          {factory.status === "pending" && (
-                            <Badge variant="secondary" className="gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Pending Review
-                            </Badge>
-                          )}
-                          {factory.isGoldMember && (
-                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 gap-1">
-                              <Award className="h-3 w-3" />
-                              Gold Member
+                        <div className="flex flex-wrap gap-4 mb-4">
+                          <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 gap-1.5 px-3 py-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Verified Supplier
+                          </Badge>
+                          {factory.webinars > 0 && (
+                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20 gap-1.5 px-3 py-1">
+                              <ImageIcon className="h-3.5 w-3.5" />
+                              {factory.webinars} Active Webinars
                             </Badge>
                           )}
                         </div>
 
-                        {/* Certifications */}
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {factory.certifications.map((cert: string, idx: number) => (
+                          {factory.certifications.map((cert: any, idx: number) => (
                             <Badge 
                               key={idx}
                               variant="outline" 
                               className="bg-muted/30 gap-1.5 px-3 py-1"
                             >
                               <Shield className="h-3 w-3" />
-                              {cert}
+                              {cert.name || cert.type}
                             </Badge>
                           ))}
                         </div>
 
-                        {/* Key Metrics */}
                         <div className="grid grid-cols-3 gap-4">
                           <div className="text-center p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
                             <div className="flex items-center justify-center gap-1.5 text-blue-600 mb-1">
@@ -543,7 +522,6 @@ export default function Factories() {
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
                       <div className="flex flex-col gap-2 justify-center">
                         <Button
                           variant="outline"
@@ -569,7 +547,6 @@ export default function Factories() {
         ))}
       </Tabs>
 
-      {/* Factory Comparison Modal */}
       {showComparison && (
         <FactoryComparison
           factories={factories.filter(f => selectedForComparison.includes(f.id))}
