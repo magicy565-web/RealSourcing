@@ -6,8 +6,9 @@
 import { z } from "zod";
 import { router, adminProcedure } from "../../_core/trpc.js";
 import { getDb } from "../../db.js";
+import { logAuditEvent, logBatchAuditEvents } from "../../_core/audit.js";
 import { users, userProfiles, buyerProfiles, userBehaviorEvents } from "../../../drizzle/schema.js";
-import { eq, and, or, like, desc, sql, count } from "drizzle-orm";
+import { eq, and, or, like, desc, sql, count, inArray } from "drizzle-orm";
 
 export const adminUserRouter = router({
   /**
@@ -16,7 +17,7 @@ export const adminUserRouter = router({
   list: adminProcedure
     .input(
       z.object({
-        page: z.number().min(1).default(1),
+        page: z.number().min(1).max(1000).default(1), // 限制最大页码防止大 OFFSET 攻击
         pageSize: z.number().min(1).max(100).default(20),
         role: z.enum(["user", "buyer", "factory", "admin"]).optional(),
         status: z.enum(["active", "suspended", "deleted"]).optional(),
@@ -39,10 +40,12 @@ export const adminUserRouter = router({
         conditions.push(eq(users.status, status));
       }
       if (search) {
+        // 使用参数化查询避免 SQL 注入
+        const searchPattern = `%${search}%`;
         conditions.push(
           or(
-            like(users.name, `%${search}%`),
-            like(users.email, `%${search}%`)
+            like(users.name, searchPattern),
+            like(users.email, searchPattern)
           )
         );
       }
@@ -164,7 +167,14 @@ export const adminUserRouter = router({
         .set({ status })
         .where(eq(users.id, id));
 
-      // TODO: 记录审计日志
+      // 记录审计日志
+      await logAuditEvent({
+        userId: ctx.user?.id || 0,
+        action: 'update_user_status',
+        entityType: 'user',
+        entityId: id,
+        changes: { status, reason },
+      });
       // await db.insert(auditLogs).values({
       //   userId: ctx.user.id,
       //   action: 'update_user_status',
@@ -187,7 +197,7 @@ export const adminUserRouter = router({
         reason: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error('Database connection failed');
       
@@ -201,13 +211,22 @@ export const adminUserRouter = router({
 
       const status = statusMap[action];
 
-      // 批量更新
-      for (const id of ids) {
-        await db
-          .update(users)
-          .set({ status })
-          .where(eq(users.id, id));
-      }
+      // 批量更新 (使用 inArray 避免 SQL 注入)
+      await db
+        .update(users)
+        .set({ status })
+        .where(inArray(users.id, ids));
+
+      // 批量记录审计日志
+      await logBatchAuditEvents(
+        ids.map((id) => ({
+          userId: ctx.user?.id || 0, // 使用当前管理员 ID
+          action: `batch_${action}_user`,
+          entityType: 'user',
+          entityId: id,
+          changes: { status, reason: input.reason },
+        }))
+      );
 
       return { success: true, updated: ids.length };
     }),

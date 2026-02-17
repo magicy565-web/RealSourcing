@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ConfirmDialog } from '../../components/admin/ConfirmDialog';
 import { trpc } from '../../lib/trpc';
 import { 
   Users, 
@@ -23,6 +24,13 @@ export function AdminUsers() {
   });
 
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    action: () => void;
+    variant?: 'default' | 'destructive';
+  }>({ open: false, title: '', description: '', action: () => {}, variant: 'default' });
 
   // 查询用户列表
   const { data: users, isLoading, refetch } = trpc.admin.user.list.useQuery(filters);
@@ -34,6 +42,7 @@ export function AdminUsers() {
   const updateStatusMutation = trpc.admin.user.updateStatus.useMutation({
     onSuccess: () => {
       refetch();
+      setConfirmDialog({ ...confirmDialog, open: false });
     },
   });
 
@@ -42,23 +51,34 @@ export function AdminUsers() {
     onSuccess: () => {
       refetch();
       setSelectedUsers([]);
+      setConfirmDialog({ ...confirmDialog, open: false });
     },
   });
 
-  const handleStatusUpdate = (userId: number, status: 'active' | 'suspended' | 'deleted') => {
-    if (confirm(`Are you sure you want to ${status} this user?`)) {
-      updateStatusMutation.mutate({ id: userId, status });
-    }
+  const handleStatusUpdate = (userId: number, status: 'active' | 'suspended' | 'deleted', userName: string) => {
+    const statusText = { active: '激活', suspended: '禁用', deleted: '删除' };
+    setConfirmDialog({
+      open: true,
+      title: `${statusText[status]}用户`,
+      description: `确定要${statusText[status]}用户 "${userName}" 吗?`,
+      variant: status === 'deleted' ? 'destructive' : 'default',
+      action: () => updateStatusMutation.mutate({ id: userId, status }),
+    });
   };
 
   const handleBatchAction = (action: 'activate' | 'suspend' | 'delete') => {
     if (selectedUsers.length === 0) {
-      alert('Please select users first');
+      alert('请先选择用户');
       return;
     }
-    if (confirm(`Are you sure you want to ${action} ${selectedUsers.length} users?`)) {
-      batchUpdateMutation.mutate({ ids: selectedUsers, action });
-    }
+    const actionText = { activate: '激活', suspend: '禁用', delete: '删除' };
+    setConfirmDialog({
+      open: true,
+      title: `批量${actionText[action]}用户`,
+      description: `确定要${actionText[action]} ${selectedUsers.length} 个用户吗?`,
+      variant: action === 'delete' ? 'destructive' : 'default',
+      action: () => batchUpdateMutation.mutate({ ids: selectedUsers, action }),
+    });
   };
 
   const toggleUserSelection = (userId: number) => {
@@ -278,7 +298,7 @@ export function AdminUsers() {
                       </button>
                       {user.status !== 'active' && (
                         <button
-                          onClick={() => handleStatusUpdate(user.id, 'active')}
+                          onClick={() => handleStatusUpdate(user.id, 'active', user.name || user.email || '')}
                           className="p-2 hover:bg-green-600/20 rounded-lg transition-colors"
                           title="Activate"
                         >
@@ -287,7 +307,7 @@ export function AdminUsers() {
                       )}
                       {user.status === 'active' && (
                         <button
-                          onClick={() => handleStatusUpdate(user.id, 'suspended')}
+                          onClick={() => handleStatusUpdate(user.id, 'suspended', user.name || user.email || '')}
                           className="p-2 hover:bg-orange-600/20 rounded-lg transition-colors"
                           title="Suspend"
                         >
@@ -295,7 +315,7 @@ export function AdminUsers() {
                         </button>
                       )}
                       <button
-                        onClick={() => handleStatusUpdate(user.id, 'deleted')}
+                        onClick={() => handleStatusUpdate(user.id, 'deleted', user.name || user.email || '')}
                         className="p-2 hover:bg-red-600/20 rounded-lg transition-colors"
                         title="Delete"
                       >
@@ -338,6 +358,15 @@ export function AdminUsers() {
           </div>
         )}
       </div>
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.action}
+      />
     </div>
   );
 }

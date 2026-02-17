@@ -6,12 +6,13 @@
 import { z } from "zod";
 import { router, adminProcedure } from "../../_core/trpc.js";
 import { getDb } from "../../db.js";
+import { logAuditEvent, logBatchAuditEvents } from "../../_core/audit.js";
 import { 
   factories, 
   factoryProducts, 
   factoryCertifications 
 } from "../../../drizzle/schema.js";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, desc, count, inArray } from "drizzle-orm";
 
 export const adminReviewRouter = router({
   /**
@@ -21,7 +22,7 @@ export const adminReviewRouter = router({
     .input(
       z.object({
         type: z.enum(["factory", "product", "certification"]),
-        page: z.number().min(1).default(1),
+        page: z.number().min(1).max(1000).default(1), // 限制最大页码防止大 OFFSET 攻击
         pageSize: z.number().min(1).max(100).default(20),
       })
     )
@@ -34,7 +35,7 @@ export const adminReviewRouter = router({
 
       if (type === "factory") {
         // 查询待审核工厂
-        const pendingFactories = await db
+        const items = await db
           .select()
           .from(factories)
           .where(eq(factories.status, "pending"))
@@ -48,14 +49,15 @@ export const adminReviewRouter = router({
           .where(eq(factories.status, "pending"));
 
         return {
-          items: pendingFactories,
+          items,
           total: Number(total),
           page,
           pageSize,
+          totalPages: Math.ceil(Number(total) / pageSize),
         };
       } else if (type === "product") {
         // 查询待审核产品
-        const pendingProducts = await db
+        const items = await db
           .select()
           .from(factoryProducts)
           .where(eq(factoryProducts.status, "draft"))
@@ -69,14 +71,15 @@ export const adminReviewRouter = router({
           .where(eq(factoryProducts.status, "draft"));
 
         return {
-          items: pendingProducts,
+          items,
           total: Number(total),
           page,
           pageSize,
+          totalPages: Math.ceil(Number(total) / pageSize),
         };
-      } else {
+      } else if (type === "certification") {
         // 查询待审核认证
-        const pendingCerts = await db
+        const items = await db
           .select()
           .from(factoryCertifications)
           .where(eq(factoryCertifications.status, "pending"))
@@ -90,12 +93,15 @@ export const adminReviewRouter = router({
           .where(eq(factoryCertifications.status, "pending"));
 
         return {
-          items: pendingCerts,
+          items,
           total: Number(total),
           page,
           pageSize,
+          totalPages: Math.ceil(Number(total) / pageSize),
         };
       }
+
+      return { items: [], total: 0, page, pageSize, totalPages: 0 };
     }),
 
   /**
@@ -118,28 +124,28 @@ export const adminReviewRouter = router({
       if (type === "factory") {
         await db
           .update(factories)
-          .set({ 
-            status: "verified",
-            verifiedAt: new Date(),
-          })
+          .set({ status: "verified", verifiedAt: new Date() })
           .where(eq(factories.id, id));
       } else if (type === "product") {
         await db
           .update(factoryProducts)
           .set({ status: "published" })
           .where(eq(factoryProducts.id, id));
-      } else {
+      } else if (type === "certification") {
         await db
           .update(factoryCertifications)
-          .set({ 
-            status: "verified",
-            verifiedAt: new Date(),
-          })
+          .set({ status: "verified", verifiedAt: new Date() })
           .where(eq(factoryCertifications.id, id));
       }
 
-      // TODO: 记录审计日志
-      // TODO: 发送通知给用户
+      // 记录审计日志
+      await logAuditEvent({
+        userId: ctx.user?.id || 0,
+        action: `approve_${type}`,
+        entityType: type,
+        entityId: id,
+        changes: { notes },
+      });
 
       return { success: true };
     }),
@@ -155,7 +161,7 @@ export const adminReviewRouter = router({
         reason: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error('Database connection failed');
       
@@ -164,25 +170,28 @@ export const adminReviewRouter = router({
       if (type === "factory") {
         await db
           .update(factories)
-          .set({ 
-            status: "rejected",
-            // rejectionReason: reason, // 需要在 schema 中添加此字段
-          })
+          .set({ status: "rejected", rejectionReason: reason })
           .where(eq(factories.id, id));
       } else if (type === "product") {
         await db
           .update(factoryProducts)
-          .set({ status: "archived" })
+          .set({ status: "rejected", rejectionReason: reason })
           .where(eq(factoryProducts.id, id));
-      } else {
+      } else if (type === "certification") {
         await db
           .update(factoryCertifications)
-          .set({ status: "expired" }) // 使用 expired 表示被拒绝
+          .set({ status: "rejected", rejectionReason: reason })
           .where(eq(factoryCertifications.id, id));
       }
 
-      // TODO: 记录审计日志
-      // TODO: 发送通知给用户
+      // 记录审计日志
+      await logAuditEvent({
+        userId: ctx.user?.id || 0, // 使用当前管理员 ID
+        action: `reject_${type}`,
+        entityType: type,
+        entityId: id,
+        changes: { reason },
+      });
 
       return { success: true };
     }),
@@ -197,40 +206,39 @@ export const adminReviewRouter = router({
         ids: z.array(z.number()),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error('Database connection failed');
       
       const { type, ids } = input;
 
       if (type === "factory") {
-        for (const id of ids) {
-          await db
-            .update(factories)
-            .set({ 
-              status: "verified",
-              verifiedAt: new Date(),
-            })
-            .where(eq(factories.id, id));
-        }
+        await db
+          .update(factories)
+          .set({ status: "verified", verifiedAt: new Date() })
+          .where(inArray(factories.id, ids));
       } else if (type === "product") {
-        for (const id of ids) {
-          await db
-            .update(factoryProducts)
-            .set({ status: "published" })
-            .where(eq(factoryProducts.id, id));
-        }
-      } else {
-        for (const id of ids) {
-          await db
-            .update(factoryCertifications)
-            .set({ 
-              status: "verified",
-              verifiedAt: new Date(),
-            })
-            .where(eq(factoryCertifications.id, id));
-        }
+        await db
+          .update(factoryProducts)
+          .set({ status: "published" })
+          .where(inArray(factoryProducts.id, ids));
+      } else if (type === "certification") {
+        await db
+          .update(factoryCertifications)
+          .set({ status: "verified", verifiedAt: new Date() })
+          .where(inArray(factoryCertifications.id, ids));
       }
+
+      // 批量记录审计日志
+      await logBatchAuditEvents(
+        ids.map((id) => ({
+          userId: ctx.user?.id || 0, // 使用当前管理员 ID
+          action: `batch_approve_${type}`,
+          entityType: type,
+          entityId: id,
+          changes: {},
+        }))
+      );
 
       return { success: true, approved: ids.length };
     }),
@@ -241,6 +249,7 @@ export const adminReviewRouter = router({
   getStats: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new Error('Database connection failed');
+
     // 待审核工厂数量
     const [{ pendingFactories }] = await db
       .select({ pendingFactories: count() })
@@ -259,17 +268,11 @@ export const adminReviewRouter = router({
       .from(factoryCertifications)
       .where(eq(factoryCertifications.status, "pending"));
 
-    // 已验证工厂数量
-    const [{ verifiedFactories }] = await db
-      .select({ verifiedFactories: count() })
-      .from(factories)
-      .where(eq(factories.status, "verified"));
-
     return {
       pendingFactories: Number(pendingFactories),
       pendingProducts: Number(pendingProducts),
       pendingCertifications: Number(pendingCertifications),
-      verifiedFactories: Number(verifiedFactories),
+      totalPending: Number(pendingFactories) + Number(pendingProducts) + Number(pendingCertifications),
     };
   }),
 });
