@@ -43,10 +43,26 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Get API URL from environment variable or use relative path for development
-const apiUrl = import.meta.env.VITE_API_URL || "/api/trpc";
-console.log("[API Config] Using URL:", apiUrl);
-console.log("[API Config] VITE_API_URL env:", import.meta.env.VITE_API_URL);
+// Dynamic API URL detection:
+// 1. Use VITE_API_URL if provided by build tool
+// 2. If on Vercel, default to our ECS server IP
+// 3. Otherwise fallback to relative path
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) return envUrl;
+  
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname.includes("vercel.app") || hostname.includes("cnsubscribe.xyz")) {
+      return "http://47.99.205.136/api/trpc";
+    }
+  }
+  
+  return "/api/trpc";
+};
+
+const apiUrl = getApiUrl();
+console.log("[API Config] Detected URL:", apiUrl);
 
 const trpcClient = trpc.createClient({
   links: [
