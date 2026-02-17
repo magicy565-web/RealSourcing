@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc.js";
 import { getDb } from "../db.js";
-import { webinars, webinarParticipants, subscriptions, subscriptionPlans } from "../../drizzle/schema.js";
+import { webinars, webinarParticipants, webinarFactories, factories, subscriptions, subscriptionPlans } from "../../drizzle/schema.js";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 // 订阅套餐的时长限制（分钟）
@@ -244,9 +244,19 @@ export const webinarRouter = router({
         .from(webinarParticipants)
         .where(eq(webinarParticipants.webinarId, input.id));
 
+      // 获取参展工厂列表
+      const exhibitingFactories = await db
+        .select({
+          factory: factories,
+        })
+        .from(webinarFactories)
+        .leftJoin(factories, eq(webinarFactories.factoryId, factories.id))
+        .where(eq(webinarFactories.webinarId, input.id));
+
       return {
         ...webinar[0],
         participants,
+        exhibitingFactories: exhibitingFactories.map(f => f.factory).filter(Boolean),
       };
     }),
 

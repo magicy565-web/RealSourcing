@@ -262,6 +262,18 @@ export const webinarParticipants = mysqlTable("webinar_participants", {
 export type WebinarParticipant = InferSelectModel<typeof webinarParticipants>;
 export type InsertWebinarParticipant = InferInsertModel<typeof webinarParticipants>;
 
+export const webinarFactories = mysqlTable("webinar_factories", {
+  id: int("id").autoincrement().primaryKey(),
+  webinarId: int("webinar_id"),
+  factoryId: int("factory_id"),
+}, (table) => ({
+  webinarIdIdx: index("idx_webinarId").on(table.webinarId),
+  factoryIdIdx: index("idx_factoryId").on(table.factoryId),
+}));
+
+export type WebinarFactory = InferSelectModel<typeof webinarFactories>;
+export type InsertWebinarFactory = InferInsertModel<typeof webinarFactories>;
+
 // ============================================================================
 // 4. 询价报价域 (RFQ & Quotation)
 // ============================================================================
