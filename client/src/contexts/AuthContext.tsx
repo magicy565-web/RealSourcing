@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 尝试从后端获取当前用户信息
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch('https://api.cnsubscribe.xyz/api/auth/me', {
           credentials: 'include', // 包含 cookies
         });
         
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('https://api.cnsubscribe.xyz/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await fetch('https://api.cnsubscribe.xyz/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });

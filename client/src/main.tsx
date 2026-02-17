@@ -43,9 +43,8 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Use relative path for API requests. 
-// In production (Vercel), this is handled by rewrites in vercel.json
-const apiUrl = "/api/trpc";
+// Use direct HTTPS API URL to backend server
+const apiUrl = "https://api.cnsubscribe.xyz/api/trpc";
 
 const trpcClient = trpc.createClient({
   links: [
