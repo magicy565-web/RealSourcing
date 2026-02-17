@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
@@ -6,10 +5,12 @@ import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
   ArrowLeft, Calendar, Clock, Users, Video, Circle,
-  Play
+  Play, Eye, Share2, Edit, Tag, Globe
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { trpc } from "../lib/trpc";
+import { EnhancedImage } from "../components/EnhancedImage";
+import { useToast } from "../hooks/use-toast";
 import DecisionMatrix from "../components/tactical/DecisionMatrix";
 
 interface WebinarDetailProps {
@@ -20,6 +21,7 @@ interface WebinarDetailProps {
 
 export default function WebinarDetail({ params }: WebinarDetailProps) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const webinarId = parseInt(params?.id || "0");
   
   // 使用真实的 tRPC 查询
@@ -53,6 +55,21 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
     );
   }
 
+  // Extract data with fallbacks
+  const coverImage = (webinar as any).coverImage || (webinar as any).cover_image;
+  const scheduledAt = (webinar as any).scheduledAt || (webinar as any).scheduled_at;
+  const maxParticipants = (webinar as any).maxParticipants || (webinar as any).max_participants || 0;
+  const viewCount = (webinar as any).viewCount || (webinar as any).view_count || 0;
+
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "链接已复制",
+      description: "Webinar 链接已复制到剪贴板",
+    });
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       live: "bg-red-500/10 text-red-400 border-red-500/20",
@@ -68,6 +85,29 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
     <DashboardLayout>
       <div className="h-full overflow-auto">
         <div className="max-w-6xl mx-auto p-8">
+          {/* Cover Image */}
+          {coverImage && (
+            <div className="relative mb-6 rounded-lg overflow-hidden">
+              <EnhancedImage
+                src={coverImage}
+                alt={webinar.title}
+                className="rounded-lg"
+              />
+              {webinar.status === "live" && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                  <Button
+                    size="lg"
+                    className="bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/20"
+                    onClick={() => setLocation(`/webinars/${webinar.id}/room`)}
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    加入直播
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-start justify-between mb-8">
             <div className="flex items-start gap-4">
@@ -94,6 +134,14 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleShare}
+                className="bg-[#141414] border-[#262626] hover:border-violet-500/50"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
               {webinar.status === "live" && (
                 <>
                   <DecisionMatrix />
@@ -119,7 +167,7 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
           </div>
 
           {/* Info Cards */}
-          <div className="grid grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <Card className="bg-[#141414] border-[#262626]">
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
@@ -128,7 +176,7 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
                 <div>
                   <div className="text-[10px] text-muted-foreground font-light uppercase tracking-wider">Date</div>
                   <div className="text-sm font-light text-white">
-                    {new Date(webinar.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {new Date(scheduledAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric", year: "numeric" })}
                   </div>
                 </div>
               </CardContent>
@@ -151,11 +199,46 @@ export default function WebinarDetail({ params }: WebinarDetailProps) {
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground font-light uppercase tracking-wider">Participants</div>
-                  <div className="text-sm font-light text-white">{webinar.maxParticipants}</div>
+                  <div className="text-sm font-light text-white">{maxParticipants}</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#141414] border-[#262626]">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <Eye className="h-5 w-5 text-purple-400" />
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground font-light uppercase tracking-wider">Views</div>
+                  <div className="text-sm font-light text-white">{viewCount}</div>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Additional Details */}
+          {(webinar.category || webinar.language) && (
+            <Card className="bg-[#141414] border-[#262626] mb-8">
+              <CardContent className="p-6 space-y-3">
+                {webinar.category && (
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground font-light">分类:</span>
+                    <Badge variant="outline" className="font-light">{webinar.category}</Badge>
+                  </div>
+                )}
+                {webinar.language && (
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground font-light">语言:</span>
+                    <Badge variant="outline" className="font-light">
+                      {webinar.language === 'en' ? '🇬🇧 English' : '🇨🇳 中文'}
+                    </Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </DashboardLayout>
