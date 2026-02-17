@@ -1,28 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Badge } from "../components/ui/badge";
-import {
-  Plus,
-  Search,
-  Calendar,
-  Users,
-  Clock,
-  Video,
-  Eye,
-  Loader2,
-  Globe,
-  ArrowRight,
-  Circle
-} from "lucide-react";
+import { Plus, Search, Video, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { cn } from "../lib/utils";
 import type { Webinar } from "../lib/directus";
 import DashboardLayout from "../components/DashboardLayout";
-import { getAssetUrl } from "../lib/config";
 import { trpc } from "../lib/trpc";
+import { WebinarCard } from "../components/WebinarCard";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
@@ -30,7 +16,7 @@ export default function Webinars() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // 使用 tRPC 获取 Webinar 列表
-  const { data: webinarsData, isLoading } = trpc.webinar.listAll.useQuery({
+  const { data: webinarsData, isLoading, error } = trpc.webinar.listAll.useQuery({
     limit: 100,
   });
 
@@ -48,38 +34,21 @@ export default function Webinars() {
     if (searchQuery) {
       const matchesSearch =
         w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (w.description && w.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        (w.description && w.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (w.category && w.category.toLowerCase().includes(searchQuery.toLowerCase()));
       if (!matchesSearch) return false;
     }
     return true;
   });
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { color: string; label: string; dot?: boolean }> = {
-      live: { color: "bg-red-500/10 text-red-400 border-red-500/20", label: "🔴 Live", dot: true },
-      scheduled: { color: "bg-blue-500/10 text-blue-400 border-blue-500/20", label: "Scheduled" },
-      completed: { color: "bg-green-500/10 text-green-400 border-green-500/20", label: "Completed" },
-      draft: { color: "bg-gray-500/10 text-gray-400 border-gray-500/20", label: "Draft" },
-      cancelled: { color: "bg-gray-500/10 text-gray-400 border-gray-500/20", label: "Cancelled" },
-    };
-    const c = config[status] || { color: "bg-gray-500/10 text-gray-400", label: status };
-    return (
-      <Badge className={cn("text-[10px] font-light", c.color)}>
-        {c.dot && <Circle className="h-1.5 w-1.5 fill-current mr-1 animate-pulse" />}
-        {c.label}
-      </Badge>
-    );
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Not scheduled";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleWebinarClick = (webinar: Webinar) => {
+    // Route based on meeting type
+    const meetingType = (webinar as any).meetingType || (webinar as any).meeting_type;
+    if (meetingType === 'sourcing') {
+      setLocation(`/webinars/${webinar.id}/sourcing`);
+    } else {
+      setLocation(`/webinars/${webinar.id}`);
+    }
   };
 
   return (
@@ -105,7 +74,7 @@ export default function Webinars() {
 
           {/* Stats Summary */}
           {!isLoading && webinars.length > 0 && (
-            <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <Card className="bg-[#141414] border-[#262626]">
                 <CardContent className="p-5">
                   <div className="text-2xl font-light text-white mb-1">{webinars.length}</div>
@@ -140,7 +109,7 @@ export default function Webinars() {
           )}
 
           {/* Search and Filters */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -151,8 +120,8 @@ export default function Webinars() {
               />
             </div>
 
-            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-auto">
-              <TabsList className="bg-[#141414] border border-[#262626]">
+            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full sm:w-auto">
+              <TabsList className="bg-[#141414] border border-[#262626] w-full sm:w-auto grid grid-cols-4">
                 <TabsTrigger value="all" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white font-light text-xs">全部</TabsTrigger>
                 <TabsTrigger value="scheduled" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white font-light text-xs">已安排</TabsTrigger>
                 <TabsTrigger value="live" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white font-light text-xs">直播中</TabsTrigger>
@@ -160,6 +129,18 @@ export default function Webinars() {
               </TabsList>
             </Tabs>
           </div>
+
+          {/* Error State */}
+          {error && (
+            <Card className="bg-[#141414] border-[#262626] border-red-500/20">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="text-red-400 mb-2">⚠️ 加载失败</div>
+                <p className="text-muted-foreground text-center text-sm">
+                  {error.message || "无法加载 Webinar 列表,请稍后重试"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Loading State */}
           {isLoading && (
@@ -169,7 +150,7 @@ export default function Webinars() {
           )}
 
           {/* Empty State */}
-          {!isLoading && filteredWebinars.length === 0 && (
+          {!isLoading && !error && filteredWebinars.length === 0 && (
             <Card className="bg-[#141414] border-[#262626]">
               <CardContent className="flex flex-col items-center justify-center py-24">
                 <Video className="h-16 w-16 text-muted-foreground mb-4 opacity-20" />
@@ -194,76 +175,15 @@ export default function Webinars() {
             </Card>
           )}
 
-          {/* Webinar List */}
-          {!isLoading && filteredWebinars.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Webinar Grid */}
+          {!isLoading && !error && filteredWebinars.length > 0 && (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {filteredWebinars.map((webinar) => (
-                <Card 
-                  key={webinar.id} 
-                  className="bg-[#141414] border-[#262626] overflow-hidden hover:border-violet-500/50 transition-all duration-300 group cursor-pointer"
-                  onClick={() => {
-                    // Route based on meeting type
-                    const meetingType = (webinar as any).meetingType || (webinar as any).meeting_type;
-                    if (meetingType === 'sourcing') {
-                      setLocation(`/webinars/${webinar.id}/sourcing`);
-                    } else {
-                      setLocation(`/webinars/${webinar.id}`);
-                    }
-                  }}
-                >
-                  {/* Cover Image */}
-                  <div className="aspect-video bg-[#1a1a1a] relative overflow-hidden">
-                    {(webinar.coverImage || webinar.cover_image) ? (
-                      <img
-                        src={getAssetUrl(webinar.coverImage || webinar.cover_image)}
-                        alt={webinar.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Video className="h-12 w-12 text-violet-500/20" />
-                      </div>
-                    )}
-                    
-                    {/* Status Badge Overlay */}
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      {getStatusBadge(webinar.status)}
-                      {/* Meeting Type Badge */}
-                      {((webinar as any).meetingType || (webinar as any).meeting_type) === 'sourcing' && (
-                        <Badge className="bg-violet-600/90 text-white border-violet-500/50 text-xs font-medium px-2 py-0.5">
-                          🛍️ Sourcing
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <CardContent className="p-5">
-                    <h3 className="text-lg font-light text-white mb-2 truncate group-hover:text-violet-400 transition-colors">
-                      {webinar.title}
-                    </h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground font-light">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(webinar.scheduledAt || webinar.scheduled_at)}
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-light">
-                            <Users className="h-3 w-3" />
-                            {webinar.currentParticipants || webinar.participants_count || 0}
-                          </div>
-                          {webinar.category && (
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-light">
-                              <Globe className="h-3 w-3" />
-                              {webinar.category}
-                            </div>
-                          )}
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-violet-400 transition-colors" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <WebinarCard
+                  key={webinar.id}
+                  webinar={webinar}
+                  onClick={() => handleWebinarClick(webinar)}
+                />
               ))}
             </div>
           )}
@@ -272,4 +192,3 @@ export default function Webinars() {
     </DashboardLayout>
   );
 }
-// Cache bust 1771216415

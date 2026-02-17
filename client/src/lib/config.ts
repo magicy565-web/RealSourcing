@@ -7,7 +7,7 @@
 export const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz';
 
 // OSS配置
-export const OSS_BASE_URL = import.meta.env.VITE_OSS_BASE_URL || 'https://realsourcing.oss-cn-hangzhou.aliyuncs.com';
+export const OSS_BASE_URL = import.meta.env.VITE_OSS_BASE_URL || 'https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com';
 
 // 应用配置
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'RealSourcing';
