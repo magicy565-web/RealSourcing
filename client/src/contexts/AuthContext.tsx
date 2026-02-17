@@ -23,63 +23,73 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock 用户数据（用于开发测试）
-const MOCK_USERS: Record<string, User> = {
-  'admin@realsourcing.com': {
-    id: '1',
-    email: 'admin@realsourcing.com',
-    name: 'Admin User',
-    role: 'admin',
-  },
-  'factory@shenzhen.com': {
-    id: '2',
-    email: 'factory@shenzhen.com',
-    name: 'Shenzhen Electronics',
-    role: 'factory',
-    factory_id: 1,
-  },
-  'buyer@tiktok.com': {
-    id: '3',
-    email: 'buyer@tiktok.com',
-    name: 'TikTok Buyer',
-    role: 'buyer',
-  },
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 从 localStorage 恢复用户信息
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    // 尝试从后端获取当前用户信息
+    const fetchCurrentUser = async () => {
       try {
-        setUser(JSON.parse(savedUser));
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include', // 包含 cookies
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setUser(data.user);
+          }
+        }
       } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('user');
+        console.error('Failed to fetch current user:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    fetchCurrentUser();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // TODO: 实际的登录 API 调用
-    // 这里使用 Mock 数据进行演示
-    
-    const mockUser = MOCK_USERS[email];
-    if (mockUser) {
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-    } else {
-      throw new Error('Invalid credentials');
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // 包含 cookies
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      if (data.success && data.user) {
+        setUser(data.user);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
   const value: AuthContextType = {
