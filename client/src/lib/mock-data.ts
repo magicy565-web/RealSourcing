@@ -46,10 +46,25 @@ export const mockStore = {
   factories: [] as MockFactory[],
   users: [] as any[],
   
-  // Helper methods (empty implementations)
+  // Helper methods (minimal implementations for compatibility)
+  getWebinars: () => [] as MockWebinar[],
   getWebinarById: (id: number) => null,
+  getRegistrations: () => [] as MockRegistration[],
+  getRegistrationById: (id: number) => null,
+  getFactories: () => [] as MockFactory[],
   getFactoryById: (id: number) => null,
+  getUsers: () => [] as any[],
   getUserById: (id: number) => null,
+  getDashboardStats: () => ({
+    totalWebinars: 0,
+    scheduled: 0,
+    liveNow: 0,
+    completed: 0,
+    totalFactories: 0,
+    activeBuyers: 0,
+    avgCycle: "0 Days"
+  }),
+  updateRegistrationStatus: (id: number, status: string) => {},
 };
 
 // Avatar helper function
