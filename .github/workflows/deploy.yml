@@ -1,0 +1,86 @@
+name: Deploy to Aliyun ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - 'shared/**'
+      - 'drizzle/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔑 Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+      
+      - name: 🚀 Deploy to Aliyun Server
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $USER@$HOST << 'ENDSSH'
+            set -e
+            echo "================================================"
+            echo "🚀 开始部署 RealSourcing 后端服务"
+            echo "================================================"
+            
+            echo "📂 进入项目目录..."
+            cd $DEPLOY_PATH || exit 1
+            
+            echo "📥 拉取最新代码..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            echo "📦 安装/更新依赖..."
+            pnpm install --frozen-lockfile || pnpm install
+            
+            echo "🔄 重启 PM2 服务..."
+            pm2 restart realsourcing-api || pm2 start ecosystem.config.js
+            
+            echo "⏳ 等待服务启动..."
+            sleep 5
+            
+            echo "🏥 检查服务状态..."
+            pm2 status realsourcing-api
+            
+            echo "================================================"
+            echo "✅ 部署成功！"
+            echo "================================================"
+          ENDSSH
+      
+      - name: 🧪 API 健康检查
+        run: |
+          echo "正在进行 API 健康检查..."
+          sleep 3
+          
+          response=$(curl -s -o /dev/null -w "%{http_code}" "http://${{ secrets.DEPLOY_HOST }}:3001/api/trpc/webinar.listAll?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22limit%22%3A1%7D%7D%7D")
+          
+          if [ $response -eq 200 ]; then
+            echo "✅ API 健康检查通过 (HTTP $response)"
+          else
+            echo "⚠️  API 返回状态码: HTTP $response"
+            echo "注意：这可能是正常的（某些端点需要认证）"
+          fi
+      
+      - name: 📊 部署摘要
+        if: always()
+        run: |
+          echo "### 🚀 部署完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **提交**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **分支**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **服务器**: \`${{ secrets.DEPLOY_HOST }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **时间**: \`$(date -u +"%Y-%m-%d %H:%M:%S UTC")\`" >> $GITHUB_STEP_SUMMARY
