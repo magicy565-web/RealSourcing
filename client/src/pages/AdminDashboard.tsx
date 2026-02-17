@@ -10,51 +10,18 @@ import {
   Users,
   Package,
   BarChart3,
-  Settings,
   LogOut
 } from 'lucide-react';
-
-interface Webinar {
-  id: number;
-  title: string;
-  subtitle?: string;
-  description: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  host_name?: string;
-  max_participants?: number;
-  current_participants?: number;
-  meeting_type?: string;
-  product_count?: number;
-}
+import { trpc } from "../lib/trpc";
+import { Skeleton } from "../components/ui/skeleton";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const [webinars, setWebinars] = useState<Webinar[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'webinars' | 'products' | 'suppliers' | 'stats'>('webinars');
 
-  useEffect(() => {
-    fetchWebinars();
-  }, []);
-
-  const fetchWebinars = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('https://admin.cnsubscribe.xyz/items/webinars?fields=*,webinar_products.id&sort=-id');
-      const data = await response.json();
-      const webinarsWithCount = data.data.map((webinar: any) => ({
-        ...webinar,
-        product_count: webinar.webinar_products?.length || 0
-      }));
-      setWebinars(webinarsWithCount);
-    } catch (error) {
-      console.error('Error fetching webinars:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 使用 tRPC 获取真实数据
+  const { data: webinars, isLoading: loadingWebinars } = trpc.webinar.list.useQuery();
+  const { data: stats, isLoading: loadingStats } = trpc.webinar.getDashboardStats.useQuery();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -81,7 +48,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-sm text-gray-400 mt-1">RealSourcing Management Console</p>
+            <p className="text-sm text-gray-400 mt-1">RealSourcing Management Console (Real API)</p>
           </div>
           <button
             onClick={() => setLocation('/')}
@@ -167,24 +134,24 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-4 gap-4 mb-6">
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
                   <p className="text-sm text-gray-400 mb-1">Total Webinars</p>
-                  <p className="text-2xl font-bold">{webinars.length}</p>
+                  <p className="text-2xl font-bold">{loadingStats ? "..." : stats?.totalWebinars || 0}</p>
                 </div>
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
                   <p className="text-sm text-gray-400 mb-1">Live Now</p>
                   <p className="text-2xl font-bold text-green-400">
-                    {webinars.filter(w => w.status === 'live').length}
+                    {loadingWebinars ? "..." : webinars?.filter((w: any) => w.status === 'live').length || 0}
                   </p>
                 </div>
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
                   <p className="text-sm text-gray-400 mb-1">Upcoming</p>
                   <p className="text-2xl font-bold text-blue-400">
-                    {webinars.filter(w => w.status === 'upcoming').length}
+                    {loadingWebinars ? "..." : webinars?.filter((w: any) => w.status === 'upcoming').length || 0}
                   </p>
                 </div>
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
-                  <p className="text-sm text-gray-400 mb-1">Completed</p>
-                  <p className="text-2xl font-bold text-gray-400">
-                    {webinars.filter(w => w.status === 'ended').length}
+                  <p className="text-sm text-gray-400 mb-1">Verified Factories</p>
+                  <p className="text-2xl font-bold text-orange-400">
+                    {loadingStats ? "..." : stats?.verifiedFactories || 0}
                   </p>
                 </div>
               </div>
@@ -204,7 +171,7 @@ export default function AdminDashboard() {
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Products
+                        Duration
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Participants
@@ -218,20 +185,22 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2A2A3E]">
-                    {isLoading ? (
+                    {loadingWebinars ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
-                          Loading webinars...
+                          <Skeleton className="h-8 w-full mb-2" />
+                          <Skeleton className="h-8 w-full mb-2" />
+                          <Skeleton className="h-8 w-full" />
                         </td>
                       </tr>
-                    ) : webinars.length === 0 ? (
+                    ) : webinars?.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
                           No webinars found. Create your first webinar to get started.
                         </td>
                       </tr>
                     ) : (
-                      webinars.map((webinar) => (
+                      webinars?.map((webinar: any) => (
                         <tr key={webinar.id} className="hover:bg-[#2A2A3E] transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             #{webinar.id}
@@ -239,9 +208,7 @@ export default function AdminDashboard() {
                           <td className="px-6 py-4">
                             <div>
                               <p className="font-medium">{webinar.title}</p>
-                              {webinar.subtitle && (
-                                <p className="text-sm text-gray-400">{webinar.subtitle}</p>
-                              )}
+                              <p className="text-xs text-gray-400 truncate max-w-xs">{webinar.description}</p>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -250,20 +217,20 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {webinar.product_count} products
+                            {webinar.duration} mins
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {webinar.current_participants || 0}/{webinar.max_participants || 20}
+                            {webinar.maxParticipants || 20} max
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                            {new Date(webinar.start_time).toLocaleString()}
+                            {new Date(webinar.scheduledAt).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => setLocation(`/webinars/${webinar.id}/sourcing`)}
+                                onClick={() => setLocation(`/webinars/${webinar.id}`)}
                                 className="p-2 hover:bg-[#3A3A4E] rounded-lg transition-colors"
-                                title="View"
+                                title="View Details"
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
@@ -273,13 +240,6 @@ export default function AdminDashboard() {
                                 title="Edit"
                               >
                                 <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => setLocation(`/admin/webinars/${webinar.id}/products`)}
-                                className="p-2 hover:bg-violet-600 rounded-lg transition-colors"
-                                title="Manage Products"
-                              >
-                                <Package className="h-4 w-4" />
                               </button>
                               <button
                                 className="p-2 hover:bg-red-600 rounded-lg transition-colors"
