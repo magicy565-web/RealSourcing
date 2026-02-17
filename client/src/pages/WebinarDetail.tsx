@@ -1,4 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "wouter";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ import { format } from "date-fns";
 
 export default function WebinarDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const webinarId = parseInt(id || "0");
 
   const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(webinarId);
@@ -46,7 +47,7 @@ export default function WebinarDetail() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Webinar Not Found</h2>
           <p className="text-gray-400 mb-6">The webinar you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate("/webinars")}>
+          <Button onClick={() => setLocation("/webinars")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Webinars
           </Button>
@@ -80,7 +81,7 @@ export default function WebinarDetail() {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => navigate("/webinars")}
+              onClick={() => setLocation("/webinars")}
               className="text-gray-400 hover:text-white"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -222,7 +223,7 @@ export default function WebinarDetail() {
                       <Card
                         key={factory.id}
                         className="bg-gray-900/50 border-gray-800 hover:border-blue-500/50 transition-all cursor-pointer group"
-                        onClick={() => navigate(`/factories/${factory.id}`)}
+                        onClick={() => setLocation(`/factories/${factory.id}`)}
                       >
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
