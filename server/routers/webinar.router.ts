@@ -138,6 +138,46 @@ export const webinarRouter = router({
       };
     }),
 
+  // 获取所有 Webinar 列表（公开接口）
+  listAll: publicProcedure
+    .input(
+      z.object({
+        status: z.enum(["draft", "scheduled", "live", "completed", "cancelled"]).optional(),
+        limit: z.number().min(1).max(100).default(100),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库连接失败" });
+
+      const conditions = [];
+      
+      if (input.status) {
+        conditions.push(eq(webinars.status, input.status));
+      }
+
+      const items = await db
+        .select()
+        .from(webinars)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(webinars.scheduledAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const total = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(webinars)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+      return {
+        items,
+        total: total[0].count,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
   // 获取 Webinar 列表
   list: protectedProcedure
     .input(
@@ -480,3 +520,6 @@ export const webinarRouter = router({
       return { message: "Webinar 已结束", actualDuration };
     }),
 });
+
+// DEBUG: Log router procedures
+console.log('[DEBUG] webinarRouter procedures:', Object.keys(webinarRouter._def.procedures));

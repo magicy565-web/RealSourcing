@@ -23,6 +23,98 @@ function enrichWebinar(w: any, participants?: any[], creator?: any) {
 }
 
 // ============================================================================
+// GET /api/webinars/public — List public webinars (no auth required)
+// ============================================================================
+router.get('/public', async (req: Request, res: Response) => {
+  try {
+    const db = await getDb();
+    if (!db) throw new Error('Database connection failed');
+
+    const {
+      status = 'scheduled',
+      category,
+      search,
+      sort = 'newest',
+      page = '1',
+      limit = '12',
+    } = req.query as Record<string, string>;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build WHERE conditions (only show non-deleted, public webinars)
+    const conditions: any[] = [isNull(webinars.deletedAt)];
+
+    if (status && status !== 'all') {
+      conditions.push(eq(webinars.status, status as any));
+    }
+
+    if (category) {
+      conditions.push(eq(webinars.category, category));
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          like(webinars.title, `%${search}%`),
+          like(webinars.description, `%${search}%`)
+        )
+      );
+    }
+
+    // Build ORDER BY
+    let orderBy: any;
+    switch (sort) {
+      case 'oldest':
+        orderBy = asc(webinars.createdAt);
+        break;
+      case 'upcoming':
+        orderBy = asc(webinars.scheduledAt);
+        break;
+      case 'popular':
+        orderBy = desc(webinars.currentParticipants);
+        break;
+      default: // 'newest'
+        orderBy = desc(webinars.createdAt);
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [items, totalResult] = await Promise.all([
+      db
+        .select()
+        .from(webinars)
+        .where(whereClause)
+        .orderBy(orderBy)
+        .limit(limitNum)
+        .offset(offset),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(webinars)
+        .where(whereClause),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+
+    res.json({
+      success: true,
+      webinars: items,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: pageNum * limitNum < total,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching public webinars:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch webinars' });
+  }
+});
+
+// ============================================================================
 // GET /api/webinars — List webinars with search, filter, pagination, sorting
 // ============================================================================
 router.get('/', requireAuth, async (req: Request, res: Response) => {

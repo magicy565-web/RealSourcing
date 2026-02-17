@@ -21,56 +21,21 @@ import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import type { Webinar } from "../lib/directus";
 import DashboardLayout from "../components/DashboardLayout";
-import { API_ENDPOINTS, getAssetUrl } from "../lib/config";
+import { getAssetUrl } from "../lib/config";
+import { trpc } from "../lib/trpc";
 
 export default function Webinars() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [webinars, setWebinars] = useState<Webinar[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // 获取 Webinar 列表（带重试机制）
-  useEffect(() => {
-    const fetchWebinars = async (retryCount = 0) => {
-      setIsLoading(true);
-      try {
-        // 使用配置的API端点
-        const url = `${API_ENDPOINTS.webinars}?limit=100`;
+  // 使用 tRPC 获取 Webinar 列表
+  const { data: webinarsData, isLoading } = trpc.webinar.listAll.useQuery({
+    limit: 100,
+  });
 
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          mode: "cors",
-        });
-
-        if (!response.ok) {
-          // 如果失败且还有重试次数，则重试
-          if (retryCount < 2) {
-            console.log(`API request failed (${response.status}), retrying... (${retryCount + 1}/2)`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 等待 1 秒
-            return fetchWebinars(retryCount + 1);
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        // 过滤掉软删除的数据
-        const validWebinars = (data.data || []).filter((w: any) => !w.deletedAt);
-        console.log("Webinars loaded:", validWebinars.length);
-        setWebinars(validWebinars as Webinar[]);
-      } catch (error: any) {
-        console.error("Failed to fetch webinars after retries:", error);
-        setWebinars([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchWebinars();
-  }, []);
+  // 提取 webinars 数组
+  const webinars = (webinarsData?.items || []).filter((w: any) => !w.deletedAt) as Webinar[];
 
   // 过滤 Webinars
   const filteredWebinars = webinars.filter((w) => {

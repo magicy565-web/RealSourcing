@@ -14,6 +14,7 @@ import { usageRouter } from "./usage.router.js";
 import { agoraRouter } from "./agora.router.js";
 import { rtmRouter } from "./rtm.router.js";
 import { aiRouter } from "./ai.router.js";
+import { directusProxyRouter } from "./directus-proxy.router.js";
 
 /**
  * 应用主路由
@@ -30,6 +31,7 @@ export const appRouter = router({
   agora: agoraRouter,
   rtm: rtmRouter,
   ai: aiRouter,
+  directus: directusProxyRouter,
 });
 
 /**
