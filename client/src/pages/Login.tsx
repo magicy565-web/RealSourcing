@@ -27,9 +27,14 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      const user = await login(email, password);
       toast.success("登录成功！");
-      setLocation("/home");
+      // Redirect based on user role
+      if (user?.role === 'admin') {
+        setLocation("/admin");
+      } else {
+        setLocation("/home");
+      }
     } catch (error: any) {
       toast.error(error.message || "登录失败，请检查邮箱和密码");
     } finally {
@@ -40,9 +45,14 @@ export default function Login() {
   const quickLogin = async (userEmail: string) => {
     setIsLoading(true);
     try {
-      await login(userEmail, 'password');
+      const user = await login(userEmail, 'password');
       toast.success("登录成功！");
-      setLocation("/home");
+      // Redirect based on user role
+      if (user?.role === 'admin') {
+        setLocation("/admin");
+      } else {
+        setLocation("/home");
+      }
     } catch (error: any) {
       toast.error(error.message || "登录失败");
     } finally {

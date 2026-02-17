@@ -14,7 +14,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   isAdmin: boolean;
   isFactory: boolean;
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchCurrentUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     try {
       const response = await fetch('https://api.cnsubscribe.xyz/api/auth/login', {
         method: 'POST',
@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success && data.user) {
         setUser(data.user);
+        return data.user;
       } else {
         throw new Error('Invalid response from server');
       }
