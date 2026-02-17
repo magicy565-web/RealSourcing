@@ -916,3 +916,152 @@ export const aiRecommendations = mysqlTable("ai_recommendations", {
 
 export type AiRecommendation = InferSelectModel<typeof aiRecommendations>;
 export type InsertAiRecommendation = InferInsertModel<typeof aiRecommendations>;
+
+// ============================================================================
+// External Events Table (外部活动表)
+// ============================================================================
+export const externalEvents = mysqlTable("external_events", {
+  id: int("id").autoincrement().primaryKey(),
+  source: varchar("source", { length: 100 }).notNull(),
+  externalId: varchar("externalId", { length: 255 }),
+  
+  // 基础信息
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  subtitle: varchar("subtitle", { length: 500 }),
+  
+  // 讲师信息
+  speaker: varchar("speaker", { length: 255 }),
+  speakerTitle: varchar("speakerTitle", { length: 255 }),
+  speakerCompany: varchar("speakerCompany", { length: 255 }),
+  speakerBio: text("speakerBio"),
+  speakerAvatar: varchar("speakerAvatar", { length: 500 }),
+  speakerLinkedin: varchar("speakerLinkedin", { length: 500 }),
+  
+  // 组织信息
+  organizer: varchar("organizer", { length: 255 }),
+  organizerLogo: varchar("organizerLogo", { length: 500 }),
+  coOrganizers: json("coOrganizers").$type<string[]>(),
+  
+  // 活动信息
+  registrationUrl: varchar("registrationUrl", { length: 500 }),
+  eventUrl: varchar("eventUrl", { length: 500 }),
+  scheduledAt: timestamp("scheduledAt"),
+  duration: int("duration"),
+  timezone: varchar("timezone", { length: 50 }),
+  language: varchar("language", { length: 10 }),
+  
+  // 分类信息
+  industry: varchar("industry", { length: 100 }),
+  topics: json("topics").$type<string[]>(),
+  targetAudience: text("targetAudience"),
+  level: mysqlEnum("level", ["beginner", "intermediate", "advanced"]),
+  
+  // 媒体资源
+  coverImage: varchar("coverImage", { length: 500 }),
+  promoVideoUrl: varchar("promoVideoUrl", { length: 500 }),
+  thumbnailUrl: varchar("thumbnailUrl", { length: 500 }),
+  
+  // 状态
+  status: mysqlEnum("status", ["upcoming", "live", "completed", "cancelled"]).default("upcoming"),
+  isSyncedToWebinars: tinyint("isSyncedToWebinars").default(0),
+  syncedWebinarId: int("syncedWebinarId"),
+  
+  // 数据收集
+  collectedAt: timestamp("collectedAt"),
+  collectedBy: int("collectedBy"),
+  dataQuality: mysqlEnum("dataQuality", ["high", "medium", "low"]),
+  notes: text("notes"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  sourceIdx: index("idx_source").on(table.source),
+  scheduledAtIdx: index("idx_scheduledAt").on(table.scheduledAt),
+  statusIdx: index("idx_status").on(table.status),
+  industryIdx: index("idx_industry").on(table.industry),
+}));
+
+export type ExternalEvent = InferSelectModel<typeof externalEvents>;
+export type InsertExternalEvent = InferInsertModel<typeof externalEvents>;
+
+// ============================================================================
+// AI Analysis Results Table (AI分析结果表)
+// ============================================================================
+export const aiAnalysisResults = mysqlTable("ai_analysis_results", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  analysisType: varchar("analysisType", { length: 100 }).notNull(),
+  entityType: varchar("entityType", { length: 50 }).notNull(),
+  entityId: int("entityId").notNull(),
+  
+  // 分析结果
+  summary: text("summary"),
+  insights: json("insights").$type<Record<string, any>>(),
+  recommendations: json("recommendations").$type<string[]>(),
+  score: decimal("score", { precision: 5, scale: 2 }),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  
+  // 元数据
+  modelVersion: varchar("modelVersion", { length: 50 }),
+  processingTime: int("processingTime"),
+  dataPoints: int("dataPoints"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  entityIdx: index("idx_entityType_entityId").on(table.entityType, table.entityId),
+  analysisTypeIdx: index("idx_analysisType").on(table.analysisType),
+}));
+
+export type AiAnalysisResult = InferSelectModel<typeof aiAnalysisResults>;
+export type InsertAiAnalysisResult = InferInsertModel<typeof aiAnalysisResults>;
+
+// ============================================================================
+// User Behavior Events Table (用户行为事件表)
+// ============================================================================
+export const userBehaviorEvents = mysqlTable("user_behavior_events", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sessionId: varchar("sessionId", { length: 255 }),
+  
+  // 事件信息
+  eventType: varchar("eventType", { length: 100 }).notNull(),
+  eventCategory: varchar("eventCategory", { length: 100 }),
+  eventAction: varchar("eventAction", { length: 100 }),
+  eventLabel: varchar("eventLabel", { length: 255 }),
+  
+  // 页面信息
+  pageUrl: varchar("pageUrl", { length: 500 }),
+  referrerUrl: varchar("referrerUrl", { length: 500 }),
+  
+  // 实体关联
+  entityType: varchar("entityType", { length: 50 }),
+  entityId: int("entityId"),
+  
+  // 元数据
+  metadata: json("metadata").$type<Record<string, any>>(),
+  
+  // 设备信息
+  deviceType: varchar("deviceType", { length: 50 }),
+  browser: varchar("browser", { length: 100 }),
+  os: varchar("os", { length: 100 }),
+  screenResolution: varchar("screenResolution", { length: 50 }),
+  
+  // 地理位置
+  country: varchar("country", { length: 100 }),
+  region: varchar("region", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  
+  // 时间戳
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_userId").on(table.userId),
+  sessionIdIdx: index("idx_sessionId").on(table.sessionId),
+  eventTypeIdx: index("idx_eventType").on(table.eventType),
+  timestampIdx: index("idx_timestamp").on(table.timestamp),
+  entityIdx: index("idx_entityType_entityId").on(table.entityType, table.entityId),
+}));
+
+export type UserBehaviorEvent = InferSelectModel<typeof userBehaviorEvents>;
+export type InsertUserBehaviorEvent = InferInsertModel<typeof userBehaviorEvents>;
