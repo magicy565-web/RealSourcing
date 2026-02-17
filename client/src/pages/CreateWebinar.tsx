@@ -10,19 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { ArrowLeft, Check, Calendar, Clock, Globe, Users, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Calendar, Clock, Globe, Users, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "../hooks/use-toast";
-import { directus } from "../lib/directus";
-import { createItem, uploadFiles } from "@directus/sdk";
+import { trpc } from "../lib/trpc";
 
 export default function CreateWebinar() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -32,7 +29,7 @@ export default function CreateWebinar() {
     duration: "120",
     category: "",
     language: "en",
-    type: "webinar" as "webinar" | "one_to_one",
+    type: "webinar" as "webinar" | "one_to_one" | "group",
     maxParticipants: "100",
   });
 
@@ -48,18 +45,6 @@ export default function CreateWebinar() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleCreate = async () => {
     if (!validate()) {
       toast({
@@ -72,49 +57,29 @@ export default function CreateWebinar() {
 
     setLoading(true);
     try {
-      // 1. 上传封面图（如果有）
-      let coverImageId: string | null = null;
-      if (coverImageFile) {
-        const formData = new FormData();
-        formData.append("file", coverImageFile);
-        
-        const uploadResult = await directus.request(
-          uploadFiles(formData)
-        );
-        
-        if (uploadResult && typeof uploadResult === 'object' && 'id' in uploadResult) {
-          coverImageId = (uploadResult as any).id;
-        }
-      }
-
-      // 2. 创建 Webinar
+      // 组合日期和时间
       const scheduledAt = new Date(`${formData.date}T${formData.time}`).toISOString();
       
-      const newWebinar = await directus.request(
-        createItem("webinars", {
-          title: formData.title,
-          description: formData.description || null,
-          category: formData.category,
-          type: formData.type,
-          status: "scheduled",
-          language: formData.language,
-          scheduledAt: scheduledAt,
-          duration: parseInt(formData.duration),
-          maxParticipants: parseInt(formData.maxParticipants),
-          currentParticipants: 0,
-          coverImage: coverImageId ? `/assets/${coverImageId}` : null,
-          recordingEnabled: 1,
-          viewCount: 0,
-          createdById: 1, // TODO: 使用实际登录用户ID
-        })
-      );
+      // 调用 tRPC API 创建 Webinar
+      const result = await trpc.webinar.create.mutate({
+        title: formData.title,
+        description: formData.description || undefined,
+        category: formData.category,
+        type: formData.type,
+        language: formData.language,
+        scheduledAt: scheduledAt,
+        duration: parseInt(formData.duration),
+        maxParticipants: parseInt(formData.maxParticipants),
+        recordingEnabled: true,
+      });
 
       toast({
         title: "创建成功",
         description: "Webinar 已成功创建",
       });
 
-      setLocation(`/webinars/${(newWebinar as any).id}`);
+      // 跳转到 Webinar 详情页
+      setLocation(`/webinars/${result.id}`);
     } catch (error: any) {
       console.error("Failed to create webinar:", error);
       toast({
@@ -148,32 +113,29 @@ export default function CreateWebinar() {
         </div>
       </div>
 
+      {/* Form */}
       <Card>
         <CardHeader>
           <CardTitle>基本信息</CardTitle>
-          <CardDescription>
-            填写 Webinar 的基本信息和设置
-          </CardDescription>
+          <CardDescription>填写 Webinar 的基本信息和设置</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Title */}
+          {/* 标题 */}
           <div className="space-y-2">
-            <Label htmlFor="title">
-              标题 <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="title">标题 *</Label>
             <Input
               id="title"
               placeholder="例如：TikTok 热门产品采购会"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className={errors.title ? "border-red-500" : ""}
+              onChange={(e) => {
+                setFormData({ ...formData, title: e.target.value });
+                setErrors({ ...errors, title: "" });
+              }}
             />
-            {errors.title && (
-              <p className="text-sm text-red-500">{errors.title}</p>
-            )}
+            {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
           </div>
 
-          {/* Description */}
+          {/* 描述 */}
           <div className="space-y-2">
             <Label htmlFor="description">描述</Label>
             <Textarea
@@ -185,82 +147,49 @@ export default function CreateWebinar() {
             />
           </div>
 
-          {/* Cover Image */}
-          <div className="space-y-2">
-            <Label htmlFor="cover">封面图</Label>
-            <div className="flex items-center gap-4">
-              <Input
-                id="cover"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                onClick={() => document.getElementById("cover")?.click()}
-                type="button"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                上传封面
-              </Button>
-              {coverImagePreview && (
-                <div className="relative w-32 h-20 rounded-lg overflow-hidden border">
-                  <img
-                    src={coverImagePreview}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Date and Time */}
+          {/* 日期和时间 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">
-                日期 <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="date">日期 *</Label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="date"
                   type="date"
+                  className="pl-10"
                   value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className={`pl-10 ${errors.date ? "border-red-500" : ""}`}
+                  onChange={(e) => {
+                    setFormData({ ...formData, date: e.target.value });
+                    setErrors({ ...errors, date: "" });
+                  }}
                 />
               </div>
-              {errors.date && (
-                <p className="text-sm text-red-500">{errors.date}</p>
-              )}
+              {errors.date && <p className="text-sm text-red-500">{errors.date}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="time">
-                时间 <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="time">时间 *</Label>
               <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="time"
                   type="time"
+                  className="pl-10"
                   value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  className={`pl-10 ${errors.time ? "border-red-500" : ""}`}
+                  onChange={(e) => {
+                    setFormData({ ...formData, time: e.target.value });
+                    setErrors({ ...errors, time: "" });
+                  }}
                 />
               </div>
-              {errors.time && (
-                <p className="text-sm text-red-500">{errors.time}</p>
-              )}
+              {errors.time && <p className="text-sm text-red-500">{errors.time}</p>}
             </div>
           </div>
 
-          {/* Duration and Max Participants */}
+          {/* 时长和最大参与人数 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="duration">时长（分钟）</Label>
+              <Label>时长（分钟）</Label>
               <Select
                 value={formData.duration}
                 onValueChange={(value) => setFormData({ ...formData, duration: value })}
@@ -273,7 +202,6 @@ export default function CreateWebinar() {
                   <SelectItem value="60">60 分钟</SelectItem>
                   <SelectItem value="90">90 分钟</SelectItem>
                   <SelectItem value="120">120 分钟</SelectItem>
-                  <SelectItem value="180">180 分钟</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -281,57 +209,53 @@ export default function CreateWebinar() {
             <div className="space-y-2">
               <Label htmlFor="maxParticipants">最大参与人数</Label>
               <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="maxParticipants"
                   type="number"
-                  min="1"
-                  max="1000"
+                  className="pl-10"
                   value={formData.maxParticipants}
                   onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value })}
-                  className="pl-10"
                 />
               </div>
             </div>
           </div>
 
-          {/* Category */}
+          {/* 分类 */}
           <div className="space-y-2">
-            <Label htmlFor="category">
-              分类 <span className="text-red-500">*</span>
-            </Label>
+            <Label>分类 *</Label>
             <Select
               value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
+              onValueChange={(value) => {
+                setFormData({ ...formData, category: value });
+                setErrors({ ...errors, category: "" });
+              }}
             >
-              <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+              <SelectTrigger>
                 <SelectValue placeholder="选择分类" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Electronics">电子产品</SelectItem>
-                <SelectItem value="E-commerce">电商产品</SelectItem>
-                <SelectItem value="Fashion">时尚服饰</SelectItem>
-                <SelectItem value="Home & Garden">家居园艺</SelectItem>
-                <SelectItem value="Beauty">美妆护肤</SelectItem>
-                <SelectItem value="Sports">运动户外</SelectItem>
-                <SelectItem value="Toys">玩具礼品</SelectItem>
-                <SelectItem value="Other">其他</SelectItem>
+                <SelectItem value="electronics">电子产品</SelectItem>
+                <SelectItem value="ecommerce">电商产品</SelectItem>
+                <SelectItem value="fashion">时尚服饰</SelectItem>
+                <SelectItem value="home">家居园艺</SelectItem>
+                <SelectItem value="beauty">美妆护肤</SelectItem>
+                <SelectItem value="sports">运动户外</SelectItem>
+                <SelectItem value="toys">玩具礼品</SelectItem>
+                <SelectItem value="other">其他</SelectItem>
               </SelectContent>
             </Select>
-            {errors.category && (
-              <p className="text-sm text-red-500">{errors.category}</p>
-            )}
+            {errors.category && <p className="text-sm text-red-500">{errors.category}</p>}
           </div>
 
-          {/* Language */}
+          {/* 语言 */}
           <div className="space-y-2">
-            <Label htmlFor="language">语言</Label>
+            <Label>语言</Label>
             <Select
               value={formData.language}
               onValueChange={(value) => setFormData({ ...formData, language: value })}
             >
               <SelectTrigger>
-                <Globe className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -343,46 +267,46 @@ export default function CreateWebinar() {
             </Select>
           </div>
 
-          {/* Type */}
+          {/* 类型 */}
           <div className="space-y-2">
-            <Label htmlFor="type">类型</Label>
+            <Label>类型</Label>
             <Select
               value={formData.type}
-              onValueChange={(value) => setFormData({ ...formData, type: value as "webinar" | "one_to_one" })}
+              onValueChange={(value: any) => setFormData({ ...formData, type: value })}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="webinar">群组 Webinar</SelectItem>
+                <SelectItem value="group">小组会议</SelectItem>
                 <SelectItem value="one_to_one">一对一会议</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-4 pt-4">
+          {/* 操作按钮 */}
+          <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
               onClick={() => setLocation("/webinars")}
               disabled={loading}
-              className="flex-1"
             >
               取消
             </Button>
             <Button
               onClick={handleCreate}
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="flex-1"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   创建中...
                 </>
               ) : (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="mr-2 h-4 w-4" />
                   创建 Webinar
                 </>
               )}
