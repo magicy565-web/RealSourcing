@@ -29,7 +29,7 @@ import { useToast } from "../hooks/use-toast";
 import { cn } from "../lib/utils";
 
 // 声网客户端配置
-const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
+const APP_ID = import.meta.env.VITE_AGORA_APP_ID || '0deed6e0ce284935b09babccaa5eb882';
 
 export default function WebinarRoom() {
   const { id } = useParams<{ id: string }>();
@@ -49,8 +49,8 @@ export default function WebinarRoom() {
   const localVideoTrackRef = useRef<ICameraVideoTrack | null>(null);
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
 
-  // 获取 Webinar 详情
-  const { data: webinar, isLoading } = trpc.webinarEnhanced.getById.useQuery(
+  // 获取 Webinar 详情 - 修正为 webinar.getById
+  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(
     { id: parseInt(id!) },
     { enabled: !!id }
   );
@@ -60,41 +60,41 @@ export default function WebinarRoom() {
     {
       channelName: `webinar_${id}`,
       uid: 0, // 0 表示由服务器分配 UID
-      role: isHost ? "publisher" : "audience",
     },
-    { enabled: !!id && isJoined }
+    { enabled: !!id && !isJoined }
   );
 
-  // 开始 Webinar
-  const startWebinar = trpc.webinarEnhanced.start.useMutation({
-    onSuccess: () => {
-      toast({ title: "Webinar 已开始" });
-    },
-  });
+  // 离开频道
+  const leaveChannel = async () => {
+    if (!clientRef.current) return;
 
-  // 结束 Webinar
-  const endWebinar = trpc.webinarEnhanced.end.useMutation({
-    onSuccess: () => {
-      toast({ title: "Webinar 已结束" });
-      leaveChannel();
-      setLocation("/webinars");
-    },
-  });
+    try {
+      // 关闭本地轨道
+      localVideoTrackRef.current?.close();
+      localAudioTrackRef.current?.close();
+
+      // 离开频道
+      await clientRef.current.leave();
+
+      setIsJoined(false);
+      setIsMicOn(false);
+      setIsCameraOn(false);
+      setRemoteUsers([]);
+    } catch (error: any) {
+      console.error("离开频道失败:", error);
+    }
+  };
 
   // 初始化 Agora 客户端
   useEffect(() => {
     if (!APP_ID) {
-      toast({
-        title: "配置错误",
-        description: "未配置 VITE_AGORA_APP_ID",
-        variant: "destructive",
-      });
+      console.error("未配置 VITE_AGORA_APP_ID");
       return;
     }
 
-    // 创建客户端（互动直播模式）
+    // 创建客户端
     const client = AgoraRTC.createClient({
-      mode: "live", // 互动直播模式
+      mode: "rtc",
       codec: "vp8",
     });
 
@@ -127,38 +127,23 @@ export default function WebinarRoom() {
     };
   }, []);
 
-  // 加入频道
+  // 加入频道逻辑
   const joinChannel = async () => {
-    if (!clientRef.current || !tokenData) return;
+    if (!clientRef.current || !tokenData || isJoined) return;
 
     try {
       const client = clientRef.current;
-
-      // 设置用户角色
-      await client.setClientRole(isHost ? "host" : "audience");
 
       // 加入频道
       await client.join(
         APP_ID,
         `webinar_${id}`,
         tokenData.token,
-        tokenData.uid
+        null
       );
 
       setIsJoined(true);
-
-      // 如果是主播，自动开启摄像头和麦克风
-      if (isHost) {
-        await enableCamera();
-        await enableMicrophone();
-      }
-
-      toast({ title: "已加入 Webinar" });
-
-      // 如果是主播且 Webinar 未开始，自动开始
-      if (isHost && webinar?.status === "scheduled") {
-        startWebinar.mutate({ id: parseInt(id!) });
-      }
+      toast({ title: "已成功加入频道" });
     } catch (error: any) {
       toast({
         title: "加入失败",
@@ -168,26 +153,12 @@ export default function WebinarRoom() {
     }
   };
 
-  // 离开频道
-  const leaveChannel = async () => {
-    if (!clientRef.current) return;
-
-    try {
-      // 关闭本地轨道
-      localVideoTrackRef.current?.close();
-      localAudioTrackRef.current?.close();
-
-      // 离开频道
-      await clientRef.current.leave();
-
-      setIsJoined(false);
-      setIsMicOn(false);
-      setIsCameraOn(false);
-      setRemoteUsers([]);
-    } catch (error: any) {
-      console.error("离开频道失败:", error);
+  // 自动加入
+  useEffect(() => {
+    if (webinar && tokenData && !isJoined) {
+      joinChannel();
     }
-  };
+  }, [webinar, tokenData, isJoined]);
 
   // 开启/关闭摄像头
   const toggleCamera = async () => {
@@ -276,34 +247,6 @@ export default function WebinarRoom() {
     }
   };
 
-  // 举手
-  const toggleHandRaise = () => {
-    setIsHandRaised(!isHandRaised);
-    toast({
-      title: isHandRaised ? "已放下手" : "已举手",
-      description: isHandRaised
-        ? "您已取消举手"
-        : "主持人会看到您的举手请求",
-    });
-  };
-
-  // 结束 Webinar
-  const handleEndWebinar = () => {
-    if (confirm("确定要结束这场 Webinar 吗？")) {
-      endWebinar.mutate({ id: parseInt(id!) });
-    }
-  };
-
-  // 自动加入频道
-  useEffect(() => {
-    if (webinar && tokenData && !isJoined) {
-      // 判断是否为主播（工厂创建者）
-      const isCreator = webinar.factoryId === webinar.factoryId; // TODO: 从用户信息判断
-      setIsHost(isCreator);
-      joinChannel();
-    }
-  }, [webinar, tokenData, isJoined]);
-
   // 渲染远程用户视频
   useEffect(() => {
     remoteUsers.forEach((user) => {
@@ -346,9 +289,6 @@ export default function WebinarRoom() {
               <Badge variant={webinar.status === "live" ? "default" : "secondary"}>
                 {webinar.status === "live" ? "直播中" : webinar.status}
               </Badge>
-              <span className="text-sm text-muted-foreground">
-                {isHost ? "主播" : "观众"}
-              </span>
               <Separator orientation="vertical" className="h-4" />
               <span className="text-sm text-muted-foreground flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -356,169 +296,85 @@ export default function WebinarRoom() {
               </span>
             </div>
           </div>
-
-          {isHost && (
-            <Button variant="destructive" onClick={handleEndWebinar}>
-              <PhoneOff className="h-4 w-4 mr-2" />
-              结束 Webinar
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => setLocation("/webinars")}>
+            离开房间
+          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden p-6 gap-6">
         {/* Video Area */}
-        <div className="flex-1 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
-            {/* Local Video (Host) */}
-            {isHost && (
-              <Card className="relative overflow-hidden">
-                <CardContent className="p-0 h-full">
-                  <div
-                    id="local-video"
-                    className={cn(
-                      "w-full h-full bg-muted flex items-center justify-center",
-                      !isCameraOn && "bg-slate-800"
-                    )}
-                  >
-                    {!isCameraOn && (
-                      <div className="text-center text-white">
-                        <VideoOff className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">摄像头已关闭</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm">
-                    您（主播）
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Local Video */}
+          <Card className="overflow-hidden relative bg-black aspect-video">
+            <div id="local-video" className="w-full h-full" />
+            {!isCameraOn && (
+              <div className="absolute inset-0 flex items-center justify-center text-white bg-slate-800">
+                摄像头已关闭
+              </div>
             )}
+            <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 rounded text-xs text-white">
+              您 (主持人)
+            </div>
+          </Card>
 
-            {/* Remote Videos */}
-            {remoteUsers.map((user) => (
-              <Card key={user.uid} className="relative overflow-hidden">
-                <CardContent className="p-0 h-full">
-                  <div
-                    id={`remote-video-${user.uid}`}
-                    className="w-full h-full bg-muted"
-                  ></div>
-                  <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm">
-                    用户 {user.uid}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* Empty State */}
-            {remoteUsers.length === 0 && !isHost && (
-              <Card className="col-span-full">
-                <CardContent className="flex items-center justify-center h-96">
-                  <div className="text-center text-muted-foreground">
-                    <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p>等待主播加入...</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {/* Remote Videos */}
+          {remoteUsers.map((user) => (
+            <Card key={user.uid} className="overflow-hidden relative bg-black aspect-video">
+              <div id={`remote-video-${user.uid}`} className="w-full h-full" />
+              <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 rounded text-xs text-white">
+                用户 {user.uid}
+              </div>
+            </Card>
+          ))}
         </div>
 
-        {/* Sidebar - Chat */}
-        <div className="w-80 border-l flex flex-col">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              聊天室
-            </h3>
+        {/* Sidebar (Chat Placeholder) */}
+        <Card className="w-80 flex flex-col">
+          <div className="p-4 border-b font-semibold flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            聊天室
           </div>
-          <div className="flex-1 p-4 overflow-y-auto">
-            <p className="text-sm text-muted-foreground text-center">
-              聊天功能开发中...
-            </p>
+          <div className="flex-1 p-4 text-sm text-muted-foreground italic">
+            聊天功能正在对接中...
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Control Bar */}
-      <div className="border-t px-6 py-4">
+      {/* Toolbar */}
+      <div className="border-t p-6 bg-slate-50/50">
         <div className="flex items-center justify-center gap-4">
-          {/* Microphone */}
-          {isHost && (
-            <Button
-              size="lg"
-              variant={isMicOn ? "default" : "outline"}
-              onClick={toggleMicrophone}
-              className="rounded-full w-14 h-14"
-            >
-              {isMicOn ? (
-                <Mic className="h-5 w-5" />
-              ) : (
-                <MicOff className="h-5 w-5" />
-              )}
-            </Button>
-          )}
-
-          {/* Camera */}
-          {isHost && (
-            <Button
-              size="lg"
-              variant={isCameraOn ? "default" : "outline"}
-              onClick={toggleCamera}
-              className="rounded-full w-14 h-14"
-            >
-              {isCameraOn ? (
-                <Video className="h-5 w-5" />
-              ) : (
-                <VideoOff className="h-5 w-5" />
-              )}
-            </Button>
-          )}
-
-          {/* Raise Hand (Audience) */}
-          {!isHost && (
-            <Button
-              size="lg"
-              variant={isHandRaised ? "default" : "outline"}
-              onClick={toggleHandRaise}
-              className="rounded-full w-14 h-14"
-            >
-              <Hand className="h-5 w-5" />
-            </Button>
-          )}
-
-          {/* Screen Share */}
           <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full w-14 h-14"
-            disabled
+            variant={isMicOn ? "default" : "destructive"}
+            size="icon"
+            className="rounded-full h-12 w-12"
+            onClick={toggleMicrophone}
           >
-            <ScreenShare className="h-5 w-5" />
+            {isMicOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
           </Button>
-
-          {/* Settings */}
           <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full w-14 h-14"
-            disabled
+            variant={isCameraOn ? "default" : "destructive"}
+            size="icon"
+            className="rounded-full h-12 w-12"
+            onClick={toggleCamera}
           >
-            <Settings className="h-5 w-5" />
+            {isCameraOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
           </Button>
-
-          {/* Leave */}
-          <Button
-            size="lg"
-            variant="destructive"
-            onClick={() => {
-              leaveChannel();
-              setLocation("/webinars");
-            }}
-            className="rounded-full w-14 h-14"
-          >
-            <PhoneOff className="h-5 w-5" />
+          <Separator orientation="vertical" className="h-8" />
+          <Button variant="outline" size="icon" className="rounded-full h-12 w-12">
+            <ScreenShare className="h-6 w-6" />
+          </Button>
+          <Button variant="outline" size="icon" className="rounded-full h-12 w-12">
+            <Hand className="h-6 w-6" />
+          </Button>
+          <Button variant="outline" size="icon" className="rounded-full h-12 w-12">
+            <Settings className="h-6 w-6" />
+          </Button>
+          <Separator orientation="vertical" className="h-8" />
+          <Button variant="destructive" className="rounded-full px-8" onClick={() => setLocation("/webinars")}>
+            <PhoneOff className="h-4 w-4 mr-2" />
+            挂断
           </Button>
         </div>
       </div>
