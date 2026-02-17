@@ -5,6 +5,10 @@
   "installCommand": "pnpm install",
   "rewrites": [
     {
+      "source": "/api/trpc/:path*",
+      "destination": "http://47.99.205.136/api/trpc/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/index"
     },
