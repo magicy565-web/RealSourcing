@@ -67,6 +67,11 @@ const server = http.createServer((req, res) => {
   req.on('end', () => {
     const signature = req.headers['x-hub-signature-256'];
     
+    console.log('[Webhook] Received request');
+    console.log('[Webhook] Signature header:', signature);
+    console.log('[Webhook] Body length:', body.length);
+    console.log('[Webhook] SECRET:', SECRET);
+    
     // Verify signature
     if (!verifySignature(body, signature)) {
       console.error('[Webhook] Invalid signature');
