@@ -151,4 +151,137 @@ Be professional, concise, and provide actionable insights on pricing, quality, a
       );
       return { translatedText };
     }),
+
+  /**
+   * 获取个性化产品推荐
+   */
+  getRecommendations: protectedProcedure
+    .input(z.object({
+      webinarId: z.number(),
+      limit: z.number().default(10),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { getDb } = await import("../db.js");
+      const { aiRecommendations } = await import("../../drizzle/schema.js");
+      const { eq, and, desc } = await import("drizzle-orm");
+      const db = getDb();
+      
+      const recommendations = await db.query.aiRecommendations.findMany({
+        where: and(
+          eq(aiRecommendations.userId, ctx.user.id),
+          eq(aiRecommendations.webinarId, input.webinarId)
+        ),
+        orderBy: [desc(aiRecommendations.matchScore)],
+        limit: input.limit,
+      });
+
+      return recommendations;
+    }),
+
+  /**
+   * 生成Webinar报告
+   */
+  generateWebinarReport: protectedProcedure
+    .input(z.object({
+      webinarId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { getDb } = await import("../db.js");
+      const { webinarReports, liveInteractions } = await import("../../drizzle/schema.js");
+      const db = getDb();
+      const { eq, sql } = await import("drizzle-orm");
+
+      // 获取互动数据
+      const interactions = await db.query.liveInteractions.findMany({
+        where: eq(liveInteractions.webinarId, input.webinarId),
+      });
+
+      // 统计产品浏览
+      const productViews = interactions.filter(
+        i => i.interactionType === 'product_view'
+      );
+      
+      const productStats = productViews.reduce((acc, view) => {
+        if (view.productId) {
+          acc[view.productId] = (acc[view.productId] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<number, number>);
+
+      const hotProducts = Object.entries(productStats)
+        .map(([productId, count]) => ({
+          productId: Number(productId),
+          score: count,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+
+      // 统计高意向买家
+      const userInteractionCounts = interactions.reduce((acc, interaction) => {
+        acc[interaction.userId] = (acc[interaction.userId] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
+
+      const highIntentBuyers = Object.entries(userInteractionCounts)
+        .map(([userId, count]) => ({
+          userId: Number(userId),
+          score: count,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
+
+      // 生成AI洞察
+      const aiInsights = `本次会议产生了 ${interactions.length} 次互动。热门产品共 ${hotProducts.length} 个，高意向买家 ${highIntentBuyers.length} 名。`;
+
+      // 保存报告
+      const existing = await db.query.webinarReports.findFirst({
+        where: eq(webinarReports.webinarId, input.webinarId),
+      });
+
+      if (existing) {
+        await db.update(webinarReports)
+          .set({
+            totalFavorites: interactions.filter(i => i.interactionType === 'product_favorite').length,
+            totalInquiries: interactions.filter(i => i.interactionType === 'inquiry').length,
+            hotProducts,
+            highIntentBuyers,
+            aiInsights,
+            generatedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(webinarReports.webinarId, input.webinarId));
+      } else {
+        await db.insert(webinarReports).values({
+          webinarId: input.webinarId,
+          totalFavorites: interactions.filter(i => i.interactionType === 'product_favorite').length,
+          totalInquiries: interactions.filter(i => i.interactionType === 'inquiry').length,
+          hotProducts,
+          highIntentBuyers,
+          aiInsights,
+          generatedAt: new Date(),
+        });
+      }
+
+      return { success: true, insights: aiInsights };
+    }),
+
+  /**
+   * 获取Webinar报告
+   */
+  getWebinarReport: publicProcedure
+    .input(z.object({
+      webinarId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db.js");
+      const { webinarReports } = await import("../../drizzle/schema.js");
+      const db = getDb();
+      const { eq } = await import("drizzle-orm");
+      
+      const report = await db.query.webinarReports.findFirst({
+        where: eq(webinarReports.webinarId, input.webinarId),
+      });
+
+      return report;
+    }),
 });

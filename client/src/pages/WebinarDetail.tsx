@@ -1,5 +1,4 @@
-import { useParams } from "wouter";
-import { useLocation } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,14 +20,17 @@ import {
   Bookmark,
   ExternalLink,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 export default function WebinarDetail() {
-  const { id } = useParams<{ id: string }>();
+  const [, params] = useRoute("/webinars/:id");
   const [, setLocation] = useLocation();
-  const webinarId = parseInt(id || "0");
+  const webinarId = parseInt(params?.id || "0");
 
-  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(webinarId);
+  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(
+    { id: webinarId },
+    { enabled: !!webinarId }
+  );
 
   if (isLoading) {
     return (
@@ -146,7 +148,7 @@ export default function WebinarDetail() {
                     <div>
                       <p className="text-xs text-gray-500">Date</p>
                       <p className="text-sm font-semibold text-white">
-                        {format(new Date(webinar.startTime), "MMM d, yyyy")}
+                        {webinar.scheduledAt ? format(new Date(webinar.scheduledAt), "MMM d, yyyy") : "TBD"}
                       </p>
                     </div>
                   </div>
@@ -194,7 +196,7 @@ export default function WebinarDetail() {
                     <div>
                       <p className="text-xs text-gray-500">Factories</p>
                       <p className="text-sm font-semibold text-white">
-                        {webinar.factories?.length || 0}
+                        {webinar.exhibitingFactories?.length || 0}
                       </p>
                     </div>
                   </div>
@@ -217,9 +219,9 @@ export default function WebinarDetail() {
               </TabsList>
 
               <TabsContent value="factories" className="mt-6 space-y-4">
-                {webinar.factories && webinar.factories.length > 0 ? (
+                {webinar.exhibitingFactories && webinar.exhibitingFactories.length > 0 ? (
                   <div className="grid gap-4">
-                    {webinar.factories.map((factory: any) => (
+                    {webinar.exhibitingFactories.map((factory: any) => (
                       <Card
                         key={factory.id}
                         className="bg-gray-900/50 border-gray-800 hover:border-blue-500/50 transition-all cursor-pointer group"
@@ -315,7 +317,7 @@ export default function WebinarDetail() {
                         </div>
                         <div className="flex-1 pb-6">
                           <p className="text-sm text-gray-500 mb-1">
-                            {format(new Date(webinar.startTime), "h:mm a")}
+                            {webinar.scheduledAt ? format(new Date(webinar.scheduledAt), "h:mm a") : "TBD"}
                           </p>
                           <h4 className="text-lg font-semibold text-white mb-2">Opening & Welcome</h4>
                           <p className="text-gray-400">Introduction and overview of the webinar</p>
@@ -420,13 +422,13 @@ export default function WebinarDetail() {
                   <div className="flex items-center gap-3 text-sm">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <span className="text-white">
-                      {format(new Date(webinar.startTime), "EEEE, MMMM d, yyyy")}
+                      {webinar.scheduledAt ? format(new Date(webinar.scheduledAt), "EEEE, MMMM d, yyyy") : "To Be Determined"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <Clock className="h-4 w-4 text-gray-400" />
                     <span className="text-white">
-                      {format(new Date(webinar.startTime), "h:mm a")} ({webinar.duration} min)
+                      {webinar.scheduledAt ? format(new Date(webinar.scheduledAt), "h:mm a") : "TBD"} ({webinar.duration || 0} min)
                     </span>
                   </div>
                 </div>

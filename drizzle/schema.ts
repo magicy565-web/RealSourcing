@@ -215,7 +215,68 @@ export const webinars = mysqlTable("webinars", {
   recordingStatus: mysqlEnum("recordingStatus", ["none", "recording", "completed", "failed"]),
   recordingUrl: varchar("recordingUrl", { length: 500 }),
   coverImage: varchar("coverImage", { length: 500 }),
+  // 讲师信息
+  speaker: varchar("speaker", { length: 255 }),
+  speakerTitle: varchar("speakerTitle", { length: 255 }),
+  speakerCompany: varchar("speakerCompany", { length: 255 }),
+  speakerBio: text("speakerBio"),
+  speakerAvatar: varchar("speakerAvatar", { length: 500 }),
+  speakerLinkedin: varchar("speakerLinkedin", { length: 500 }),
+  // 主办方信息
+  organizer: varchar("organizer", { length: 255 }),
+  organizerLogo: varchar("organizerLogo", { length: 500 }),
+  coOrganizers: json("coOrganizers").$type<string[]>(),
+  registrationUrl: varchar("registrationUrl", { length: 500 }),
+  externalEventId: varchar("externalEventId", { length: 255 }),
+  eventSource: varchar("eventSource", { length: 100 }).default("internal"),
+  // 分类与标签
+  industry: varchar("industry", { length: 100 }),
+  topics: json("topics").$type<string[]>(),
+  targetAudience: text("targetAudience"),
+  level: mysqlEnum("level", ["beginner", "intermediate", "advanced"]),
+  // 营销与展示
+  subtitle: varchar("subtitle", { length: 500 }),
+  highlights: json("highlights").$type<string[]>(),
+  agenda: json("agenda").$type<Array<{time: string; title: string; description?: string}>>(),
+  learningOutcomes: json("learningOutcomes").$type<string[]>(),
+  promoVideoUrl: varchar("promoVideoUrl", { length: 500 }),
+  thumbnailUrl: varchar("thumbnailUrl", { length: 500 }),
+  bannerImage: varchar("bannerImage", { length: 500 }),
+  // 统计数据
+  registrationCount: int("registrationCount").default(0),
+  attendanceCount: int("attendanceCount").default(0),
+  completionRate: decimal("completionRate", { precision: 5, scale: 2 }).default("0.00"),
+  averageRating: decimal("averageRating", { precision: 3, scale: 2 }).default("0.00"),
+  ratingCount: int("ratingCount").default(0),
+  shareCount: int("shareCount").default(0),
+  clickCount: int("clickCount").default(0),
+  questionCount: int("questionCount").default(0),
+  pollCount: int("pollCount").default(0),
+  chatMessageCount: int("chatMessageCount").default(0),
+  productFavoriteCount: int("productFavoriteCount").default(0),
+  inquiryCount: int("inquiryCount").default(0),
+  // 国际化
+  timezone: varchar("timezone", { length: 50 }).default("UTC"),
+  translations: json("translations").$type<Record<string, {title: string; description: string}>>(),
+  // SEO
+  slug: varchar("slug", { length: 255 }),
+  metaTitle: varchar("metaTitle", { length: 255 }),
+  metaDescription: text("metaDescription"),
   tags: json("tags").$type<string[]>(),
+  // 会议设置
+  requiresApproval: tinyint("requiresApproval").default(0),
+  isPublic: tinyint("isPublic").default(1),
+  allowRecording: tinyint("allowRecording").default(1),
+  allowChat: tinyint("allowChat").default(1),
+  allowQA: tinyint("allowQA").default(1),
+  allowProductDisplay: tinyint("allowProductDisplay").default(1),
+  reminderSent: tinyint("reminderSent").default(0),
+  followUpSent: tinyint("followUpSent").default(0),
+  // 商业数据
+  estimatedRevenue: decimal("estimatedRevenue", { precision: 10, scale: 2 }),
+  actualRevenue: decimal("actualRevenue", { precision: 10, scale: 2 }),
+  conversionRate: decimal("conversionRate", { precision: 5, scale: 2 }),
+  roi: decimal("roi", { precision: 5, scale: 2 }),
   workSpec: text("workSpec"),
   aiSummary: text("aiSummary"),
   viewCount: int("viewCount").default(0),
@@ -748,3 +809,110 @@ export const negotiationEvents = mysqlTable("negotiation_events", {
 
 export type NegotiationEvent = InferSelectModel<typeof negotiationEvents>;
 export type InsertNegotiationEvent = InferInsertModel<typeof negotiationEvents>;
+
+// ============================================================================
+// 买家画像表
+// ============================================================================
+
+export const buyerProfiles = mysqlTable("buyer_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  shopType: varchar("shopType", { length: 100 }),
+  shopName: varchar("shopName", { length: 255 }),
+  mainCategories: json("mainCategories").$type<string[]>(),
+  priceRangeMin: decimal("priceRangeMin", { precision: 10, scale: 2 }),
+  priceRangeMax: decimal("priceRangeMax", { precision: 10, scale: 2 }),
+  preferredMoqMin: int("preferredMoqMin"),
+  preferredMoqMax: int("preferredMoqMax"),
+  totalOrders: int("totalOrders").default(0),
+  totalSpent: decimal("totalSpent", { precision: 10, scale: 2 }).default("0.00"),
+  webinarsAttended: int("webinarsAttended").default(0),
+  productsViewed: int("productsViewed").default(0),
+  productsFavorited: int("productsFavorited").default(0),
+  inquiriesSent: int("inquiriesSent").default(0),
+  creditScore: int("creditScore").default(50),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_userId").on(table.userId),
+}));
+
+export type BuyerProfile = InferSelectModel<typeof buyerProfiles>;
+export type InsertBuyerProfile = InferInsertModel<typeof buyerProfiles>;
+
+// ============================================================================
+// 实时互动表
+// ============================================================================
+
+export const liveInteractions = mysqlTable("live_interactions", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  webinarId: int("webinarId").notNull(),
+  userId: int("userId").notNull(),
+  interactionType: mysqlEnum("interactionType", [
+    "join", "leave", "product_view", "product_favorite", 
+    "inquiry", "chat", "question", "poll_vote"
+  ]).notNull(),
+  productId: int("productId"),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  webinarIdIdx: index("idx_webinarId").on(table.webinarId),
+  userIdIdx: index("idx_userId").on(table.userId),
+}));
+
+export type LiveInteraction = InferSelectModel<typeof liveInteractions>;
+export type InsertLiveInteraction = InferInsertModel<typeof liveInteractions>;
+
+// ============================================================================
+// 会议报告表
+// ============================================================================
+
+export const webinarReports = mysqlTable("webinar_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  webinarId: int("webinarId").notNull().unique(),
+  totalParticipants: int("totalParticipants").default(0),
+  totalProducts: int("totalProducts").default(0),
+  totalFavorites: int("totalFavorites").default(0),
+  totalInquiries: int("totalInquiries").default(0),
+  hotProducts: json("hotProducts").$type<Array<{productId: number; score: number}>>(),
+  highIntentBuyers: json("highIntentBuyers").$type<Array<{userId: number; score: number}>>(),
+  aiInsights: text("aiInsights"),
+  aiRecommendations: text("aiRecommendations"),
+  generatedAt: timestamp("generatedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  webinarIdIdx: index("idx_webinarId").on(table.webinarId),
+}));
+
+export type WebinarReport = InferSelectModel<typeof webinarReports>;
+export type InsertWebinarReport = InferInsertModel<typeof webinarReports>;
+
+// ============================================================================
+// AI推荐表
+// ============================================================================
+
+export const aiRecommendations = mysqlTable("ai_recommendations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  webinarId: int("webinarId").notNull(),
+  productId: int("productId").notNull(),
+  recommendationType: mysqlEnum("recommendationType", [
+    "high_match", "medium_match", "similar", "trending"
+  ]).notNull(),
+  matchScore: decimal("matchScore", { precision: 3, scale: 2 }),
+  matchReasons: json("matchReasons").$type<string[]>(),
+  isShown: tinyint("isShown").default(0),
+  shownAt: timestamp("shownAt"),
+  isClicked: tinyint("isClicked").default(0),
+  clickedAt: timestamp("clickedAt"),
+  isConverted: tinyint("isConverted").default(0),
+  convertedAt: timestamp("convertedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_userId").on(table.userId),
+  webinarIdIdx: index("idx_webinarId").on(table.webinarId),
+}));
+
+export type AiRecommendation = InferSelectModel<typeof aiRecommendations>;
+export type InsertAiRecommendation = InferInsertModel<typeof aiRecommendations>;
