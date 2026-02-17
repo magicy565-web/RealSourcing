@@ -1,256 +1,235 @@
-# Vercel 部署检查清单
+# RealSourcing 部署检查清单
 
-使用此清单确保部署过程顺利完成。
+## ✅ 已完成的任务
 
----
+### 1. 后端基础设施
+- [x] 清理 Directus CMS 容器和配置
+- [x] 清理 RDS 数据库中的 Directus 系统表
+- [x] 安装 Node.js 22.22.0
+- [x] 安装 PM2 6.0.14 进程管理器
+- [x] 安装 pnpm 10.29.3 包管理器
+- [x] 配置 PM2 开机自启动
 
-## 📋 部署前准备
+### 2. 后端部署
+- [x] 部署代码到 `/var/www/realsourcing`
+- [x] 配置环境变量（.env 文件）
+- [x] 安装项目依赖（pnpm install）
+- [x] 启动后端服务（PM2）
+- [x] 验证服务运行状态（内存 ~240MB）
 
-### 数据库准备
-- [ ] 阿里云 MySQL RDS 实例已创建
-- [ ] 数据库名称已创建（如 `realsourcing`）
-- [ ] 数据库用户已创建，权限已配置
-- [ ] 白名单已配置（添加 `0.0.0.0/0` 允许 Vercel 访问）
-- [ ] 数据库连接测试通过
-  ```bash
-  mysql -h your-host -u username -p database_name
-  ```
+### 3. 数据库连接
+- [x] 配置 RDS MySQL 连接
+- [x] 验证数据库连接正常
+- [x] 确认 webinar 数据存在（26 条记录）
 
-### 数据库迁移
-- [ ] 本地环境已配置 `DATABASE_URL`
-- [ ] 数据库迁移已执行
-  ```bash
-  export DATABASE_URL="mysql://user:pass@host:3306/db"
-  pnpm db:push
-  ```
-- [ ] 数据库表创建成功
-  ```bash
-  pnpm tsx scripts/db-verify.ts
-  ```
+### 4. Nginx 配置
+- [x] 安装 Nginx 和 Certbot
+- [x] 创建反向代理配置
+- [x] 配置支持 IP 和域名访问
+- [x] 启用 Nginx 配置
+- [x] 验证 HTTP 访问正常
 
-### 第三方服务配置
+### 5. SSL 证书
+- [x] 配置 DNS A 记录（api.cnsubscribe.xyz → 47.99.205.136）
+- [x] 创建 SSL 自动申请脚本
+- [x] 配置定时任务（每 10 分钟检查 DNS）
+- [⏳] 等待 DNS 全球传播
+- [⏳] 等待 SSL 证书自动申请
 
-#### 声网 Agora
-- [ ] 声网账号已创建
-- [ ] 项目已创建，获取以下信息：
-  - [ ] `AGORA_APP_ID`
-  - [ ] `AGORA_CERTIFICATE`
-  - [ ] `AGORA_CUSTOMER_ID`
-  - [ ] `AGORA_CUSTOMER_SECRET`
+### 6. 前端配置
+- [x] 更新 main.tsx 支持环境变量
+- [x] 创建 .env.production 文件
+- [x] 创建 .env.local 模板
+- [x] 提交代码到 GitHub
+- [⏳] 配置 Vercel 环境变量
+- [⏳] 重新部署前端
 
-#### 阿里云 OSS
-- [ ] OSS Bucket 已创建
-- [ ] 访问密钥已创建：
-  - [ ] `OSS_ACCESS_KEY_ID`
-  - [ ] `OSS_ACCESS_KEY_SECRET`
-- [ ] Bucket 信息已记录：
-  - [ ] `OSS_BUCKET` (Bucket 名称)
-  - [ ] `OSS_REGION` (如 `oss-cn-shenzhen`)
-  - [ ] `OSS_ENDPOINT` (如 `https://oss-cn-shenzhen.aliyuncs.com`)
+### 7. 文档
+- [x] 创建部署总结文档（DEPLOYMENT_SUMMARY.md）
+- [x] 创建 Vercel 部署指南（VERCEL_DEPLOYMENT_GUIDE.md）
+- [x] 创建部署检查清单（本文件）
 
-#### Manus OAuth
-- [ ] Manus 应用已注册
-- [ ] 获取以下信息：
-  - [ ] `VITE_APP_ID`
-  - [ ] `VITE_OAUTH_PORTAL_URL` (通常为 `https://oauth.manus.computer`)
-  - [ ] `OWNER_OPEN_ID`
+## ⏳ 待完成的任务
 
-#### 支付服务（可选）
-- [ ] 支付宝配置（如需要）：
-  - [ ] `ALIPAY_APP_ID`
-  - [ ] `ALIPAY_PRIVATE_KEY`
-  - [ ] `ALIPAY_PUBLIC_KEY`
-- [ ] 微信支付配置（如需要）：
-  - [ ] `WECHAT_MERCHANT_ID`
-  - [ ] `WECHAT_API_KEY`
-  - [ ] `WECHAT_APP_ID`
-  - [ ] `WECHAT_APP_SECRET`
+### 1. Vercel 前端部署
+- [ ] 登录 Vercel Dashboard
+- [ ] 配置环境变量 `VITE_API_URL=http://47.99.205.136/api/trpc`
+- [ ] 触发重新部署
+- [ ] 验证构建成功
 
-### 代码准备
-- [ ] 代码已推送到 GitHub 主分支
-- [ ] 本地构建测试通过
-  ```bash
-  pnpm install
-  pnpm build
-  ```
-- [ ] 本地运行测试通过
-  ```bash
-  pnpm dev
-  # 访问 http://localhost:5173
-  ```
+### 2. 前后端连接测试
+- [ ] 访问前端网站
+- [ ] 测试 API 请求（查看 Network 标签）
+- [ ] 验证 API 地址正确（指向 47.99.205.136）
+- [ ] 测试登录功能
+- [ ] 测试 Webinar 列表加载
+- [ ] 测试工厂数据显示
 
----
+### 3. CORS 配置（如果需要）
+- [ ] 检查是否有 CORS 错误
+- [ ] 如有错误，在 Nginx 或后端添加 CORS 头
+- [ ] 重新测试跨域请求
 
-## 🚀 Vercel 部署
+### 4. SSL 证书生效后
+- [ ] 检查 `/var/log/ssl-apply.log` 确认证书申请成功
+- [ ] 测试 HTTPS 访问：`https://api.cnsubscribe.xyz`
+- [ ] 更新 Vercel 环境变量为 HTTPS URL
+- [ ] 重新部署前端
+- [ ] 验证 HTTPS 连接正常
 
-### 项目导入
-- [ ] 访问 [Vercel Dashboard](https://vercel.com/dashboard)
-- [ ] 点击 "New Project"
-- [ ] 导入 `magicy565-web/RealSourcing` 仓库
-- [ ] 项目名称已设置
+### 5. 最终验证
+- [ ] 完整的用户注册流程
+- [ ] 完整的用户登录流程
+- [ ] Webinar 创建功能
+- [ ] Webinar 列表显示
+- [ ] 工厂管理功能
+- [ ] 产品管理功能
+- [ ] Agora 实时通信测试
+- [ ] 文件上传到 OSS
 
-### 构建配置
-- [ ] Framework Preset: `Other`
-- [ ] Build Command: `pnpm install && pnpm run build`
-- [ ] Output Directory: `dist/public`
-- [ ] Install Command: `pnpm install --frozen-lockfile`
-- [ ] Node.js Version: `20.x`
+### 6. 性能和监控
+- [ ] 检查服务器资源使用率
+- [ ] 设置日志轮转（logrotate）
+- [ ] 配置监控告警（可选）
+- [ ] 备份数据库（可选）
 
-### 环境变量配置
+## 🔧 快速命令参考
 
-#### 核心配置
-- [ ] `DATABASE_URL` (MySQL 连接字符串)
-- [ ] `NODE_ENV` = `production`
-- [ ] `APP_URL` (先用临时值，部署后更新)
-- [ ] `JWT_SECRET` (至少 32 位随机字符串)
+### 检查后端状态
+```bash
+ssh root@47.99.205.136
+pm2 status
+pm2 logs realsourcing-api --lines 20
+```
 
-#### OAuth 配置
-- [ ] `VITE_OAUTH_PORTAL_URL`
-- [ ] `VITE_APP_ID`
-- [ ] `OAUTH_SERVER_URL`
-- [ ] `OWNER_OPEN_ID`
+### 检查 Nginx 状态
+```bash
+ssh root@47.99.205.136
+systemctl status nginx
+tail -f /var/log/nginx/api.access.log
+```
 
-#### 声网配置
-- [ ] `AGORA_APP_ID`
-- [ ] `AGORA_CERTIFICATE`
-- [ ] `AGORA_CUSTOMER_ID`
-- [ ] `AGORA_CUSTOMER_SECRET`
+### 检查 SSL 申请进度
+```bash
+ssh root@47.99.205.136
+tail -f /var/log/ssl-apply.log
+```
 
-#### 阿里云 OSS 配置
-- [ ] `OSS_ACCESS_KEY_ID`
-- [ ] `OSS_ACCESS_KEY_SECRET`
-- [ ] `OSS_BUCKET`
-- [ ] `OSS_REGION`
-- [ ] `OSS_ENDPOINT`
+### 测试 API 端点
+```bash
+# 测试健康检查
+curl http://47.99.205.136/api/trpc/auth.me
 
-#### 可选配置
-- [ ] `CORS_ORIGIN` (与 `APP_URL` 相同)
-- [ ] `ALIPAY_APP_ID` (如需支付功能)
-- [ ] `WECHAT_MERCHANT_ID` (如需支付功能)
-- [ ] `NOVA_API_KEY` (如需 AI 功能)
+# 测试 webinar 列表（需要认证）
+curl http://47.99.205.136/api/trpc/webinar.list
+```
 
-### 开始部署
-- [ ] 点击 "Deploy" 按钮
-- [ ] 等待构建完成（约 2-5 分钟）
-- [ ] 部署成功，获取部署 URL
+### 重启服务
+```bash
+ssh root@47.99.205.136
+pm2 restart realsourcing-api
+systemctl reload nginx
+```
 
----
+## 📊 当前系统状态
 
-## ✅ 部署后验证
+| 组件 | 状态 | 地址/端口 | 备注 |
+|------|------|----------|------|
+| Node.js 后端 | ✅ 运行中 | localhost:3001 | PM2 管理 |
+| Nginx 反向代理 | ✅ 运行中 | 0.0.0.0:80 | HTTP |
+| RDS MySQL | ✅ 连接正常 | rm-bp1h4o9up7249uep3to.mysql.rds.aliyuncs.com:3306 | 26 条 webinar |
+| OSS 存储 | ✅ 配置完成 | oss-cn-hangzhou | bucket: demand-os-discord |
+| DNS | ⏳ 传播中 | api.cnsubscribe.xyz | 已配置 A 记录 |
+| SSL 证书 | ⏳ 等待中 | - | 自动申请脚本运行中 |
+| 前端 (Vercel) | ⏳ 待更新 | - | 需要配置环境变量 |
 
-### 基础功能测试
-- [ ] 访问部署 URL，前端页面正常加载
-- [ ] 控制台无错误信息
-- [ ] 静态资源（CSS、JS、图片）正常加载
+## 🎯 下一步行动
 
-### API 功能测试
-- [ ] 访问 `https://your-domain.vercel.app/api/health`
-- [ ] 返回 `{"status":"ok",...}`
-- [ ] 登录功能测试（OAuth）
-- [ ] 登录后能正常访问用户信息
+### 立即执行
+1. **配置 Vercel 环境变量**
+   - 登录 https://vercel.com
+   - 进入 RealSourcing 项目
+   - Settings → Environment Variables
+   - 添加 `VITE_API_URL=http://47.99.205.136/api/trpc`
+   - 保存并重新部署
 
-### 核心功能测试
-- [ ] 创建会议功能正常
-- [ ] 音视频通话功能正常（Agora）
-- [ ] 文件上传功能正常（OSS）
-- [ ] 消息发送功能正常（RTM）
-- [ ] 数据库读写正常
+2. **测试前后端连接**
+   - 访问 Vercel 部署的前端
+   - 打开浏览器开发者工具
+   - 检查 Network 请求是否指向正确的 API
 
-### 性能测试
-- [ ] 首页加载时间 < 3 秒
-- [ ] API 响应时间 < 1 秒
-- [ ] 无明显性能问题
+### 30 分钟内
+3. **检查 SSL 证书申请**
+   - SSH 到服务器
+   - 查看 `/var/log/ssl-apply.log`
+   - 如果成功，更新 Vercel 环境变量为 HTTPS
 
----
+### 完成后
+4. **全面测试**
+   - 测试所有主要功能
+   - 记录任何问题
+   - 优化性能
 
-## 🔧 部署后配置
+5. **文档更新**
+   - 更新 README.md
+   - 记录已知问题
+   - 编写运维手册
 
-### 更新环境变量
-- [ ] 更新 `APP_URL` 为实际部署域名
-- [ ] 更新 `CORS_ORIGIN` 为实际部署域名
-- [ ] 重新部署以应用更新
+## 📝 注意事项
 
-### 更新 OAuth 回调地址
-- [ ] 在 Manus OAuth 后台更新回调地址
-  ```
-  https://your-actual-domain.vercel.app/api/oauth/callback
-  ```
+### 安全
+- ⚠️ 当前使用 HTTP，数据未加密
+- ✅ SSL 证书申请后将自动升级到 HTTPS
+- ✅ 数据库密码已配置在 .env 文件中
+- ⚠️ 建议定期更换数据库密码
 
-### 配置自定义域名（可选）
-- [ ] 在 Vercel Dashboard 添加自定义域名
-- [ ] 在域名服务商配置 DNS 记录
-- [ ] 等待 DNS 生效（通常 5-30 分钟）
-- [ ] 验证自定义域名可访问
-- [ ] 更新环境变量中的 `APP_URL` 和 `CORS_ORIGIN`
+### 性能
+- ✅ 内存占用 ~240MB（符合 2GB 服务器要求）
+- ✅ CPU 使用率 <1%
+- ✅ PM2 自动重启机制已启用
+- ⚠️ 建议配置日志轮转避免磁盘占满
 
----
+### 备份
+- ⚠️ 未配置自动备份
+- 建议：每周备份 RDS 数据库
+- 建议：定期备份 OSS 文件
 
-## 📊 监控和维护
+### 监控
+- ✅ PM2 提供基本监控
+- ⚠️ 未配置告警
+- 建议：配置服务器监控（如阿里云云监控）
 
-### 启用监控
-- [ ] 启用 Vercel Analytics
-- [ ] 配置 Sentry 错误追踪（可选）
-- [ ] 设置告警规则
+## 🆘 故障排除
 
-### 数据库维护
-- [ ] 配置数据库自动备份
-- [ ] 测试数据库恢复流程
-- [ ] 监控数据库连接数
+### 后端无响应
+```bash
+pm2 restart realsourcing-api
+pm2 logs realsourcing-api --lines 50
+```
 
-### 日志管理
-- [ ] 查看 Vercel Functions 日志
-- [ ] 配置日志保留策略
-- [ ] 设置错误告警
+### 前端无法连接后端
+1. 检查 Vercel 环境变量
+2. 检查 CORS 配置
+3. 检查 API 地址是否正确
 
----
+### 数据库连接失败
+1. 检查 RDS 白名单
+2. 检查 .env 文件配置
+3. 测试数据库连接
 
-## 🎯 优化建议
+### SSL 证书申请失败
+1. 检查 DNS 是否生效
+2. 检查 Nginx 配置
+3. 查看详细日志：`/var/log/letsencrypt/letsencrypt.log`
 
-### 性能优化
-- [ ] 启用 Vercel Edge Functions（部分 API）
-- [ ] 配置静态资源缓存
-- [ ] 优化图片加载（使用 Vercel Image Optimization）
-- [ ] 实现 API 响应缓存
+## 📞 联系信息
 
-### 安全加固
-- [ ] 配置 CSP (Content Security Policy)
-- [ ] 启用 HTTPS 强制跳转
-- [ ] 实现 API 限流
-- [ ] 定期更新依赖包
-
-### 用户体验
-- [ ] 配置 PWA 支持
-- [ ] 优化移动端体验
-- [ ] 添加离线功能
-- [ ] 实现骨架屏加载
-
----
-
-## 📝 文档更新
-
-- [ ] 更新项目 README.md，添加部署说明
-- [ ] 记录实际使用的环境变量值（敏感信息除外）
-- [ ] 更新团队文档，记录部署流程
-- [ ] 创建运维手册
+- **服务器**: 47.99.205.136
+- **域名**: api.cnsubscribe.xyz
+- **GitHub**: https://github.com/magicy565-web/RealSourcing
+- **Vercel**: （待配置）
 
 ---
 
-## ✨ 完成标志
-
-当以上所有核心检查项（标记为 ✅ 的必填项）都完成后，部署即告成功！
-
-**部署完成日期**: _______________  
-**部署人员**: _______________  
-**部署环境**: _______________  
-**部署 URL**: _______________
-
----
-
-## 🆘 遇到问题？
-
-参考以下文档：
-- [QUICK_START.md](./QUICK_START.md) - 快速开始指南
-- [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) - 完整部署指南
-- [DEPLOYMENT_SUMMARY.md](./DEPLOYMENT_SUMMARY.md) - 部署配置总结
-
-或提交 GitHub Issue 寻求帮助。
+**最后更新**: 2026-02-17
+**部署状态**: 🟡 部分完成（等待前端部署和 SSL 证书）
