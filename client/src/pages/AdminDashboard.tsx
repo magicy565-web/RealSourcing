@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import AdminProductManagement from './AdminProductManagement';
+import { AdminUsers } from './admin/AdminUsers';
+import { AdminReview } from './admin/AdminReview';
+import { AdminAnalytics } from './admin/AdminAnalytics';
 import { 
   Plus, 
   Edit, 
@@ -10,14 +13,18 @@ import {
   Users,
   Package,
   BarChart3,
-  LogOut
+  LogOut,
+  Shield,
+  CheckCircle,
 } from 'lucide-react';
 import { trpc } from "../lib/trpc";
 import { Skeleton } from "../components/ui/skeleton";
 
+type TabType = 'webinars' | 'products' | 'users' | 'review' | 'analytics';
+
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<'webinars' | 'products' | 'suppliers' | 'stats'>('webinars');
+  const [activeTab, setActiveTab] = useState<TabType>('analytics');
 
   // 使用 tRPC 获取真实数据
   const { data: webinars, isLoading: loadingWebinars } = trpc.webinar.list.useQuery();
@@ -47,8 +54,11 @@ export default function AdminDashboard() {
       <div className="bg-[#1A1A2E] border-b border-[#2A2A3E] px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-sm text-gray-400 mt-1">RealSourcing Management Console (Real API)</p>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Shield className="h-6 w-6 text-violet-500" />
+              Admin Dashboard
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">RealSourcing Professional Management Console</p>
           </div>
           <button
             onClick={() => setLocation('/')}
@@ -64,6 +74,17 @@ export default function AdminDashboard() {
         {/* Sidebar */}
         <div className="w-64 bg-[#1A1A2E] border-r border-[#2A2A3E] min-h-[calc(100vh-73px)]">
           <nav className="p-4 space-y-2">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeTab === 'analytics'
+                  ? 'bg-violet-600 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-[#2A2A3E]'
+              }`}
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span className="font-medium">Analytics</span>
+            </button>
             <button
               onClick={() => setActiveTab('webinars')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -87,32 +108,38 @@ export default function AdminDashboard() {
               <span className="font-medium">Products</span>
             </button>
             <button
-              onClick={() => setActiveTab('suppliers')}
+              onClick={() => setActiveTab('users')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                activeTab === 'suppliers'
+                activeTab === 'users'
                   ? 'bg-violet-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-[#2A2A3E]'
               }`}
             >
               <Users className="h-5 w-5" />
-              <span className="font-medium">Suppliers</span>
+              <span className="font-medium">Users</span>
             </button>
             <button
-              onClick={() => setActiveTab('stats')}
+              onClick={() => setActiveTab('review')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                activeTab === 'stats'
+                activeTab === 'review'
                   ? 'bg-violet-600 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-[#2A2A3E]'
               }`}
             >
-              <BarChart3 className="h-5 w-5" />
-              <span className="font-medium">Statistics</span>
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Review</span>
             </button>
           </nav>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 p-6">
+          {activeTab === 'analytics' && <AdminAnalytics />}
+
+          {activeTab === 'users' && <AdminUsers />}
+
+          {activeTab === 'review' && <AdminReview />}
+
           {activeTab === 'webinars' && (
             <div>
               {/* Header */}
@@ -260,22 +287,6 @@ export default function AdminDashboard() {
 
           {activeTab === 'products' && (
             <AdminProductManagement />
-          )}
-
-          {activeTab === 'suppliers' && (
-            <div className="text-center py-12">
-              <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Supplier Management</h3>
-              <p className="text-gray-400 mb-4">Coming soon...</p>
-            </div>
-          )}
-
-          {activeTab === 'stats' && (
-            <div className="text-center py-12">
-              <BarChart3 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Statistics & Analytics</h3>
-              <p className="text-gray-400 mb-4">Coming soon...</p>
-            </div>
           )}
         </div>
       </div>

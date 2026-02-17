@@ -16,6 +16,7 @@ import { rtmRouter } from "./rtm.router.js";
 import { aiRouter } from "./ai.router.js";
 import { directusProxyRouter } from "./directus-proxy.router.js";
 import { buyerRouter } from "./buyer.router.js";
+import { adminRouter } from "./admin/index.js";
 
 /**
  * 应用主路由
@@ -34,6 +35,7 @@ export const appRouter = router({
   ai: aiRouter,
   directus: directusProxyRouter,
   buyer: buyerRouter,
+  admin: adminRouter,
 });
 
 /**
