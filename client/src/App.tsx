@@ -11,7 +11,7 @@ import LandingPage from "./pages/LandingPage";
 import SignIn from "./pages/SignIn";
 import Webinars from "./pages/Webinars";
 import WebinarCreate from "./pages/CreateWebinar";
-import WebinarDetail from "./pages/WebinarDetail";
+import WebinarDetailEnhanced from "./pages/WebinarDetailEnhanced";
 import WebinarReplay from "./pages/WebinarReplay";
 import WebinarRoom from "./pages/WebinarRoom";
 import ProductShowcase from "./pages/ProductShowcase";
@@ -64,7 +64,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/webinars/:id/edit" component={AdminWebinarForm} />
       <Route path="/admin/products/:id/edit" component={AdminProductForm} />
-      <Route path="/webinars/:id">{(params) => <WebinarDetail params={params} />}</Route>
+      <Route path="/webinars/:id">{(params) => <WebinarDetailEnhanced params={params} />}</Route>
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
       <Route path="/factories" component={Factories} />
       <Route path="/factories/:id" component={FactoryDetail} />
