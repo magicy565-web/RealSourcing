@@ -14,7 +14,7 @@ import {
   PhoneOff, Users, MessageSquare, HelpCircle, Package,
   Send, ThumbsUp, Heart, Star, Building2, MapPin,
   Shield, ArrowLeft, Maximize2, Minimize2, Settings,
-  Download, Share2, Bookmark, Globe, Clock, TrendingUp
+  Download, Share2, Bookmark, Globe, Clock, TrendingUp, Circle
 } from "lucide-react";
 import { agoraService } from "../lib/agora";
 import { trpc } from "../lib/trpc";
