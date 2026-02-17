@@ -45,7 +45,7 @@ MAX_RETRIES=10
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -f -s http://localhost:3001/api/trpc/webinar.list > /dev/null 2>&1; then
+    if curl -f -s "http://localhost:3001/api/trpc/webinar.listAll?batch=1&input=%7B%220%22%3A%7B%22json%22%3A%7B%22limit%22%3A1%7D%7D%7D" > /dev/null 2>&1; then
         echo "✅ 健康检查通过"
         break
     fi
