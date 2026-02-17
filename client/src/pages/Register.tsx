@@ -27,9 +27,10 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('https://api.cnsubscribe.xyz/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, email, password, role }),
       });
       
