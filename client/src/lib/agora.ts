@@ -34,7 +34,7 @@ export class AgoraService {
 
   constructor() {
     // Set Agora log level
-    AgoraRTC.setLogLevel(0); // 0: DEBUG, 1: INFO, 2: WARNING, 3: ERROR, 4: NONE
+    AgoraRTC.setLogLevel(1); // 0: DEBUG, 1: INFO, 2: WARNING, 3: ERROR, 4: NONE
   }
 
   /**
