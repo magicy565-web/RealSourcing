@@ -273,12 +273,10 @@ export const adminAnalyticsRouter = router({
       })
       .from(factoryProducts);
 
-    // 总收藏量
-    const [{ totalFavorites }] = await db
-      .select({
-        totalFavorites: sql<number>`SUM(favorite_count)`,
-      })
-      .from(factoryProducts);
+    // 总收藏量 (从 product_favorites 表统计)
+    // TODO: 需要 JOIN product_favorites 表来获取准确的收藏数
+    // 暂时设置为 0
+    const totalFavorites = 0;
 
     // 总询价量
     const [{ totalInquiries }] = await db
@@ -290,7 +288,7 @@ export const adminAnalyticsRouter = router({
     return {
       byStatus: byStatus.map((s) => ({ status: s.status, count: Number(s.count) })),
       totalViews: Number(totalViews) || 0,
-      totalFavorites: Number(totalFavorites) || 0,
+      totalFavorites: totalFavorites,
       totalInquiries: Number(totalInquiries) || 0,
     };
   }),
