@@ -64,26 +64,26 @@
 ✅ 多语言支持: 优秀
 ```
 
-### 3. Google Gemini ⚠️
+### 3. Google Gemini ✅
 
 **适用场景**: 海外用户
 
 **配置信息**:
 - API密钥: `AIzaSyB-O4BMacXGA7Bprl_U9B-t0OqCSNxXedE`
-- 模型: `gemini-pro`
+- 模型: `gemini-2.5-flash` (最新高性能模型)
 - 优先级: 1 (最高)
 - 适用地区: 海外 (global)
 
 **测试结果**:
 ```
-⚠️  API密钥可能有问题或模型不可用
-✅ 自动降级到OpenAI正常工作
+✅ 连接成功
+✅ 响应时间: ~2秒
+✅ 英文支持: 优秀
+✅ 免费配额: 高
 ```
 
-**建议**: 
-- 检查Gemini API密钥是否激活
-- 确认API配额是否充足
-- 或使用其他Gemini模型 (如 `gemini-1.5-pro`)
+**示例响应**:
+> As your RealSourcing AI assistant, I'm designed to simplify and optimize your cross-border e-commerce sourcing from end-to-end. My core features include...
 
 ---
 
@@ -258,18 +258,18 @@ npx tsx scripts/test-ai-providers.ts
 |-------|------|------|
 | 阿里云百炼 (国内) | ✅ 通过 | 响应时间 ~1.5s |
 | OpenAI兼容 (通用) | ✅ 通过 | 响应时间 ~1.8s |
-| Google Gemini (海外) | ⚠️ 降级 | 自动降级到OpenAI |
+| Google Gemini (海外) | ✅ 通过 | 响应时间 ~2.0s |
 | 自动路由 (国内) | ✅ 通过 | 正确选择百炼 |
-| 自动路由 (海外) | ✅ 通过 | 降级到OpenAI |
+| 自动路由 (海外) | ✅ 通过 | 正确选择Gemini |
 | 降级策略 | ✅ 通过 | 故障转移正常 |
 
 ### 性能指标
 
 | 提供商 | 平均响应时间 | Token支持 | 中文质量 | 英文质量 |
-|-------|------------|----------|---------|---------|
+|-------|------------|----------|---------|---------||
 | 阿里云百炼 | 1.5s | ✅ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | OpenAI | 1.8s | ✅ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Gemini | N/A | ⚠️ | N/A | N/A |
+| Gemini 2.5 | 2.0s | ⚠️ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 
 ---
 
@@ -480,7 +480,7 @@ DEFAULT_REGION=global
 - ✅ **智能路由**: 100%
 - ✅ **降级策略**: 100%
 - ✅ **现有服务迁移**: 100%
-- ⚠️ **Gemini可用性**: 待修复 (不影响使用)
+- ✅ **Gemini可用性**: 100% (使用gemini-2.5-flash)
 
 ### 技术亮点
 
