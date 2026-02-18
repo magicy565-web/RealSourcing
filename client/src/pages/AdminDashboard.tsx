@@ -27,6 +27,12 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
 
   // AdminDashboard 只作为容器，具体数据由各个子组件获取
+  const { data: webinars, isLoading: loadingWebinars } = trpc.webinar.list.useQuery(undefined, {
+    enabled: activeTab === 'webinars'
+  });
+  const { data: stats, isLoading: loadingStats } = trpc.admin.analytics.getDashboard.useQuery({ dateRange: '30d' }, {
+    enabled: activeTab === 'webinars'
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -159,7 +165,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-4 gap-4 mb-6">
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
                   <p className="text-sm text-gray-400 mb-1">Total Webinars</p>
-                  <p className="text-2xl font-bold">{loadingStats ? "..." : stats?.totalWebinars || 0}</p>
+                  <p className="text-2xl font-bold">{loadingStats ? "..." : stats?.metrics.totalWebinars || 0}</p>
                 </div>
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
                   <p className="text-sm text-gray-400 mb-1">Live Now</p>
@@ -176,7 +182,7 @@ export default function AdminDashboard() {
                 <div className="bg-[#1A1A2E] rounded-lg p-4 border border-[#2A2A3E]">
                   <p className="text-sm text-gray-400 mb-1">Verified Factories</p>
                   <p className="text-2xl font-bold text-orange-400">
-                    {loadingStats ? "..." : stats?.verifiedFactories || 0}
+                    {loadingStats ? "..." : stats?.metrics.totalProducts || 0}
                   </p>
                 </div>
               </div>
