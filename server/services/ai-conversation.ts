@@ -36,34 +36,31 @@ export interface IntentContract {
 }
 
 /**
- * 调用 Nova AI LLM 进行对话
+ * 调用 Multi-Provider AI LLM 进行对话
+ * 自动根据用户地区选择最优AI提供商
  */
 export async function chatWithAI(
   messages: ConversationMessage[],
-  temperature: number = 0.7
+  temperature: number = 0.7,
+  options?: {
+    region?: 'cn' | 'global';
+    provider?: 'openai' | 'gemini' | 'bailian';
+  }
 ): Promise<string> {
   try {
-    const response = await fetch(`${ENV.forgeApiUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-mini', // [逆次]o4-mini
-        messages,
-        temperature,
-        max_tokens: 2000,
-      }),
+    // 使用新的多提供商AI服务
+    const { callAI } = await import('./ai/ai-provider.js');
+    
+    const response = await callAI(messages, {
+      temperature,
+      maxTokens: 2000,
+      region: options?.region,
+      provider: options?.provider,
+      retryOnFailure: true, // 启用自动降级
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AI API request failed: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '';
+    
+    console.log(`[AI Conversation] Used provider: ${response.provider} (${response.model})`);
+    return response.content;
   } catch (error) {
     console.error('Failed to chat with AI:', error);
     throw error;
