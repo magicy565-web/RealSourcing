@@ -4,6 +4,8 @@
 
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc.js";
+import { TRPCError } from "@trpc/server";
+import { logger } from "../logger.js";
 import {
   getFactories,
   getFactoryById,
@@ -44,35 +46,68 @@ export const factoryRouter = router({
       search: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      const factories = await getFactories(input.search);
-      
-      // 为每个工厂加载关联数据
-      const factoriesWithData = await Promise.all(
-        factories.map(async (factory) => {
-          const [images, certifications, webinarCount, onTimeRate] = await Promise.all([
-            getFactoryImages(factory.id),
-            getFactoryCertifications(factory.id),
-            getFactoryWebinarCount(factory.id),
-            calculateFactoryOnTimeRate(factory.id),
-          ]);
-          
-          return {
-            ...factory,
-            images: images.map(img => img.url),
-            certifications: certifications.map(cert => ({
-              id: cert.id,
-              type: cert.type || 'Unknown',
-              name: cert.name || '',
-              number: cert.certificateNumber || '',
-              status: cert.status || 'pending',
-            })),
-            webinarCount,
-            onTimeRate,
-          };
-        })
-      );
-      
-      return factoriesWithData;
+      try {
+        const factories = await getFactories(input.search);
+        
+        // 为每个工厂加载关联数据，使用容错机制
+        const factoriesWithData = await Promise.all(
+          factories.map(async (factory) => {
+            try {
+              const [images, certifications, webinarCount, onTimeRate] = await Promise.all([
+                getFactoryImages(factory.id).catch(err => {
+                  logger.warn({ factoryId: factory.id, error: err.message }, 'Failed to get factory images');
+                  return [];
+                }),
+                getFactoryCertifications(factory.id).catch(err => {
+                  logger.warn({ factoryId: factory.id, error: err.message }, 'Failed to get factory certifications');
+                  return [];
+                }),
+                getFactoryWebinarCount(factory.id).catch(err => {
+                  logger.warn({ factoryId: factory.id, error: err.message }, 'Failed to get webinar count');
+                  return 0;
+                }),
+                calculateFactoryOnTimeRate(factory.id).catch(err => {
+                  logger.warn({ factoryId: factory.id, error: err.message }, 'Failed to calculate on-time rate');
+                  return 95; // 默认值
+                }),
+              ]);
+              
+              return {
+                ...factory,
+                images: images.map(img => img.url),
+                certifications: certifications.map(cert => ({
+                  id: cert.id,
+                  type: cert.type || 'Unknown',
+                  name: cert.name || '',
+                  number: cert.certificateNumber || '',
+                  status: cert.status || 'pending',
+                })),
+                webinarCount,
+                onTimeRate,
+              };
+            } catch (error) {
+              logger.error({ factoryId: factory.id, error }, 'Failed to process factory data');
+              // 降级处理：返回基本工厂信息
+              return {
+                ...factory,
+                images: [],
+                certifications: [],
+                webinarCount: 0,
+                onTimeRate: 95,
+              };
+            }
+          })
+        );
+        
+        return factoriesWithData;
+      } catch (error) {
+        logger.error({ error, search: input.search }, 'Failed to get factories list');
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '获取工厂列表失败，请稍后重试',
+          cause: error,
+        });
+      }
     }),
   
   /**

@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
+import { API_CONFIG } from "./config";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -43,8 +44,12 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
-// Use direct HTTPS API URL to backend server
-const apiUrl = "https://api.cnsubscribe.xyz/api/trpc";
+// 使用统一的 API 配置
+const apiUrl = API_CONFIG.baseUrl;
+
+console.log('🚀 RealSourcing Frontend');
+console.log('📡 API URL:', apiUrl);
+console.log('🌍 Environment:', import.meta.env.MODE);
 
 const trpcClient = trpc.createClient({
   links: [
