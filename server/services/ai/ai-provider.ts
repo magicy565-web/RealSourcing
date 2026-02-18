@@ -80,7 +80,7 @@ export class AIProviderManager {
       this.providers.set('gemini', {
         provider: 'gemini',
         apiKey: process.env.GEMINI_API_KEY,
-        model: process.env.GEMINI_MODEL || 'gemini-pro',
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
         enabled: true,
         priority: 1,
         regions: ['global'],
