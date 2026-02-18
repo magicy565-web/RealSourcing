@@ -26,9 +26,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
 
-  // 使用 tRPC 获取真实数据
-  const { data: webinars, isLoading: loadingWebinars } = trpc.webinar.list.useQuery();
-  const { data: stats, isLoading: loadingStats } = trpc.webinar.getDashboardStats.useQuery();
+  // AdminDashboard 只作为容器，具体数据由各个子组件获取
 
   const getStatusColor = (status: string) => {
     switch (status) {

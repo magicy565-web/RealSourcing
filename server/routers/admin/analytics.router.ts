@@ -50,10 +50,10 @@ export const adminAnalyticsRouter = router({
 
       const [{ totalRevenue }] = await db
         .select({ 
-          totalRevenue: sql<number>`COALESCE(SUM(total_amount), 0)` 
+          totalRevenue: sql<number>`COALESCE(SUM(totalAmount), 0)` 
         })
         .from(orders)
-        .where(eq(orders.status, "completed"));
+        .where(eq(orders.status, "delivered"));
 
       const [{ activeUsers }] = await db
         .select({ activeUsers: count() })
@@ -91,12 +91,12 @@ export const adminAnalyticsRouter = router({
       const revenueTrend = await db
         .select({
           date: sql<string>`DATE(${orders.createdAt})`,
-          revenue: sql<number>`SUM(total_amount)`,
+          revenue: sql<number>`SUM(totalAmount)`,
         })
         .from(orders)
         .where(
           and(
-            eq(orders.status, "completed"),
+            eq(orders.status, "delivered"),
             sql`${orders.createdAt} >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`
           )
         )
@@ -205,37 +205,32 @@ export const adminAnalyticsRouter = router({
       .from(webinars)
       .groupBy(webinars.status);
 
-    // 平均注册人数
+    // 平均参与人数
     const [{ avgRegistrations }] = await db
       .select({
-        avgRegistrations: sql<number>`AVG(registration_count)`,
+        avgRegistrations: sql<number>`AVG(currentParticipants)`,
       })
       .from(webinars);
 
-    // 平均出席人数
+    // 平均出席人数 (使用 currentParticipants 作为替代)
     const [{ avgAttendance }] = await db
       .select({
-        avgAttendance: sql<number>`AVG(attendance_count)`,
+        avgAttendance: sql<number>`AVG(currentParticipants)`,
       })
       .from(webinars);
 
-    // 平均评分
-    const [{ avgRating }] = await db
-      .select({
-        avgRating: sql<number>`AVG(average_rating)`,
-      })
-      .from(webinars)
-      .where(sql`average_rating > 0`);
+    // 平均评分 (暂时返回 0，因为 webinars 表没有 rating 字段)
+    const avgRating = 0;
 
-    // 按行业统计
+    // 按分类统计 (使用 category 字段)
     const byIndustry = await db
       .select({
-        industry: webinars.industry,
+        industry: webinars.category,
         count: count(),
       })
       .from(webinars)
-      .where(sql`industry IS NOT NULL`)
-      .groupBy(webinars.industry)
+      .where(sql`category IS NOT NULL`)
+      .groupBy(webinars.category)
       .orderBy(desc(count()))
       .limit(10);
 
@@ -269,7 +264,7 @@ export const adminAnalyticsRouter = router({
     // 总浏览量
     const [{ totalViews }] = await db
       .select({
-        totalViews: sql<number>`SUM(view_count)`,
+        totalViews: sql<number>`SUM(viewCount)`,
       })
       .from(factoryProducts);
 
@@ -281,7 +276,7 @@ export const adminAnalyticsRouter = router({
     // 总询价量
     const [{ totalInquiries }] = await db
       .select({
-        totalInquiries: sql<number>`SUM(inquiry_count)`,
+        totalInquiries: sql<number>`SUM(inquiryCount)`,
       })
       .from(factoryProducts);
 
