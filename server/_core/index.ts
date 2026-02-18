@@ -44,9 +44,13 @@ async function startServer() {
       'http://localhost:3000'
     ];
     
-    if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    // 在开发/测试环境允许所有来源
+    if (origin) {
+      // 检查是否在允许列表中,或者是manus.computer域名(测试用)
+      if (allowedOrigins.includes(origin) || origin.includes('manus.computer')) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
     }
     
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
