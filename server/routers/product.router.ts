@@ -36,7 +36,7 @@ export const productRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
       includeViralScore: z.boolean().default(true),
-    }))
+    }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error('Database not available');
@@ -75,7 +75,7 @@ export const productRouter = router({
       ];
       
       // 如果需要AI评分,计算评分
-      if (input.includeViralScore) {
+      if (input?.includeViralScore !== false) {
         const scores = calculateBatchViralPotential(mockProducts);
         return mockProducts.map(product => ({
           ...product,
@@ -164,7 +164,7 @@ export const productRouter = router({
     .input(z.object({
       limit: z.number().default(10),
       category: z.string().optional(),
-    }))
+    }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error('Database not available');
@@ -172,7 +172,7 @@ export const productRouter = router({
       // 构建买家画像
       const buyerProfile: BuyerProfile = {
         id: ctx.user.id,
-        shopCategory: input.category,
+        shopCategory: input?.category,
         // TODO: 从用户历史数据中提取更多信息
       };
       
@@ -203,7 +203,7 @@ export const productRouter = router({
       const recommendations = recommendProducts(
         buyerProfile,
         mockProducts,
-        input.limit
+        input?.limit || 10
       );
       
       // TODO: 将推荐记录保存到 ai_recommendations 表
