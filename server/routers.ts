@@ -21,6 +21,7 @@ import { orderRouter } from "./routers/order.router.js";
 import { subscriptionEnhancedRouter } from "./routers/subscription_enhanced.router.js";
 import { agoraRouter } from "./routers/agora.router.js";
 import { webinarRouter } from "./routers/webinar.router.js";
+import { productRouter } from "./routers/product.router.js";
 import {
   createWebinar, getWebinars, getWebinarById, updateWebinar, deleteWebinar,
   createFactory, getFactories, getFactoryById, updateFactory,
@@ -341,6 +342,9 @@ export const appRouter = router({
 
   // Subscription Management (Enhanced)
   subscriptionEnhanced: subscriptionEnhancedRouter,
+
+  // Product Management with AI Services
+  product: productRouter,
 
   // Reports
   report: router({
