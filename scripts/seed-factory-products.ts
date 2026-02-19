@@ -5,6 +5,7 @@
 
 import { getDb } from '../server/db.js';
 import * as schema from '../drizzle/schema.js';
+import { eq } from 'drizzle-orm';
 import { calculateBatchViralPotential, type Product } from '../server/services/ai/index.js';
 
 // 测试产品数据
@@ -245,7 +246,7 @@ async function seedFactoryProducts() {
 
     // 2. 清空现有产品数据（可选）
     console.log('🗑️  清理现有产品数据...');
-    await db.delete(schema.factoryProducts).where(schema.factoryProducts.factoryId.eq(factoryId));
+    await db.delete(schema.factoryProducts).where(eq(schema.factoryProducts.factoryId, factoryId));
     console.log('✅ 清理完成\n');
 
     // 3. 批量插入产品

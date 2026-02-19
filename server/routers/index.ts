@@ -14,18 +14,16 @@ import { usageRouter } from "./usage.router.js";
 import { agoraRouter } from "./agora.router.js";
 import { rtmRouter } from "./rtm.router.js";
 import { aiRouter } from "./ai.router.js";
+import { productRouter } from "./product.router.js";
 import { directusProxyRouter } from "./directus-proxy.router.js";
-import { buyerRouter } from "./buyer.router.js";
-import { adminRouter } from "./admin/index.js";
-import { healthRouter } from "./health.router.js";
 
 /**
  * 应用主路由
  * 聚合所有业务模块的子路由
  */
 export const appRouter = router({
-  health: healthRouter,
   factory: factoryRouter,
+  product: productRouter,
   order: orderRouter,
   webinar: webinarRouter,
   payment: paymentRouter,
@@ -36,8 +34,6 @@ export const appRouter = router({
   rtm: rtmRouter,
   ai: aiRouter,
   directus: directusProxyRouter,
-  buyer: buyerRouter,
-  admin: adminRouter,
 });
 
 /**

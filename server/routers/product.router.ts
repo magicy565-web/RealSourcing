@@ -27,6 +27,56 @@ import {
 
 export const productRouter = router({
   /**
+   * 根据工厂ID获取产品列表
+   */
+  listByFactory: publicProcedure
+    .input(z.object({
+      factoryId: z.number(),
+      includeViralScore: z.boolean().default(true),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database not available');
+      
+      // 从数据库查询该工厂的产品
+      const dbProducts = await db
+        .select()
+        .from(schema.factoryProducts)
+        .where(
+          and(
+            eq(schema.factoryProducts.factoryId, input.factoryId),
+            eq(schema.factoryProducts.status, 'published')
+          )
+        );
+      
+      // 转换为 AI 服务需要的格式
+      const products: Product[] = dbProducts.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category || 'Unknown',
+        price: parseFloat(p.priceRange?.split('-')[0]?.replace(/[^0-9.]/g, '') || '0'),
+        moq: p.minOrderQuantity || 0,
+        factoryRating: 4.5, // TODO: 从工厂表获取
+        leadTime: parseInt(p.leadTime?.split('-')[0] || '0'),
+        viewCount: p.viewCount || 0,
+        inquiryCount: p.inquiryCount || 0,
+        orderCount: 0,
+        reviewCount: 0,
+      }));
+      
+      // 如果需要AI评分,计算评分
+      if (input.includeViralScore && products.length > 0) {
+        const scores = calculateBatchViralPotential(products);
+        return dbProducts.map((product: any, index: number) => ({
+          ...product,
+          viralScore: scores.get(products[index].id),
+        }));
+      }
+      
+      return dbProducts;
+    }),
+
+  /**
    * 获取产品列表 (带AI评分)
    */
   list: publicProcedure
@@ -41,49 +91,55 @@ export const productRouter = router({
       const db = await getDb();
       if (!db) throw new Error('Database not available');
       
-      // 注意: 这里假设有 products 表,如果没有则需要创建
-      // 目前数据库中可能还没有 products 表,这是待实现的功能
+      // 从数据库查询产品
+      let query = db.select().from(schema.factoryProducts);
       
-      // 临时返回模拟数据用于测试
-      const mockProducts: Product[] = [
-        {
-          id: 1,
-          name: 'USB-C Cable',
-          category: 'Electronics',
-          price: 2.99,
-          moq: 100,
-          factoryRating: 4.5,
-          leadTime: 7,
-          viewCount: 1500,
-          inquiryCount: 25,
-          orderCount: 12,
-          reviewCount: 50,
-        },
-        {
-          id: 2,
-          name: 'Wireless Charger',
-          category: 'Electronics',
-          price: 15.99,
-          moq: 50,
-          factoryRating: 4.8,
-          leadTime: 5,
-          viewCount: 3000,
-          inquiryCount: 60,
-          orderCount: 30,
-          reviewCount: 120,
-        },
-      ];
+      // 添加过滤条件
+      const conditions = [];
+      if (input?.category) {
+        conditions.push(eq(schema.factoryProducts.category, input.category));
+      }
+      if (input?.search) {
+        conditions.push(
+          like(schema.factoryProducts.name, `%${input.search}%`)
+        );
+      }
+      // 只显示已发布的产品
+      conditions.push(eq(schema.factoryProducts.status, 'published'));
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions)) as any;
+      }
+      
+      const dbProducts = await query
+        .limit(input?.limit || 20)
+        .offset(input?.offset || 0);
+      
+      // 转换为 AI 服务需要的格式
+      const products: Product[] = dbProducts.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category || 'Unknown',
+        price: parseFloat(p.priceRange?.split('-')[0]?.replace(/[^0-9.]/g, '') || '0'),
+        moq: p.minOrderQuantity || 0,
+        factoryRating: 4.5, // TODO: 从工厂表获取
+        leadTime: parseInt(p.leadTime?.split('-')[0] || '0'),
+        viewCount: p.viewCount || 0,
+        inquiryCount: p.inquiryCount || 0,
+        orderCount: 0, // TODO: 从订单表统计
+        reviewCount: 0, // TODO: 从评论表统计
+      }));
       
       // 如果需要AI评分,计算评分
-      if (input?.includeViralScore !== false) {
-        const scores = calculateBatchViralPotential(mockProducts);
-        return mockProducts.map(product => ({
+      if (input?.includeViralScore !== false && products.length > 0) {
+        const scores = calculateBatchViralPotential(products);
+        return dbProducts.map((product: any, index: number) => ({
           ...product,
-          viralScore: scores.get(product.id),
+          viralScore: scores.get(products[index].id),
         }));
       }
       
-      return mockProducts;
+      return dbProducts;
     }),
   
   /**
@@ -297,7 +353,7 @@ export const productRouter = router({
       const scores = calculateBatchViralPotential(mockProducts);
       
       // 转换为数组格式返回
-      return Array.from(scores.entries()).map(([productId, score]) => ({
+      return Array.from(scores.entries()).map(([productId, score]: [number, any]) => ({
         productId,
         score,
       }));
