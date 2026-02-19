@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "../hooks/use-toast";
 import { trpc } from "../lib/trpc";
+import { ProductSelectorNew } from "../components/ProductSelectorNew";
 
 export default function CreateWebinar() {
   const [, setLocation] = useLocation();
@@ -32,6 +33,7 @@ export default function CreateWebinar() {
     type: "webinar" as "webinar" | "one_to_one" | "group",
     maxParticipants: "100",
   });
+  const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -72,6 +74,19 @@ export default function CreateWebinar() {
         maxParticipants: parseInt(formData.maxParticipants),
         recordingEnabled: true,
       });
+
+      // 如果选择了产品，批量添加到 Webinar
+      if (selectedProductIds.length > 0) {
+        try {
+          await trpc.webinarProduct.addProducts.mutate({
+            webinarId: result.id,
+            productIds: selectedProductIds,
+          });
+        } catch (error) {
+          console.error("Failed to add products:", error);
+          // 不阻塞主流程，只记录错误
+        }
+      }
 
       toast({
         title: "创建成功",
@@ -283,6 +298,14 @@ export default function CreateWebinar() {
                 <SelectItem value="one_to_one">一对一会议</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* 产品选择 */}
+          <div className="space-y-2">
+            <ProductSelectorNew
+              selectedProductIds={selectedProductIds}
+              onProductsChange={setSelectedProductIds}
+            />
           </div>
 
           {/* 操作按钮 */}

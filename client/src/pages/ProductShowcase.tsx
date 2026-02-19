@@ -20,6 +20,7 @@ import ProductDetailModal from '../components/ProductDetailModal';
 import InquiryModal, { InquiryData } from '../components/InquiryModal';
 import { Product } from '../lib/directus';
 import { mockProducts } from '../data/mockProducts';
+import { trpc } from '../lib/trpc';
 
 interface ChatMessage {
   id: number;
@@ -60,15 +61,28 @@ export default function ProductShowcase() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const aiChatEndRef = useRef<HTMLDivElement>(null);
 
-  // 使用模拟数据
+  // 从 API 加载 Webinar 产品
+  const { data: webinarProducts, isLoading: isLoadingProducts } = trpc.webinarProduct.listByWebinar.useQuery(
+    { webinarId: parseInt(id || '0'), includeDetails: true },
+    { enabled: !!id }
+  );
+
   useEffect(() => {
-    setIsLoading(true);
-    // 模拟加载延迟
-    setTimeout(() => {
+    if (webinarProducts && webinarProducts.length > 0) {
+      // 转换为 EnhancedProduct 格式
+      const converted = webinarProducts
+        .filter((wp: any) => wp.product)
+        .map((wp: any) => ({
+          ...wp.product,
+          viralScore: wp.product.viralScore || { overall: 0 },
+        }));
+      setEnhancedProducts(converted);
+    } else {
+      // 如果没有关联产品，使用 mock 数据
       setEnhancedProducts(mockProducts);
-      setIsLoading(false);
-    }, 500);
-  }, [id]);
+    }
+    setIsLoading(isLoadingProducts);
+  }, [webinarProducts, isLoadingProducts]);
 
   // 自动滚动到最新消息
   useEffect(() => {

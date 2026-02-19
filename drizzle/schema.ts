@@ -338,6 +338,24 @@ export const webinarFactories = mysqlTable("webinar_factories", {
 export type WebinarFactory = InferSelectModel<typeof webinarFactories>;
 export type InsertWebinarFactory = InferInsertModel<typeof webinarFactories>;
 
+export const webinarProducts = mysqlTable("webinar_products", {
+  id: int("id").autoincrement().primaryKey(),
+  webinarId: int("webinarId").notNull(),
+  productId: int("productId").notNull(),
+  displayOrder: int("displayOrder").default(0),
+  featured: tinyint("featured").default(0),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  webinarIdIdx: index("idx_webinarId").on(table.webinarId),
+  productIdIdx: index("idx_productId").on(table.productId),
+  webinarProductUnique: unique("unique_webinar_product").on(table.webinarId, table.productId),
+}));
+
+export type WebinarProduct = InferSelectModel<typeof webinarProducts>;
+export type InsertWebinarProduct = InferInsertModel<typeof webinarProducts>;
+
 // ============================================================================
 // 4. 询价报价域 (RFQ & Quotation)
 // ============================================================================
