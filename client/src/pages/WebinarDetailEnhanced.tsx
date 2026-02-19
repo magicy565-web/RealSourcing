@@ -31,7 +31,7 @@ export default function WebinarDetailEnhanced() {
   const [, setLocation] = useLocation();
   const webinarId = parseInt(params?.id || "0");
 
-  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(
+  const { data: webinar, isLoading } = trpc.webinarEnhanced.getById.useQuery(
     { id: webinarId },
     { enabled: !!webinarId }
   );

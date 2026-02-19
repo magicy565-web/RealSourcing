@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -49,7 +49,7 @@ export default function WebinarLiveRoom() {
   const webinarId = parseInt(params?.id || "0");
 
   // Fetch webinar data
-  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(
+  const { data: webinar, isLoading } = trpc.webinarEnhanced.getById.useQuery(
     { id: webinarId },
     { enabled: !!webinarId }
   );
@@ -84,14 +84,27 @@ export default function WebinarLiveRoom() {
 
   // ─── Agora Integration ──────────────────────────────────────────────────
 
+  // Fetch Agora token
+  const uid = useMemo(() => `user_${Date.now()}`, []);
+  const channelName = useMemo(
+    () => webinar?.agoraChannelName || `webinar_${webinarId}`,
+    [webinar?.agoraChannelName, webinarId]
+  );
+  
+  const { data: tokenData } = trpc.agora.getRtcToken.useQuery(
+    { channelName, uid },
+    { enabled: !!webinar }
+  );
+
   useEffect(() => {
-    if (!webinar) return;
+    if (!webinar || !tokenData) return;
 
     const joinChannel = async () => {
       try {
         await agoraService.init({
-          channel: webinar.agoraChannelName || `webinar_${webinarId}`,
-          uid: `user_${Date.now()}`,
+          channel: channelName,
+          uid: uid,
+          token: tokenData.token,
         });
 
         await agoraService.createLocalTracks();
@@ -108,7 +121,7 @@ export default function WebinarLiveRoom() {
         toast.success("Successfully joined the webinar!");
       } catch (error) {
         console.error("Failed to join:", error);
-        toast.error("Failed to join the webinar");
+        toast.error("Failed to join the webinar. Please check your camera and microphone permissions.");
       }
     };
 
@@ -117,7 +130,7 @@ export default function WebinarLiveRoom() {
     return () => {
       agoraService.leave();
     };
-  }, [webinar, webinarId]);
+  }, [webinar, tokenData, webinarId, channelName, uid]);
 
   // ─── Event Handlers ─────────────────────────────────────────────────────
 
