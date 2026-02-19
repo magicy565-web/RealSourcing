@@ -5,7 +5,7 @@ const app = express();
 const proxy = httpProxy.createProxyServer();
 
 // ECS Backend URL
-const TARGET = "http://47.99.205.136";
+const TARGET = "http://47.99.205.136:3001";
 
 // CORS Middleware
 app.use((req: any, res: any, next: any) => {
