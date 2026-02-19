@@ -27,6 +27,8 @@ import Factories from "./pages/Factories";
 import FactoriesNew from "./pages/FactoriesNew";
 import FactoriesOptimized from "./pages/FactoriesOptimized";
 import FactoryDetail from "./pages/FactoryDetail";
+import FactoryDetailOptimized from "./pages/FactoryDetailOptimized";
+import FactoryDetailWebinarCentric from "./pages/FactoryDetailWebinarCentric";
 import Reports from "./pages/Reports";
 import ReportView from "./pages/ReportView";
 import Settings from "./pages/Settings";
@@ -71,7 +73,7 @@ function Router() {
       <Route path="/webinars/:id">{(params) => <WebinarDetailEnhanced params={params} />}</Route>
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
       <Route path="/factories" component={FactoriesOptimized} />
-      <Route path="/factories/:id" component={FactoryDetail} />
+      <Route path="/factories/:id" component={FactoryDetailOptimized} />
       <Route path="/reports" component={Reports} />
       <Route path="/reports/:id">{(params) => <ReportView params={params} />}</Route>
       <Route path="/settings" component={Settings} />
