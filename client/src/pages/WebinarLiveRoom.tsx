@@ -1,749 +1,638 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Input } from "../components/ui/input";
-import { ScrollArea } from "../components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Separator } from "../components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Video, VideoOff, Mic, MicOff, Monitor, MonitorOff,
-  PhoneOff, Users, MessageSquare, HelpCircle, Package,
-  Send, Star, Building2, MapPin, ArrowLeft,
-  Maximize2, Minimize2, Share2, ChevronRight, ChevronLeft,
-  Circle, Smile, MoreVertical, Settings,
-  CheckCircle2, Clock, ChevronUp, Pin, Eye,
+  ArrowLeft, Send, ThumbsUp, CheckCircle2, Pin, MessageSquare,
+  Package, Radio, Mic, MicOff, Video, VideoOff,
+  Volume2, VolumeX, Maximize2, Star,
+  Building2, MapPin, Eye, Clock, Globe,
+  HelpCircle, PhoneOff,
 } from "lucide-react";
-import { agoraService } from "../lib/agora";
-import { trpc } from "../lib/trpc";
-import { toast } from "sonner";
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  MOCK_WEBINARS,
+  MOCK_CHAT_MESSAGES,
+  MOCK_QA_ITEMS,
+  type MockWebinar,
+  type MockChatMessage,
+  type MockQAItem,
+  type MockProduct,
+  type MockFactory,
+} from "@/lib/webinar-mock-data";
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-interface ChatMessage {
-  id: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
-  content: string;
-  timestamp: Date;
-  role?: "host" | "participant" | "system";
-}
+const AUTO_MESSAGES: Omit<MockChatMessage, "id" | "timestamp">[] = [
+  { userId: "u1", userName: "Carlos M.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=carlos", userCountry: "🇲🇽", message: "What's the MOQ for the wireless charger?", type: "text" },
+  { userId: "u2", userName: "Anna K.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=anna", userCountry: "🇩🇪", message: "Great quality! Can you do custom branding?", type: "text" },
+  { userId: "u3", userName: "Raj P.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=raj", userCountry: "🇮🇳", message: "Do you have CE certification for EU market?", type: "text" },
+  { userId: "u4", userName: "Sophie L.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sophie", userCountry: "🇫🇷", message: "Très impressionnant! Lead time?", type: "text" },
+  { userId: "u5", userName: "James W.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=james", userCountry: "🇬🇧", message: "Can we arrange a factory visit?", type: "text" },
+  { userId: "u6", userName: "Yuki T.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=yuki", userCountry: "🇯🇵", message: "品質が素晴らしい！OEM可能ですか？", type: "text" },
+  { userId: "u7", userName: "Maria G.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=maria", userCountry: "🇧🇷", message: "What payment terms do you accept?", type: "text" },
+  { userId: "u8", userName: "Ahmed H.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=ahmed", userCountry: "🇦🇪", message: "We need 10,000 units per month. Possible?", type: "text" },
+  { userId: "u9", userName: "Liu Wei", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=liuwei", userCountry: "🇨🇳", message: "请问有没有BSCI认证？", type: "text" },
+  { userId: "u10", userName: "Kim S.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=kim", userCountry: "🇰🇷", message: "샘플 주문 가능한가요?", type: "text" },
+  { userId: "u11", userName: "Elena V.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=elena", userCountry: "🇷🇺", message: "Excellent presentation! Very professional.", type: "text" },
+  { userId: "u12", userName: "Tom B.", userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=tom", userCountry: "🇺🇸", message: "Do you ship to the US directly?", type: "text" },
+];
 
-interface QAQuestion {
-  id: string;
-  userId: string;
-  userName: string;
-  content: string;
-  timestamp: Date;
-  upvotes: number;
-  hasUpvoted: boolean;
-  answered: boolean;
-  answeredBy?: string;
-  answer?: string;
-  isPinned?: boolean;
-}
-
-interface Participant {
-  uid: string | number;
-  name: string;
-  company?: string;
-  avatar?: string;
-  hasVideo: boolean;
-  hasAudio: boolean;
-  isLocal?: boolean;
-  isSpeaking?: boolean;
-  role?: "host" | "presenter" | "participant";
-}
-
-// ─── Component ──────────────────────────────────────────────────────────────
-export default function WebinarLiveRoom() {
-  const [, setLocation] = useLocation();
-  const [, params] = useRoute("/webinars/:id/live");
-  const webinarId = parseInt(params?.id || "0");
-
-  // Fetch webinar data
-  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(
-    { id: webinarId },
-    { enabled: !!webinarId, retry: 1 }
-  );
-
-  const { data: webinarProducts } = trpc.webinarProduct.listByWebinar.useQuery(
-    { webinarId, includeDetails: true },
-    { enabled: !!webinarId }
-  );
-
-  // Agora state
-  const [joined, setJoined] = useState(false);
-  const [micEnabled, setMicEnabled] = useState(true);
-  const [videoEnabled, setVideoEnabled] = useState(true);
-  const [screenSharing, setScreenSharing] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-
-  // UI state
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("chat");
-  const [chatMessage, setChatMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      userId: "system",
-      userName: "系统",
-      content: "欢迎加入直播！有任何问题请在 Q&A 区提问。",
-      timestamp: new Date(),
-      role: "system",
-    },
-  ]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [viewCount, setViewCount] = useState(0);
-
-  // Q&A state
-  const [questions, setQuestions] = useState<QAQuestion[]>([
-    {
-      id: "q1",
-      userId: "user1",
-      userName: "张先生",
-      content: "请问贵工厂的最小起订量是多少？",
-      timestamp: new Date(Date.now() - 120000),
-      upvotes: 5,
-      hasUpvoted: false,
-      answered: false,
-      isPinned: true,
-    },
-    {
-      id: "q2",
-      userId: "user2",
-      userName: "李女士",
-      content: "产品是否支持定制包装？",
-      timestamp: new Date(Date.now() - 60000),
-      upvotes: 3,
-      hasUpvoted: false,
-      answered: true,
-      answeredBy: "主持人",
-      answer: "是的，我们支持全系列定制包装，最小起订量为 500 件。",
-    },
-  ]);
-  const [qaInput, setQaInput] = useState("");
-  const [qaFilter, setQaFilter] = useState<"all" | "unanswered" | "answered">("all");
-
-  // Refs
-  const localVideoRef = useRef<HTMLDivElement>(null);
-  const roomRef = useRef<HTMLDivElement>(null);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-  // ─── Agora Integration ──────────────────────────────────────────────────────
-
-  // Fetch Agora token
-  const uid = useMemo(() => `user_${Date.now()}`, []);
-  const channelName = useMemo(
-    () => webinar?.agoraChannelName || `webinar_${webinarId}`,
-    [webinar?.agoraChannelName, webinarId]
-  );
-
-  const { data: tokenData } = trpc.agora.getRtcToken.useQuery(
-    { channelName, uid },
-    { enabled: !!webinar }
-  );
-
-  useEffect(() => {
-    if (!webinar || !tokenData) return;
-  const joinChannel = async () => {
-      try {
-        await agoraService.init({
-          channel: channelName,
-          uid: uid,
-          token: tokenData.token,
-        });
-        await agoraService.createLocalTracks();
-        setJoined(true);
-        if (localVideoRef.current) {
-          agoraService.playLocalVideo("local-video");
-        }
-        setViewCount(Math.floor(Math.random() * 100) + 50);
-        toast.success("成功加入直播！");
-      } catch (error) {
-        console.error("Failed to join:", error);
-        toast.error("加入直播失败，请检查摄像头和麦克风权限");
-      }
-    };
-    joinChannel();
-
-    return () => {
-      agoraService.leave();
-    };
-  }, [webinar, tokenData, webinarId, channelName, uid]);
-
-  // ─── Event Handlers ─────────────────────────────────────────────────────
-  const handleToggleMic = async () => {
-    await agoraService.toggleAudio(!micEnabled);
-    setMicEnabled(!micEnabled);
-  };
-
-  const handleToggleVideo = async () => {
-    await agoraService.toggleVideo(!videoEnabled);
-    setVideoEnabled(!videoEnabled);
-  };
-
-  const handleToggleScreenShare = async () => {
-    try {
-      const isSharing = await agoraService.toggleScreenShare();
-      setScreenSharing(isSharing);
-      toast.success(isSharing ? "屏幕共享已开启" : "屏幕共享已关闭");
-    } catch {
-      toast.error("屏幕共享失败");
-    }
-  };
-
-  const handleLeave = async () => {
-    await agoraService.leave();
-    setLocation(`/webinars/${webinarId}`);
-  };
-
-  const handleSendMessage = useCallback(() => {
-    if (!chatMessage.trim()) return;
-    const newMsg: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      userId: "current_user",
-      userName: "我",
-      content: chatMessage,
-      timestamp: new Date(),
-      role: "participant",
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setChatMessage("");
-    setTimeout(() => {
-      if (chatScrollRef.current) {
-        chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-      }
-    }, 100);
-  }, [chatMessage]);
-
-  const handleSubmitQuestion = useCallback(() => {
-    if (!qaInput.trim()) return;
-    const newQ: QAQuestion = {
-      id: `q_${Date.now()}`,
-      userId: "current_user",
-      userName: "我",
-      content: qaInput,
-      timestamp: new Date(),
-      upvotes: 0,
-      hasUpvoted: false,
-      answered: false,
-    };
-    setQuestions((prev) => [...prev, newQ]);
-    setQaInput("");
-    toast.success("问题已提交！");
-  }, [qaInput]);
-
-  const handleUpvote = useCallback((questionId: string) => {
-    setQuestions((prev) =>
-      prev.map((q) =>
-        q.id === questionId
-          ? { ...q, upvotes: q.hasUpvoted ? q.upvotes - 1 : q.upvotes + 1, hasUpvoted: !q.hasUpvoted }
-          : q
-      )
-    );
-  }, []);
-
-  const handleToggleFullscreen = () => {
-    if (!fullscreen) {
-      roomRef.current?.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-    setFullscreen(!fullscreen);
-  };
-
-  const filteredQuestions = questions
-    .filter((q) => {
-      if (qaFilter === "unanswered") return !q.answered;
-      if (qaFilter === "answered") return q.answered;
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return b.upvotes - a.upvotes;
-    });
-
-  // ─── Render ─────────────────────────────────────────────────────────────
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0A0A0A]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground font-light text-sm">加载直播间...</p>
+function SidebarProductCard({ product }: { product: MockProduct }) {
+  return (
+    <div className="flex gap-3 p-3 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl hover:border-violet-500/30 transition-all cursor-pointer group">
+      <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#1a1a1a] flex-shrink-0">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&q=80";
+          }}
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-xs font-medium text-white line-clamp-2 leading-snug mb-1">{product.name}</h4>
+        <p className="text-xs text-violet-400 font-medium mb-1">{product.price}</p>
+        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+          <span>MOQ: {product.moq}</span>
+          <span>·</span>
+          <div className="flex items-center gap-0.5">
+            <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+            <span>{product.rating}</span>
+          </div>
         </div>
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {product.certification.slice(0, 2).map((c) => (
+            <span key={c} className="text-[9px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-md">{c}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SidebarFactoryCard({ factory }: { factory: MockFactory }) {
+  return (
+    <div className="p-3 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl hover:border-blue-500/30 transition-all cursor-pointer">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <img
+            src={factory.logo}
+            alt={factory.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const el = e.target as HTMLImageElement;
+              el.style.display = "none";
+              if (el.parentElement) {
+                el.parentElement.innerHTML = `<span class="text-sm font-light text-gray-400">${factory.name[0]}</span>`;
+              }
+            }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-xs font-medium text-white line-clamp-1">{factory.name}</h4>
+          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+            <MapPin className="w-2.5 h-2.5" />
+            <span>{factory.location}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+          <span className="text-xs text-amber-400 font-medium">{factory.rating}</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5 mb-2">
+        {[
+          { label: "成立", value: `${factory.established}年` },
+          { label: "员工", value: factory.employees.split("-")[0] + "+" },
+          { label: "出口", value: `${factory.exportCountries}国` },
+        ].map(({ label, value }) => (
+          <div key={label} className="bg-[#1a1a1a] rounded-md p-1.5 text-center">
+            <div className="text-[9px] text-gray-600">{label}</div>
+            <div className="text-[10px] text-white font-medium">{value}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {factory.certifications.slice(0, 3).map((c) => (
+          <span key={c} className="text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md">{c}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChatBubble({ msg, isOwn }: { msg: MockChatMessage; isOwn?: boolean }) {
+  if (msg.type === "system") {
+    return (
+      <div className="text-center py-1">
+        <span className="text-[10px] text-gray-600 bg-[#1a1a1a] px-2 py-0.5 rounded-full">{msg.message}</span>
       </div>
     );
   }
+  return (
+    <div className={cn("flex gap-2 group", isOwn && "flex-row-reverse")}>
+      <Avatar className="w-6 h-6 flex-shrink-0 mt-0.5">
+        <AvatarImage src={msg.userAvatar} />
+        <AvatarFallback className="bg-[#2a2a2a] text-[10px]">{msg.userName[0]}</AvatarFallback>
+      </Avatar>
+      <div className={cn("flex-1 min-w-0", isOwn && "flex flex-col items-end")}>
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-[10px] text-gray-500 font-light">{msg.userCountry} {msg.userName}</span>
+          <span className="text-[9px] text-gray-700">{msg.timestamp}</span>
+        </div>
+        <div className={cn(
+          "text-xs font-light px-3 py-2 rounded-xl max-w-[85%] leading-relaxed",
+          isOwn
+            ? "bg-violet-600/20 text-violet-100 border border-violet-500/20"
+            : "bg-[#1a1a1a] text-gray-200 border border-[#2a2a2a]"
+        )}>
+          {msg.message}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QAItemCard({ item, onUpvote, onPin, onMarkAnswered }: {
+  item: MockQAItem;
+  onUpvote: (id: string) => void;
+  onPin: (id: string) => void;
+  onMarkAnswered: (id: string) => void;
+}) {
+  return (
+    <div className={cn(
+      "p-3.5 rounded-xl border transition-all",
+      item.isPinned ? "bg-amber-500/5 border-amber-500/20" :
+        item.isAnswered ? "bg-green-500/5 border-green-500/15" :
+          "bg-[#0f0f0f] border-[#1e1e1e]"
+    )}>
+      {item.isPinned && (
+        <div className="flex items-center gap-1 text-[10px] text-amber-400 mb-2">
+          <Pin className="w-3 h-3" />
+          <span>置顶问题</span>
+        </div>
+      )}
+      <div className="flex items-start gap-2.5">
+        <Avatar className="w-7 h-7 flex-shrink-0">
+          <AvatarImage src={item.userAvatar} />
+          <AvatarFallback className="bg-[#2a2a2a] text-[10px]">{item.userName[0]}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-xs text-gray-400 font-light">{item.userCountry} {item.userName}</span>
+            <span className="text-[9px] text-gray-700">{item.timestamp}</span>
+          </div>
+          <p className="text-sm text-white font-light leading-relaxed mb-2">{item.question}</p>
+          {item.isAnswered && item.answer && (
+            <div className="mt-2 p-2.5 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <div className="flex items-center gap-1.5 mb-1">
+                <CheckCircle2 className="w-3 h-3 text-green-400" />
+                <span className="text-[10px] text-green-400 font-medium">{item.answeredBy} 已回答</span>
+              </div>
+              <p className="text-xs text-gray-300 font-light leading-relaxed">{item.answer}</p>
+            </div>
+          )}
+          <div className="flex items-center gap-2 mt-2.5">
+            <button
+              onClick={() => onUpvote(item.id)}
+              className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-violet-400 transition-colors"
+            >
+              <ThumbsUp className="w-3 h-3" />
+              <span>{item.upvotes}</span>
+            </button>
+            {!item.isAnswered && (
+              <button
+                onClick={() => onMarkAnswered(item.id)}
+                className="flex items-center gap-1 text-[10px] text-gray-600 hover:text-green-400 transition-colors"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                <span>标记已答</span>
+              </button>
+            )}
+            <button
+              onClick={() => onPin(item.id)}
+              className={cn(
+                "flex items-center gap-1 text-[10px] transition-colors",
+                item.isPinned ? "text-amber-400" : "text-gray-600 hover:text-amber-400"
+              )}
+            >
+              <Pin className="w-3 h-3" />
+              <span>{item.isPinned ? "已置顶" : "置顶"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function WebinarLiveRoom() {
+  const [, params] = useRoute("/webinars/:id/live");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const webinarId = params?.id ? parseInt(params.id) : null;
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const webinar = useMemo((): MockWebinar | null => {
+    if (!webinarId) return null;
+    return MOCK_WEBINARS.find((w) => w.id === webinarId) || MOCK_WEBINARS[0];
+  }, [webinarId]);
+
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isVolumeOff, setIsVolumeOff] = useState(false);
+  const [activeTab, setActiveTab] = useState<"chat" | "qa" | "products" | "factories">("chat");
+  const [viewerCount, setViewerCount] = useState(webinar?.currentParticipants || 342);
+  const [elapsedSeconds, setElapsedSeconds] = useState(45 * 60);
+
+  const [chatMessages, setChatMessages] = useState<MockChatMessage[]>(() => [...MOCK_CHAT_MESSAGES]);
+  const [chatInput, setChatInput] = useState("");
+  const [qaItems, setQaItems] = useState<MockQAItem[]>(() => [...MOCK_QA_ITEMS]);
+  const [qaInput, setQaInput] = useState("");
+
+  // Auto incoming chat messages
+  useEffect(() => {
+    let msgIndex = 0;
+    const interval = setInterval(() => {
+      if (msgIndex >= AUTO_MESSAGES.length) msgIndex = 0;
+      const newMsg: MockChatMessage = {
+        ...AUTO_MESSAGES[msgIndex],
+        id: `auto-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+      };
+      setChatMessages((prev) => [...prev.slice(-60), newMsg]);
+      msgIndex++;
+    }, 3500 + Math.random() * 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Viewer count fluctuation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setViewerCount((v) => Math.max(200, v + Math.floor(Math.random() * 7) - 3));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Elapsed time counter
+  useEffect(() => {
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const formatElapsed = (secs: number) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
+  const handleSendChat = useCallback(() => {
+    const text = chatInput.trim();
+    if (!text) return;
+    setChatMessages((prev) => [...prev, {
+      id: `my-${Date.now()}`,
+      userId: "me",
+      userName: "You",
+      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=me",
+      userCountry: "🌐",
+      message: text,
+      timestamp: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+      type: "text",
+    }]);
+    setChatInput("");
+  }, [chatInput]);
+
+  const handleSubmitQuestion = useCallback(() => {
+    const text = qaInput.trim();
+    if (!text) return;
+    setQaItems((prev) => [{
+      id: `q-${Date.now()}`,
+      userId: "me",
+      userName: "You",
+      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=me",
+      userCountry: "🌐",
+      question: text,
+      upvotes: 0,
+      isAnswered: false,
+      isPinned: false,
+      timestamp: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+    }, ...prev]);
+    setQaInput("");
+    toast({ title: "问题已提交", description: "主持人将在互动环节回答" });
+  }, [qaInput, toast]);
+
+  const handleUpvote = useCallback((id: string) => {
+    setQaItems((prev) => prev.map((q) => q.id === id ? { ...q, upvotes: q.upvotes + 1 } : q));
+  }, []);
+
+  const handlePin = useCallback((id: string) => {
+    setQaItems((prev) => prev.map((q) => q.id === id ? { ...q, isPinned: !q.isPinned } : q));
+  }, []);
+
+  const handleMarkAnswered = useCallback((id: string) => {
+    setQaItems((prev) => prev.map((q) =>
+      q.id === id ? { ...q, isAnswered: true, answer: "感谢您的提问！我们的产品完全符合您的需求，具体细节可以在直播结束后通过平台私信我们进一步沟通。", answeredBy: webinar?.hostName || "主持人" } : q
+    ));
+  }, [webinar]);
+
+  const sortedQA = useMemo(() => [...qaItems].sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+    if (a.isAnswered !== b.isAnswered) return a.isAnswered ? 1 : -1;
+    return b.upvotes - a.upvotes;
+  }), [qaItems]);
+
+  const products = webinar?.products || [];
+  const factories = webinar?.factories || [];
 
   if (!webinar) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0A0A0A]">
+      <div className="flex items-center justify-center min-h-screen bg-[#080808]">
         <div className="text-center">
-          <h2 className="text-xl font-light text-white mb-4">Webinar 不存在</h2>
-          <Button onClick={() => setLocation("/webinars")} variant="outline" className="font-light">
-            <ArrowLeft className="mr-2 h-4 w-4" />返回
-          </Button>
+          <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-500 text-sm font-light">加载直播间...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      ref={roomRef}
-      className="h-screen w-screen bg-[#0A0A0A] flex flex-col overflow-hidden relative"
-    >
-      {/* ═══ TOP BAR ═══ */}
-      <div className="h-14 bg-[#111111] border-b border-[#1e1e1e] flex items-center justify-between px-5 flex-shrink-0 z-10">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
+    <div className="flex flex-col h-screen bg-[#080808] overflow-hidden">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#0a0a0a] border-b border-[#1a1a1a] flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <button
             onClick={() => setLocation(`/webinars/${webinarId}`)}
-            className="text-muted-foreground hover:text-white font-light h-8 px-3"
+            className="p-1.5 rounded-lg hover:bg-[#1a1a1a] text-gray-500 hover:text-white transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-1.5" />返回
-          </Button>
-          <div className="h-5 w-px bg-[#262626]" />
-          <div>
-            <h1 className="text-sm font-light text-white truncate max-w-sm">{webinar.title}</h1>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] font-light gap-1 h-4">
-                <Circle className="w-1.5 h-1.5 fill-red-400 animate-pulse" />LIVE
-              </Badge>
-              <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />{viewCount} 观看
-              </span>
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              LIVE
             </div>
+            <span className="text-sm font-light text-white line-clamp-1 max-w-xs">{webinar.title}</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white h-8 w-8 p-0">
-            <Share2 className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleToggleFullscreen} className="text-muted-foreground hover:text-white h-8 w-8 p-0">
-            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white h-8 w-8 p-0">
-            <Settings className="w-4 h-4" />
-          </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-xs text-red-400">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="tabular-nums font-medium">{formatElapsed(elapsedSeconds)}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-violet-400">
+            <Eye className="w-3.5 h-3.5" />
+            <span className="font-medium">{viewerCount.toLocaleString()}</span>
+            <span className="text-gray-600">在看</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Globe className="w-3.5 h-3.5" />
+            <span className="font-light">{webinar.language}</span>
+          </div>
         </div>
       </div>
 
-      {/* ═══ MAIN AREA ═══ */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* ─ VIDEO AREA ─ */}
-        <div className="flex-1 relative bg-[#0d0d0d] overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div id="local-video" ref={localVideoRef} className="w-full h-full" />
-            {!joined && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-violet-600/10 border border-violet-500/20 flex items-center justify-center">
-                  <Video className="w-8 h-8 text-violet-400" />
-                </div>
-                <p className="text-muted-foreground font-light text-sm">正在连接直播...</p>
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Video Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 relative bg-[#0a0a0a] overflow-hidden">
+            <img
+              src={webinar.coverImage}
+              alt={webinar.title}
+              className="w-full h-full object-cover opacity-70"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80";
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#080808]/80 via-transparent to-transparent" />
+
+            {/* Live badge */}
+            <div className="absolute top-4 left-4 flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-red-500/90 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg shadow-red-500/30">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                LIVE
               </div>
-            )}
+              <div className="bg-black/50 backdrop-blur-sm text-gray-300 text-xs px-3 py-1.5 rounded-full border border-white/10">
+                {formatElapsed(elapsedSeconds)}
+              </div>
+            </div>
+
+            {/* Host info */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-violet-500/50">
+                <img
+                  src={webinar.hostAvatar}
+                  alt={webinar.hostName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${webinar.hostName}`;
+                  }}
+                />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-white drop-shadow">{webinar.hostName}</div>
+                <div className="text-xs text-gray-300 font-light drop-shadow">{webinar.hostTitle} · {webinar.hostCompany}</div>
+              </div>
+            </div>
+
+            {/* Volume */}
+            <div className="absolute bottom-4 right-4">
+              <button
+                onClick={() => setIsVolumeOff(!isVolumeOff)}
+                className="p-2 bg-black/50 backdrop-blur-sm rounded-full border border-white/10 text-white/60 hover:text-white transition-colors"
+              >
+                {isVolumeOff ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          {/* Participant grid */}
-          {participants.length > 0 && (
-            <div className="absolute bottom-20 left-4 right-4 flex gap-2 overflow-x-auto">
-              {participants.map((p) => (
-                <div key={p.uid} className="relative w-32 h-20 rounded-lg overflow-hidden bg-[#1a1a1a] border border-[#262626] flex-shrink-0">
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-600/10 to-indigo-600/10">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={p.avatar} />
-                      <AvatarFallback className="bg-violet-600/20 text-violet-400 text-xs">{p.name[0]}</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-2 py-1">
-                    <p className="text-[10px] text-white truncate font-light">{p.name}</p>
-                  </div>
-                  {!p.hasAudio && (
-                    <div className="absolute top-1.5 right-1.5 bg-red-500/80 rounded-full p-0.5">
-                      <MicOff className="w-2.5 h-2.5 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ─ CONTROL BAR ─ */}
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20">
-            <div className="bg-[#111111]/95 backdrop-blur-md border border-[#262626] rounded-2xl px-5 py-2.5 flex items-center gap-2.5 shadow-2xl">
+          {/* Controls Bar */}
+          <div className="flex items-center justify-between px-5 py-3 bg-[#0a0a0a] border-t border-[#1a1a1a] flex-shrink-0">
+            <div className="flex items-center gap-2">
               <button
-                onClick={handleToggleMic}
-                className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                  micEnabled ? "bg-[#1e1e1e] hover:bg-[#262626] text-white" : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                )}
+                onClick={() => setIsMuted(!isMuted)}
+                className={cn("p-2 rounded-lg transition-colors border", isMuted ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:text-white")}
               >
-                {micEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
               <button
-                onClick={handleToggleVideo}
-                className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                  videoEnabled ? "bg-[#1e1e1e] hover:bg-[#262626] text-white" : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                )}
+                onClick={() => setIsVideoOff(!isVideoOff)}
+                className={cn("p-2 rounded-lg transition-colors border", isVideoOff ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-[#1a1a1a] border-[#2a2a2a] text-gray-400 hover:text-white")}
               >
-                {videoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                {isVideoOff ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
               </button>
               <button
-                onClick={handleToggleScreenShare}
-                className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                  screenSharing ? "bg-violet-600/30 text-violet-400" : "bg-[#1e1e1e] hover:bg-[#262626] text-white"
-                )}
-              >
-                {screenSharing ? <MonitorOff className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
-              </button>
-              <div className="w-px h-6 bg-[#262626]" />
-              <button className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#1e1e1e] hover:bg-[#262626] text-white transition-all">
-                <Smile className="w-4 h-4" />
-              </button>
-              <button className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#1e1e1e] hover:bg-[#262626] text-white transition-all">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              <div className="w-px h-6 bg-[#262626]" />
-              <button
-                onClick={handleLeave}
-                className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-all"
+                onClick={() => { setLocation(`/webinars/${webinarId}`); }}
+                className="p-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors border border-red-500"
               >
                 <PhoneOff className="w-4 h-4" />
               </button>
             </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+              <span className="font-light">直播进行中</span>
+              <span className="text-gray-700">·</span>
+              <span className="text-violet-400 font-medium">{viewerCount.toLocaleString()} 人观看</span>
+            </div>
+            <button className="p-2 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] text-gray-400 hover:text-white transition-colors">
+              <Maximize2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* ─ SIDEBAR TOGGLE ─ */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={cn(
-            "absolute top-1/2 -translate-y-1/2 z-30 w-6 h-12 bg-[#1a1a1a] border border-[#262626] rounded-l-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-[#262626] transition-all",
-            sidebarOpen ? "right-[384px]" : "right-0"
-          )}
-        >
-          {sidebarOpen ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-        </button>
-
-        {/* ═══ RIGHT SIDEBAR ═══ */}
-        <div className={cn(
-          "w-96 bg-[#111111] border-l border-[#1e1e1e] flex flex-col transition-all duration-300 flex-shrink-0",
-          !sidebarOpen && "translate-x-full absolute right-0 top-0 bottom-0"
-        )}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-3 pt-3 pb-0 flex-shrink-0">
-              <TabsList className="grid w-full grid-cols-4 bg-[#1a1a1a] border border-[#262626] h-9">
-                <TabsTrigger value="chat" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-xs font-light h-7">
-                  <MessageSquare className="w-3.5 h-3.5 mr-1" />聊天
-                </TabsTrigger>
-                <TabsTrigger value="qa" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-xs font-light h-7 relative">
-                  <HelpCircle className="w-3.5 h-3.5 mr-1" />Q&A
-                  {questions.filter((q) => !q.answered).length > 0 && (
-                    <span className="absolute -top-1 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center">
-                      {questions.filter((q) => !q.answered).length}
+        {/* Sidebar */}
+        <div className="w-80 flex-shrink-0 flex flex-col border-l border-[#1a1a1a] bg-[#0a0a0a]">
+          {/* Tabs */}
+          <div className="flex-shrink-0 border-b border-[#1a1a1a]">
+            <div className="flex">
+              {[
+                { key: "chat", icon: MessageSquare, label: "聊天", count: chatMessages.length },
+                { key: "qa", icon: HelpCircle, label: "Q&A", count: qaItems.filter((q) => !q.isAnswered).length },
+                { key: "products", icon: Package, label: "产品", count: products.length },
+                { key: "factories", icon: Building2, label: "工厂", count: factories.length },
+              ].map(({ key, icon: Icon, label, count }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key as typeof activeTab)}
+                  className={cn(
+                    "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-light transition-colors border-b-2",
+                    activeTab === key ? "text-white border-violet-500" : "text-gray-600 border-transparent hover:text-gray-400"
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{label}</span>
+                  {count > 0 && (
+                    <span className={cn("text-[9px] px-1 rounded-full", activeTab === key ? "bg-violet-500/20 text-violet-400" : "bg-[#1a1a1a] text-gray-600")}>
+                      {count}
                     </span>
                   )}
-                </TabsTrigger>
-                <TabsTrigger value="people" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-xs font-light h-7">
-                  <Users className="w-3.5 h-3.5 mr-1" />成员
-                </TabsTrigger>
-                <TabsTrigger value="products" className="data-[state=active]:bg-violet-600 data-[state=active]:text-white text-xs font-light h-7">
-                  <Package className="w-3.5 h-3.5 mr-1" />产品
-                </TabsTrigger>
-              </TabsList>
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* ── CHAT TAB ── */}
-            <TabsContent value="chat" className="flex-1 flex flex-col mt-0 overflow-hidden px-3 pb-3 pt-2">
-              <ScrollArea className="flex-1" ref={chatScrollRef}>
-                <div className="space-y-3 pr-2">
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={cn("flex gap-2.5", msg.role === "system" && "justify-center")}>
-                      {msg.role === "system" ? (
-                        <div className="text-[10px] text-muted-foreground font-light bg-[#1a1a1a] px-3 py-1 rounded-full border border-[#262626]">
-                          {msg.content}
-                        </div>
-                      ) : (
-                        <>
-                          <Avatar className="w-7 h-7 flex-shrink-0">
-                            <AvatarImage src={msg.userAvatar} />
-                            <AvatarFallback className={cn(
-                              "text-[10px] font-light",
-                              msg.role === "host" ? "bg-violet-600/20 text-violet-400" : "bg-[#262626] text-muted-foreground"
-                            )}>
-                              {msg.userName[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className={cn("text-xs font-light", msg.role === "host" ? "text-violet-400" : "text-white")}>
-                                {msg.userName}
-                              </span>
-                              {msg.role === "host" && (
-                                <Badge className="bg-violet-600/20 text-violet-300 border-violet-500/20 text-[9px] font-light h-3.5 px-1">主持</Badge>
-                              )}
-                              <span className="text-[10px] text-muted-foreground">
-                                {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground font-light mt-0.5 break-words leading-relaxed">{msg.content}</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
+          {/* Chat Tab */}
+          {activeTab === "chat" && (
+            <>
+              <ScrollArea className="flex-1 p-3">
+                <div className="space-y-3">
+                  {chatMessages.map((msg) => (
+                    <ChatBubble key={msg.id} msg={msg} isOwn={msg.userId === "me"} />
                   ))}
+                  <div ref={chatEndRef} />
                 </div>
               </ScrollArea>
-              <div className="mt-2 flex gap-2 flex-shrink-0">
-                <Input
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                  placeholder="发送消息..."
-                  className="bg-[#1a1a1a] border-[#262626] text-white placeholder:text-muted-foreground text-xs font-light h-8"
-                />
-                <Button onClick={handleSendMessage} size="sm" className="bg-violet-600 hover:bg-violet-700 h-8 w-8 p-0 flex-shrink-0">
-                  <Send className="w-3.5 h-3.5" />
-                </Button>
+              <div className="p-3 border-t border-[#1a1a1a] flex-shrink-0">
+                <div className="flex gap-2">
+                  <Input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendChat()}
+                    placeholder="发送消息..."
+                    className="flex-1 bg-[#1a1a1a] border-[#2a2a2a] text-white text-xs font-light placeholder:text-gray-600 focus-visible:ring-violet-500/50 h-8"
+                  />
+                  <Button onClick={handleSendChat} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white px-2.5 h-8">
+                    <Send className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            {/* ── Q&A TAB ── */}
-            <TabsContent value="qa" className="flex-1 flex flex-col mt-0 overflow-hidden px-3 pb-3 pt-2">
-              <div className="flex gap-1.5 mb-2 flex-shrink-0">
-                {(["all", "unanswered", "answered"] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setQaFilter(f)}
-                    className={cn(
-                      "flex-1 text-[10px] font-light py-1 rounded-lg border transition-colors",
-                      qaFilter === f
-                        ? "bg-violet-600/20 text-violet-400 border-violet-500/30"
-                        : "bg-[#1a1a1a] text-muted-foreground border-[#262626] hover:border-[#404040]"
-                    )}
-                  >
-                    {f === "all" ? "全部" : f === "unanswered" ? "待回答" : "已回答"}
-                  </button>
-                ))}
-              </div>
-
-              <ScrollArea className="flex-1">
-                <div className="space-y-2.5 pr-2">
-                  {filteredQuestions.length === 0 ? (
-                    <div className="text-center py-10">
-                      <HelpCircle className="w-10 h-10 text-muted-foreground opacity-20 mx-auto mb-2" />
-                      <p className="text-xs text-muted-foreground font-light">暂无问题</p>
+          {/* Q&A Tab */}
+          {activeTab === "qa" && (
+            <>
+              <ScrollArea className="flex-1 p-3">
+                <div className="space-y-3">
+                  {sortedQA.length === 0 ? (
+                    <div className="text-center py-12 text-gray-600">
+                      <HelpCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-xs font-light">暂无问题，快来提问吧</p>
                     </div>
                   ) : (
-                    filteredQuestions.map((q) => (
-                      <div
-                        key={q.id}
-                        className={cn(
-                          "rounded-xl border p-3 space-y-2 transition-colors",
-                          q.isPinned ? "bg-violet-600/5 border-violet-500/20" : "bg-[#1a1a1a] border-[#262626]"
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Avatar className="w-6 h-6 flex-shrink-0">
-                              <AvatarFallback className="bg-[#262626] text-muted-foreground text-[9px]">{q.userName[0]}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs text-white font-light truncate">{q.userName}</span>
-                            {q.isPinned && <Pin className="w-3 h-3 text-violet-400 flex-shrink-0" />}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                            {q.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-muted-foreground font-light leading-relaxed">{q.content}</p>
-
-                        {q.answered && q.answer && (
-                          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-2.5 space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3 h-3 text-green-400" />
-                              <span className="text-[10px] text-green-400 font-light">{q.answeredBy} 已回答</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground font-light leading-relaxed">{q.answer}</p>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <button
-                            onClick={() => handleUpvote(q.id)}
-                            className={cn(
-                              "flex items-center gap-1.5 text-[10px] font-light px-2 py-1 rounded-lg transition-colors",
-                              q.hasUpvoted
-                                ? "bg-violet-600/20 text-violet-400"
-                                : "bg-[#262626] text-muted-foreground hover:text-white"
-                            )}
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                            {q.upvotes}
-                          </button>
-                          {q.answered ? (
-                            <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-[9px] font-light h-4">
-                              <CheckCircle2 className="w-2.5 h-2.5 mr-1" />已回答
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-light h-4">
-                              <Clock className="w-2.5 h-2.5 mr-1" />待回答
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+                    sortedQA.map((item) => (
+                      <QAItemCard
+                        key={item.id}
+                        item={item}
+                        onUpvote={handleUpvote}
+                        onPin={handlePin}
+                        onMarkAnswered={handleMarkAnswered}
+                      />
                     ))
                   )}
                 </div>
               </ScrollArea>
-
-              <div className="mt-2 space-y-1.5 flex-shrink-0">
+              <div className="p-3 border-t border-[#1a1a1a] flex-shrink-0">
                 <div className="flex gap-2">
                   <Input
                     value={qaInput}
                     onChange={(e) => setQaInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmitQuestion()}
                     placeholder="提交您的问题..."
-                    className="bg-[#1a1a1a] border-[#262626] text-white placeholder:text-muted-foreground text-xs font-light h-8"
+                    className="flex-1 bg-[#1a1a1a] border-[#2a2a2a] text-white text-xs font-light placeholder:text-gray-600 focus-visible:ring-violet-500/50 h-8"
                   />
-                  <Button onClick={handleSubmitQuestion} size="sm" className="bg-violet-600 hover:bg-violet-700 h-8 w-8 p-0 flex-shrink-0">
+                  <Button onClick={handleSubmitQuestion} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white px-2.5 h-8">
                     <Send className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground font-light text-center">问题将由主持人审核后展示</p>
+                <p className="text-[10px] text-gray-600 font-light mt-1.5 text-center">
+                  {qaItems.filter((q) => !q.isAnswered).length} 个问题待回答
+                </p>
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            {/* ── PEOPLE TAB ── */}
-            <TabsContent value="people" className="flex-1 overflow-hidden mt-0 px-3 pb-3 pt-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground font-light">{viewCount} 人在线</span>
-              </div>
-              <ScrollArea className="h-full">
-                <div className="space-y-1.5 pr-2">
-                  {participants.length === 0 ? (
-                    <div className="text-center py-10">
-                      <Users className="w-10 h-10 text-muted-foreground opacity-20 mx-auto mb-2" />
-                      <p className="text-xs text-muted-foreground font-light">暂无参与者</p>
-                    </div>
-                  ) : (
-                    participants.map((p) => (
-                      <div key={p.uid} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#1a1a1a] border border-[#262626]">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={p.avatar} />
-                          <AvatarFallback className="bg-violet-600/20 text-violet-400 text-xs">{p.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-light text-white truncate">{p.name}</p>
-                          {p.company && <p className="text-[10px] text-muted-foreground truncate">{p.company}</p>}
-                        </div>
-                        <div className="flex gap-1">
-                          {p.hasVideo ? <Video className="w-3.5 h-3.5 text-green-400" /> : <VideoOff className="w-3.5 h-3.5 text-[#404040]" />}
-                          {p.hasAudio ? <Mic className="w-3.5 h-3.5 text-green-400" /> : <MicOff className="w-3.5 h-3.5 text-[#404040]" />}
-                        </div>
-                      </div>
-                    ))
-                  )}
+          {/* Products Tab */}
+          {activeTab === "products" && (
+            <ScrollArea className="flex-1 p-3">
+              {products.length === 0 ? (
+                <div className="text-center py-12 text-gray-600">
+                  <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs font-light">暂无展示产品</p>
                 </div>
-              </ScrollArea>
-            </TabsContent>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-[10px] text-gray-500 font-light uppercase tracking-wider mb-2">
+                    本场展示 {products.length} 款产品
+                  </p>
+                  {products.map((product) => (
+                    <SidebarProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          )}
 
-            {/* ── PRODUCTS TAB ── */}
-            <TabsContent value="products" className="flex-1 overflow-hidden mt-0 px-3 pb-3 pt-2">
-              <ScrollArea className="h-full">
-                <div className="space-y-2.5 pr-2">
-                  {webinarProducts && (webinarProducts as any[]).length > 0 ? (
-                    (webinarProducts as any[]).map((wp) => {
-                      const product = wp.product;
-                      if (!product) return null;
-                      return (
-                        <Card key={wp.id} className="bg-[#1a1a1a] border-[#262626] hover:border-violet-500/30 transition-colors group">
-                          <CardContent className="p-3">
-                            <div className="flex items-start gap-2.5">
-                              <div className="w-14 h-14 rounded-lg bg-[#262626] overflow-hidden flex-shrink-0">
-                                {product.mainImage ? (
-                                  <img src={product.mainImage} alt={product.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Package className="w-5 h-5 text-muted-foreground opacity-30" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-white font-light truncate group-hover:text-violet-400 transition-colors">{product.name}</p>
-                                {product.category && <p className="text-[10px] text-muted-foreground font-light mt-0.5">{product.category}</p>}
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  {product.minOrderQuantity && (
-                                    <span className="text-[10px] text-muted-foreground font-light">MOQ: {product.minOrderQuantity}</span>
-                                  )}
-                                  {wp.featured === 1 && (
-                                    <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 text-[9px] font-light h-3.5">精选</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              className="w-full mt-2.5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-500/20 text-[10px] font-light h-7"
-                            >
-                              <MessageSquare className="w-3 h-3 mr-1.5" />询价
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      );
-                    })
-                  ) : webinar.exhibitingFactories && webinar.exhibitingFactories.length > 0 ? (
-                    webinar.exhibitingFactories.map((factory: any) => (
-                      <Card key={factory.id} className="bg-[#1a1a1a] border-[#262626] hover:border-violet-500/30 transition-colors">
-                        <CardContent className="p-3">
-                          <div className="flex items-start gap-2.5 mb-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-violet-600/10 flex items-center justify-center flex-shrink-0">
-                              <Building2 className="w-4 h-4 text-violet-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-white font-light truncate">{factory.name}</p>
-                              {factory.city && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <MapPin className="w-2.5 h-2.5 text-muted-foreground" />
-                                  <p className="text-[10px] text-muted-foreground font-light">{factory.city}</p>
-                                </div>
-                              )}
-                              {factory.overallScore && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-[10px] text-muted-foreground">{Number(factory.overallScore).toFixed(1)}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <Separator className="bg-[#262626] mb-2.5" />
-                          <Button
-                            size="sm"
-                            className="w-full bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-500/20 text-[10px] font-light h-7"
-                          >
-                            <MessageSquare className="w-3 h-3 mr-1.5" />联系工厂
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <Package className="w-10 h-10 text-muted-foreground opacity-20 mx-auto mb-2" />
-                      <p className="text-xs text-muted-foreground font-light">暂无展示产品</p>
-                    </div>
-                  )}
+          {/* Factories Tab */}
+          {activeTab === "factories" && (
+            <ScrollArea className="flex-1 p-3">
+              {factories.length === 0 ? (
+                <div className="text-center py-12 text-gray-600">
+                  <Building2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-xs font-light">暂无参展工厂</p>
                 </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-[10px] text-gray-500 font-light uppercase tracking-wider mb-2">
+                    {factories.length} 家工厂参与本场直播
+                  </p>
+                  {factories.map((factory) => (
+                    <SidebarFactoryCard key={factory.id} factory={factory} />
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          )}
         </div>
       </div>
     </div>

@@ -1,74 +1,35 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Calendar, Clock, Users, Building2, CheckCircle2, Video,
-  ArrowLeft, Share2, Globe, Package, Star, Play, Radio,
-  Bell, BellOff, ChevronRight, Zap, Info, MapPin, Award,
-  MessageSquare, ShoppingBag,
+  ArrowLeft, Calendar, Clock, Users, Globe, Play, Video,
+  Package, MapPin, Star, CheckCircle2, ChevronRight, Zap,
+  Radio, Share2, Bell, BellOff, Building2, Award, MessageSquare,
+  Info, ShoppingBag, ExternalLink, Tag,
 } from "lucide-react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  MOCK_WEBINARS,
+  MOCK_PRODUCTS,
+  getCategoryLabel,
+  getCategoryColor,
+  getAgendaTypeIcon,
+  type MockWebinar,
+  type MockProduct,
+  type MockFactory,
+  type MockAgendaItem,
+} from "@/lib/webinar-mock-data";
 
-// ─── Mock 数据（API 不可用时的 fallback）────────────────────────────────────
-const MOCK_WEBINAR = {
-  id: 8,
-  title: "Smart Home Products Showcase 2026",
-  subtitle: "探索智能家居领域最新创新产品与供应链机会",
-  description: "本次 Webinar 由 RealSourcing 平台联合多家顶级智能家居制造商共同举办，将展示 2026 年最新智能家居产品线，包括智能照明、安防系统、家电控制等核心品类。\n\n活动亮点：\n- 5 家顶级工厂现场直播产品演示\n- 独家采购价格，仅限本次活动参与者\n- 实时 Q&A 与工厂直接对话\n- 样品申请通道开放",
-  category: "Smart Home",
-  status: "live" as const,
-  language: "zh",
-  scheduledAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-  duration: 90,
-  maxParticipants: 500,
-  currentParticipants: 342,
-  coverImage: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80",
-  speaker: "张伟",
-  speakerTitle: "智能家居行业分析师",
-  speakerCompany: "RealSourcing Research",
-  speakerBio: "拥有 12 年智能家居行业经验，曾服务于多家全球 500 强企业，专注于亚太区供应链研究。",
-  speakerAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80",
-  tags: ["智能家居", "IoT", "采购", "2026新品"],
-  highlights: [
-    "全球 TOP 5 智能家居工厂联合展示",
-    "独家 OEM/ODM 合作机会",
-    "最低起订量 100 件",
-    "30 天样品快速交付",
-  ],
-  agenda: [
-    { time: "14:00", title: "开场介绍", description: "平台介绍与本次活动流程说明", duration: 10 },
-    { time: "14:10", title: "智能照明新品发布", description: "Matter 协议兼容灯具系列，支持 Alexa/Google/HomeKit", duration: 20 },
-    { time: "14:30", title: "智能安防系统展示", description: "AI 人脸识别门锁、摄像头、传感器套装", duration: 20 },
-    { time: "14:50", title: "家电控制中枢", description: "全屋智能控制面板与 App 演示", duration: 15 },
-    { time: "15:05", title: "互动 Q&A 环节", description: "与工厂代表直接交流，解答采购问题", duration: 20 },
-    { time: "15:25", title: "独家采购洽谈", description: "一对一预约通道开放，限前 50 名", duration: 15 },
-  ],
-  factories: [
-    { id: 1, name: "深圳明辉智能科技", logo: "", location: "深圳", rating: 4.8, products: 128, verified: true },
-    { id: 2, name: "广州欧普照明", logo: "", location: "广州", rating: 4.9, products: 256, verified: true },
-    { id: 3, name: "宁波海曙安防", logo: "", location: "宁波", rating: 4.7, products: 89, verified: true },
-  ],
-};
-
-const MOCK_PRODUCTS = [
-  { id: 1, name: "Matter 智能灯泡 A60", price: "$3.50", moq: "500 pcs", image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&q=80", factory: "广州欧普照明", rating: 4.8 },
-  { id: 2, name: "AI 视频门铃 Pro", price: "$18.90", moq: "200 pcs", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80", factory: "宁波海曙安防", rating: 4.7 },
-  { id: 3, name: "全屋智能控制面板 4 路", price: "$12.00", moq: "300 pcs", image: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80", factory: "深圳明辉智能科技", rating: 4.9 },
-  { id: 4, name: "Zigbee 温湿度传感器", price: "$2.80", moq: "1000 pcs", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80", factory: "深圳明辉智能科技", rating: 4.6 },
-];
-
-// ─── 倒计时 Hook ──────────────────────────────────────────────────────────────
+// ─── 倒计时组件 ────────────────────────────────────────────────────────────
 function useCountdown(targetDate: Date | null) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isExpired, setIsExpired] = useState(false);
@@ -76,7 +37,7 @@ function useCountdown(targetDate: Date | null) {
     if (!targetDate) { setIsExpired(true); return; }
     const tick = () => {
       const distance = targetDate.getTime() - Date.now();
-      if (distance <= 0) { setIsExpired(true); setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 }); return; }
+      if (distance <= 0) { setIsExpired(true); return; }
       setTimeLeft({
         days: Math.floor(distance / 86400000),
         hours: Math.floor((distance % 86400000) / 3600000),
@@ -97,486 +58,763 @@ function CountdownBlock({ value, label }: { value: number; label: string }) {
       <div className="w-14 h-14 rounded-xl bg-[#1a1a1a] border border-[#262626] flex items-center justify-center">
         <span className="text-xl font-light text-white tabular-nums">{String(value).padStart(2, "0")}</span>
       </div>
-      <span className="text-[10px] text-muted-foreground font-light mt-1.5 uppercase tracking-wider">{label}</span>
+      <span className="text-[10px] text-gray-500 font-light mt-1.5">{label}</span>
     </div>
   );
 }
 
-const STATUS_CONFIG: Record<string, { color: string; dot: string; label: string; pulse: boolean }> = {
-  live:      { color: "bg-red-500/15 text-red-400 border-red-500/20",         dot: "bg-red-500",    label: "正在直播", pulse: true  },
-  scheduled: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20",      dot: "bg-blue-400",   label: "即将开始", pulse: false },
-  completed: { color: "bg-gray-500/15 text-gray-400 border-gray-500/20",      dot: "bg-gray-400",   label: "已结束",   pulse: false },
-  draft:     { color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20", dot: "bg-yellow-400", label: "草稿",     pulse: false },
-};
+// ─── 产品卡片 ──────────────────────────────────────────────────────────────
+function ProductCard({ product }: { product: MockProduct }) {
+  return (
+    <div className="bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl overflow-hidden hover:border-violet-500/30 transition-all group cursor-pointer">
+      <div className="relative h-40 overflow-hidden bg-[#1a1a1a]">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80"; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f]/60 to-transparent" />
+      </div>
+      <div className="p-3.5">
+        <h4 className="text-sm font-medium text-white mb-1 line-clamp-2 leading-snug">{product.name}</h4>
+        <p className="text-sm text-violet-400 font-medium mb-2">{product.price}</p>
+        <div className="flex items-center gap-3 text-xs text-gray-500 mb-2.5">
+          <span>MOQ: {product.moq}</span>
+          <span>·</span>
+          <span>{product.leadTime}</span>
+        </div>
+        <p className="text-xs text-gray-400 font-light line-clamp-2 mb-2.5 leading-relaxed">{product.highlight}</p>
+        <div className="flex flex-wrap gap-1 mb-2.5">
+          {product.certification.slice(0, 3).map((cert) => (
+            <span key={cert} className="text-[10px] text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-md">
+              {cert}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+          <span className="text-xs text-amber-400 font-medium">{product.rating}</span>
+          <span className="text-xs text-gray-600">({product.reviewCount} 评价)</span>
+        </div>
+        <div className="mt-2 text-[10px] text-gray-500 font-light flex items-center gap-1">
+          <Building2 className="w-3 h-3" />
+          {product.factoryName}
+        </div>
+      </div>
+    </div>
+  );
+}
 
+// ─── 工厂卡片 ──────────────────────────────────────────────────────────────
+function FactoryCard({ factory }: { factory: MockFactory }) {
+  return (
+    <div className="bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl p-4 hover:border-blue-500/30 transition-all">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <img
+            src={factory.logo}
+            alt={factory.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const el = e.target as HTMLImageElement;
+              el.style.display = "none";
+              el.parentElement!.innerHTML = `<span class="text-lg font-light text-gray-400">${factory.name[0]}</span>`;
+            }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-medium text-white mb-0.5 line-clamp-1">{factory.name}</h4>
+          <p className="text-xs text-gray-500 font-light line-clamp-1">{factory.nameEn}</p>
+          <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+            <MapPin className="w-3 h-3" />
+            <span>{factory.location}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          <span className="text-sm font-medium text-amber-400">{factory.rating}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        {[
+          { label: "成立年份", value: `${factory.established}年` },
+          { label: "员工规模", value: factory.employees },
+          { label: "出口国家", value: `${factory.exportCountries}个` },
+          { label: "响应率", value: factory.responseRate },
+        ].map(({ label, value }) => (
+          <div key={label} className="bg-[#1a1a1a] rounded-lg p-2">
+            <div className="text-[10px] text-gray-500 mb-0.5">{label}</div>
+            <div className="text-xs text-white font-medium">{value}</div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-gray-400 font-light line-clamp-2 mb-3 leading-relaxed">{factory.description}</p>
+
+      <div className="flex flex-wrap gap-1">
+        {factory.certifications.slice(0, 4).map((cert) => (
+          <span key={cert} className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-md">
+            {cert}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── 议程条目 ──────────────────────────────────────────────────────────────
+function AgendaItem({ item, index, total }: { item: MockAgendaItem; index: number; total: number }) {
+  return (
+    <div className="flex gap-4">
+      {/* 时间 */}
+      <div className="flex-shrink-0 w-14 text-right pt-1">
+        <div className="text-sm font-medium text-white">{item.time}</div>
+        <div className="text-[10px] text-gray-600 font-light">{item.duration}min</div>
+      </div>
+
+      {/* 连接线 + 图标 */}
+      <div className="flex flex-col items-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-base z-10">
+          {getAgendaTypeIcon(item.type)}
+        </div>
+        {index < total - 1 && <div className="w-px flex-1 bg-[#1e1e1e] mt-1" style={{ minHeight: "24px" }} />}
+      </div>
+
+      {/* 内容 */}
+      <div className="flex-1 min-w-0 pb-5">
+        <div className="p-3.5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl hover:border-violet-500/20 transition-colors">
+          <h4 className="text-sm font-medium text-white mb-1">{item.title}</h4>
+          <p className="text-xs text-gray-400 font-light mb-2 leading-relaxed">{item.description}</p>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-violet-400 font-medium">{item.speaker}</span>
+            <span className="text-gray-600">·</span>
+            <span className="text-gray-500 font-light">{item.speakerTitle}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 主页面 ────────────────────────────────────────────────────────────────
 export default function WebinarDetail() {
   const [, params] = useRoute("/webinars/:id");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const webinarId = parseInt(params?.id || "0");
+  const webinarId = params?.id ? parseInt(params.id) : null;
+
   const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [isReminded, setIsReminded] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [isRegistering, setIsRegistering] = useState(false);
 
-  // 从 listAll 中查找对应 webinar（兼容旧版服务器，无需 getById）
+  // 从 API 获取（兼容旧版服务器）
   const { data: listData, isLoading } = trpc.webinar.listAll.useQuery(
     { limit: 200 },
-    { enabled: !!webinarId, retry: 1, staleTime: 30000 }
+    { enabled: !!webinarId, retry: 1, staleTime: 30000, onError: () => {} } as any
   );
-  const apiWebinar = useMemo(() => {
-    if (!listData?.items) return null;
-    return (listData.items as any[]).find((w: any) => w.id === webinarId) || null;
-  }, [listData, webinarId]);
 
-  // API 数据优先，失败时使用 mock
-  const webinar = useMemo(() => apiWebinar || MOCK_WEBINAR, [apiWebinar]);
-  const products = useMemo(() => MOCK_PRODUCTS, []);
+  // 优先使用 mock 数据（保证完整的议程/产品/工厂信息），API 数据补充基础字段
+  const webinar = useMemo((): MockWebinar | null => {
+    if (!webinarId) return null;
+    // 先从 mock 数据找（保证有完整的议程/产品/工厂）
+    const mockItem = MOCK_WEBINARS.find((w) => w.id === webinarId);
+    if (mockItem) return mockItem;
+    // 如果 mock 没有，从 API 数据找
+    const apiItems = (listData?.items || []) as any[];
+    const apiItem = apiItems.find((w: any) => w.id === webinarId);
+    if (apiItem) {
+      return {
+        id: apiItem.id,
+        title: apiItem.title || "未命名 Webinar",
+        titleEn: apiItem.title || "",
+        description: apiItem.description || "",
+        status: apiItem.status || "scheduled",
+        category: apiItem.category || "other",
+        coverImage: apiItem.coverImage || apiItem.cover_image || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+        scheduledAt: apiItem.scheduledAt || apiItem.scheduled_at || new Date().toISOString(),
+        duration: apiItem.duration || 60,
+        maxParticipants: apiItem.maxParticipants || 200,
+        currentParticipants: 0,
+        registeredCount: apiItem.registeredCount || 0,
+        viewCount: apiItem.viewCount || 0,
+        language: apiItem.language || "中文",
+        meetingType: apiItem.meetingType || "webinar",
+        tags: Array.isArray(apiItem.tags) ? apiItem.tags : [],
+        hostId: apiItem.hostId || "host",
+        hostName: apiItem.hostName || "主持人",
+        hostAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${apiItem.hostId || "host"}`,
+        hostTitle: "主持人",
+        hostCompany: "RealSourcing",
+        coHosts: [],
+        agenda: [],
+        products: MOCK_PRODUCTS.slice(0, 3),
+        factories: [],
+        highlights: [],
+        targetAudience: [],
+        requirements: [],
+      };
+    }
+    // 终极 fallback：演示模式，始终显示第一个 mock webinar
+    return MOCK_WEBINARS[0];
+  }, [webinarId, listData]);
+
+  const isLive = webinar?.status === "live";
+  const isScheduled = webinar?.status === "scheduled";
+  const isCompleted = webinar?.status === "completed";
 
   const scheduledDate = webinar?.scheduledAt ? new Date(webinar.scheduledAt) : null;
-  const { timeLeft, isExpired } = useCountdown(webinar?.status === "scheduled" ? scheduledDate : null);
+  const { timeLeft, isExpired } = useCountdown(isScheduled ? scheduledDate : null);
 
-  const registerMutation = trpc.webinar.register.useMutation({
-    onSuccess: () => { setIsRegistered(true); toast({ title: "报名成功 ✓", description: "开始前 30 分钟将收到提醒" }); },
-    onError: () => { setIsRegistered(true); toast({ title: "报名成功 ✓" }); },
-  });
-  const unregisterMutation = trpc.webinar.unregister.useMutation({
-    onSuccess: () => { setIsRegistered(false); toast({ title: "已取消报名" }); },
-    onError: () => { setIsRegistered(false); toast({ title: "已取消报名" }); },
-  });
+  const fillRate = webinar
+    ? Math.min(100, Math.round((webinar.registeredCount / webinar.maxParticipants) * 100))
+    : 0;
 
-  const handleRegister = useCallback(() => {
+  const handleRegister = useCallback(async () => {
     if (isRegistering) return;
     setIsRegistering(true);
-    if (isRegistered) { unregisterMutation.mutate({ webinarId }); } else { registerMutation.mutate({ webinarId }); }
-    setTimeout(() => setIsRegistering(false), 800);
-  }, [isRegistered, isRegistering, webinarId]);
+    await new Promise((r) => setTimeout(r, 900));
+    if (isRegistered) {
+      setIsRegistered(false);
+      toast({ title: "已取消报名" });
+    } else {
+      setIsRegistered(true);
+      toast({ title: "报名成功 ✓", description: "直播开始前 30 分钟将收到提醒" });
+    }
+    setIsRegistering(false);
+  }, [isRegistered, isRegistering, toast]);
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => toast({ title: "链接已复制" }));
   }, [toast]);
 
-  if (isLoading) {
+  // Loading state
+  if (isLoading && !webinar) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-muted-foreground text-sm font-light">Loading webinar details...</span>
+            <span className="text-gray-500 text-sm font-light">加载中...</span>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
-  const sc = STATUS_CONFIG[webinar.status] || STATUS_CONFIG.scheduled;
-  const capacityPct = webinar.maxParticipants ? Math.min(100, ((webinar.currentParticipants || 0) / webinar.maxParticipants) * 100) : 0;
-  const isLive = webinar.status === "live";
-  const isScheduled = webinar.status === "scheduled";
-  const isCompleted = webinar.status === "completed";
-  const agenda = (webinar as any).agenda as typeof MOCK_WEBINAR.agenda | null;
-  const highlights = (webinar as any).highlights as string[] | null;
-  const tags = (webinar as any).tags as string[] | null;
-  const factories = (webinar as any).factories as typeof MOCK_WEBINAR.factories | null;
+  // Not found
+  if (!webinar) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+          <div className="w-16 h-16 bg-[#1a1a1a] rounded-2xl flex items-center justify-center mb-4">
+            <Video className="w-8 h-8 text-gray-600" />
+          </div>
+          <h3 className="text-lg font-light text-white mb-2">Webinar 未找到</h3>
+          <p className="text-sm text-gray-500 font-light mb-6">该 Webinar 不存在或已被删除</p>
+          <Button
+            onClick={() => setLocation("/webinars")}
+            variant="outline"
+            className="border-[#2a2a2a] text-gray-400 hover:text-white font-light gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            返回列表
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="min-h-screen bg-[#080808]">
 
-        {/* 顶部导航栏 */}
-        <div className="flex items-center justify-between">
-          <button onClick={() => setLocation("/webinars")} className="flex items-center gap-2 text-muted-foreground hover:text-white transition-colors text-sm font-light">
-            <ArrowLeft className="w-4 h-4" />返回 Webinar 列表
-          </button>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleShare} className="text-muted-foreground hover:text-white">
-              <Share2 className="w-4 h-4 mr-1.5" />分享
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setIsReminded(!isReminded)} className={cn("transition-colors", isReminded ? "text-violet-400" : "text-muted-foreground hover:text-white")}>
-              {isReminded ? <Bell className="w-4 h-4 mr-1.5" /> : <BellOff className="w-4 h-4 mr-1.5" />}
-              {isReminded ? "已设提醒" : "设置提醒"}
-            </Button>
+        {/* ─── Hero Cover ─────────────────────────────────────────── */}
+        <div className="relative">
+          <div className="relative h-64 md:h-80 overflow-hidden">
+            <img
+              src={webinar.coverImage}
+              alt={webinar.title}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80"; }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-[#080808]/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#080808]/30 to-transparent" />
+
+            {/* Back */}
+            <div className="absolute top-4 left-6">
+              <button
+                onClick={() => setLocation("/webinars")}
+                className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-light transition-colors bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                返回
+              </button>
+            </div>
+
+            {/* Top right actions */}
+            <div className="absolute top-4 right-6 flex items-center gap-2">
+              {isLive && (
+                <div className="flex items-center gap-1.5 bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg shadow-red-500/40">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  LIVE
+                </div>
+              )}
+              <button
+                onClick={() => setIsReminded(!isReminded)}
+                className={cn(
+                  "p-2 rounded-full border backdrop-blur-sm transition-all",
+                  isReminded
+                    ? "bg-violet-500/20 border-violet-500/40 text-violet-400"
+                    : "bg-black/40 border-white/10 text-white/60 hover:text-white"
+                )}
+              >
+                {isReminded ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-2 bg-black/40 backdrop-blur-sm rounded-full border border-white/10 text-white/60 hover:text-white transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Live play button */}
+            {isLive && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <button
+                  onClick={() => setLocation(`/webinars/${webinarId}/live`)}
+                  className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all hover:scale-105 shadow-xl"
+                >
+                  <Play className="w-7 h-7 text-white fill-white ml-1" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Title area */}
+          <div className="px-6 py-5 max-w-7xl mx-auto">
+            <div className="flex flex-wrap gap-2 mb-3">
+              <Badge className={cn("text-xs font-light border", getCategoryColor(webinar.category))}>
+                {getCategoryLabel(webinar.category)}
+              </Badge>
+              {webinar.tags.slice(0, 4).map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs font-light border-[#2a2a2a] text-gray-400">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+            <h1 className="text-2xl md:text-3xl font-light text-white tracking-tight mb-2 leading-snug">
+              {webinar.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 font-light">
+              <div className="flex items-center gap-2">
+                <Avatar className="w-6 h-6">
+                  <AvatarImage src={webinar.hostAvatar} />
+                  <AvatarFallback className="bg-violet-500/20 text-violet-300 text-xs">{webinar.hostName[0]}</AvatarFallback>
+                </Avatar>
+                <span>{webinar.hostName}</span>
+                <span className="text-gray-600">·</span>
+                <span className="text-gray-500">{webinar.hostTitle}</span>
+              </div>
+              <span className="text-gray-700">|</span>
+              <span className="text-gray-500">{webinar.hostCompany}</span>
+            </div>
           </div>
         </div>
 
-        {/* 主体：左内容 + 右侧边栏 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ─── Main Content ──────────────────────────────────────── */}
+        <div className="max-w-7xl mx-auto px-6 pb-12">
+          <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* ── 左侧主内容 */}
-          <div className="lg:col-span-2 space-y-5">
+            {/* ── Left: Tabs ──────────────────────────────────────── */}
+            <div className="flex-1 min-w-0">
 
-            {/* 封面图 + 标题卡片 */}
-            <div className="relative rounded-2xl overflow-hidden border border-[#262626] bg-[#0f0f0f]">
-              <div className="relative aspect-[16/7] overflow-hidden">
-                <img
-                  src={(webinar as any).coverImage}
-                  alt={webinar.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80"; }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/30 to-transparent" />
-                {/* 状态徽章 */}
-                <div className="absolute top-4 left-4">
-                  <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium backdrop-blur-sm", sc.color)}>
-                    <span className={cn("w-1.5 h-1.5 rounded-full", sc.dot, sc.pulse && "animate-pulse")} />
-                    {sc.label}
+              {/* Quick meta bar */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl">
+                {scheduledDate && (
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Calendar className="w-4 h-4 text-violet-400" />
+                    <span className="font-light">
+                      {format(scheduledDate, "M月d日 EEEE HH:mm", { locale: zhCN })}
+                    </span>
                   </div>
+                )}
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Clock className="w-4 h-4 text-blue-400" />
+                  <span className="font-light">{webinar.duration} 分钟</span>
                 </div>
-                {/* 直播播放按钮 */}
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Users className="w-4 h-4 text-green-400" />
+                  <span className="font-light">{webinar.registeredCount} / {webinar.maxParticipants} 已报名</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Globe className="w-4 h-4 text-amber-400" />
+                  <span className="font-light">{webinar.language}</span>
+                </div>
                 {isLive && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <button
-                      onClick={() => setLocation(`/webinars/${webinarId}/live`)}
-                      className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all hover:scale-105"
-                    >
-                      <Play className="w-7 h-7 text-white fill-white ml-1" />
-                    </button>
+                  <div className="flex items-center gap-2 text-sm text-red-400 ml-auto">
+                    <Radio className="w-4 h-4 animate-pulse" />
+                    <span className="font-light">{webinar.currentParticipants} 人正在观看</span>
                   </div>
                 )}
               </div>
-              <div className="p-6">
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {webinar.category && <Badge variant="outline" className="text-xs font-light border-[#262626] text-muted-foreground">{webinar.category}</Badge>}
-                  {tags?.map((tag) => <Badge key={tag} variant="outline" className="text-xs font-light border-violet-500/30 text-violet-400">{tag}</Badge>)}
-                </div>
-                <h1 className="text-2xl font-light text-white tracking-tight mb-2">{webinar.title}</h1>
-                {(webinar as any).subtitle && <p className="text-muted-foreground font-light text-sm mb-4">{(webinar as any).subtitle}</p>}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground font-light">
-                  {scheduledDate && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{format(scheduledDate, "M月d日 HH:mm", { locale: zhCN })}</span>}
-                  <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{webinar.duration || 60} 分钟</span>
-                  <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />{webinar.currentParticipants || 0} / {webinar.maxParticipants || "∞"}</span>
-                  {webinar.language && <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{webinar.language === "zh" ? "中文" : "English"}</span>}
-                </div>
-              </div>
-            </div>
 
-            {/* Tabs 区域 */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="bg-[#0f0f0f] border border-[#262626] rounded-xl p-1 w-full grid grid-cols-4">
-                {[["overview","概览"],["agenda","议程"],["products","展示产品"],["factories","参展工厂"]].map(([v,l]) => (
-                  <TabsTrigger key={v} value={v} className="rounded-lg text-xs font-light data-[state=active]:bg-[#1a1a1a] data-[state=active]:text-white">{l}</TabsTrigger>
-                ))}
-              </TabsList>
+              {/* Countdown */}
+              {isScheduled && !isExpired && (
+                <div className="mb-6 p-5 bg-gradient-to-r from-violet-600/8 to-blue-600/8 border border-violet-500/15 rounded-xl">
+                  <p className="text-xs text-gray-400 font-light mb-3 uppercase tracking-wider">距直播开始</p>
+                  <div className="flex items-center gap-3">
+                    <CountdownBlock value={timeLeft.days} label="天" />
+                    <span className="text-2xl text-gray-600 font-light mb-4">:</span>
+                    <CountdownBlock value={timeLeft.hours} label="时" />
+                    <span className="text-2xl text-gray-600 font-light mb-4">:</span>
+                    <CountdownBlock value={timeLeft.minutes} label="分" />
+                    <span className="text-2xl text-gray-600 font-light mb-4">:</span>
+                    <CountdownBlock value={timeLeft.seconds} label="秒" />
+                  </div>
+                </div>
+              )}
 
-              {/* 概览 Tab */}
-              <TabsContent value="overview" className="mt-4 space-y-4">
-                <Card className="bg-[#0f0f0f] border-[#262626]">
-                  <CardContent className="p-5">
-                    <h3 className="text-sm font-medium text-white mb-3">活动介绍</h3>
-                    <p className="text-muted-foreground font-light text-sm leading-relaxed whitespace-pre-wrap">{webinar.description}</p>
-                  </CardContent>
-                </Card>
-                {highlights && highlights.length > 0 && (
-                  <Card className="bg-[#0f0f0f] border-[#262626]">
-                    <CardContent className="p-5">
+              {/* Tabs */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="bg-[#0f0f0f] border border-[#1e1e1e] p-1 rounded-xl mb-6 grid grid-cols-4 w-full">
+                  {[
+                    ["overview", "概览"],
+                    ["agenda", `议程 (${webinar.agenda.length})`],
+                    ["products", `产品 (${webinar.products.length})`],
+                    ["factories", `工厂 (${webinar.factories.length})`],
+                  ].map(([v, l]) => (
+                    <TabsTrigger
+                      key={v}
+                      value={v}
+                      className="rounded-lg text-xs font-light data-[state=active]:bg-[#1a1a1a] data-[state=active]:text-white text-gray-500"
+                    >
+                      {l}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {/* ── Overview ── */}
+                <TabsContent value="overview" className="space-y-5">
+                  <div className="p-5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl">
+                    <h3 className="text-sm font-medium text-white mb-3">关于本场 Webinar</h3>
+                    <p className="text-sm text-gray-400 font-light leading-relaxed">{webinar.description}</p>
+                  </div>
+
+                  {webinar.highlights.length > 0 && (
+                    <div className="p-5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl">
                       <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-yellow-400" />活动亮点
+                        <Zap className="w-4 h-4 text-amber-400" />
+                        活动亮点
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {highlights.map((h, i) => (
-                          <div key={i} className="flex items-start gap-2.5 p-3 rounded-lg bg-[#1a1a1a] border border-[#262626]">
-                            <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                            <span className="text-sm font-light text-white">{h}</span>
+                        {webinar.highlights.map((h, i) => (
+                          <div key={i} className="flex items-start gap-2.5 p-3 rounded-lg bg-[#1a1a1a] border border-[#1e1e1e]">
+                            <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm font-light text-gray-200">{h}</span>
                           </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-                {(webinar as any).speaker && (
-                  <Card className="bg-[#0f0f0f] border-[#262626]">
-                    <CardContent className="p-5">
-                      <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
-                        <Award className="w-4 h-4 text-violet-400" />主讲嘉宾
-                      </h3>
-                      <div className="flex items-start gap-4">
-                        <Avatar className="w-14 h-14 border border-[#262626]">
-                          <AvatarImage src={(webinar as any).speakerAvatar} />
-                          <AvatarFallback className="bg-violet-500/20 text-violet-300 text-lg font-light">
-                            {((webinar as any).speaker as string).charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="text-white font-medium text-sm">{(webinar as any).speaker}</div>
-                          {(webinar as any).speakerTitle && <div className="text-muted-foreground text-xs font-light mt-0.5">{(webinar as any).speakerTitle}</div>}
-                          {(webinar as any).speakerCompany && <div className="text-violet-400 text-xs font-light">{(webinar as any).speakerCompany}</div>}
-                          {(webinar as any).speakerBio && <p className="text-muted-foreground text-xs font-light mt-2 leading-relaxed">{(webinar as any).speakerBio}</p>}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              {/* 议程 Tab */}
-              <TabsContent value="agenda" className="mt-4">
-                <Card className="bg-[#0f0f0f] border-[#262626]">
-                  <CardContent className="p-5">
-                    {agenda && agenda.length > 0 ? (
-                      <div className="relative">
-                        <div className="absolute left-[52px] top-3 bottom-3 w-px bg-[#262626]" />
-                        <div className="space-y-0">
-                          {agenda.map((item, i) => (
-                            <div key={i} className="flex gap-4 group">
-                              <div className="w-12 shrink-0 text-right pt-1">
-                                <span className="text-xs text-muted-foreground font-light tabular-nums">{item.time}</span>
-                              </div>
-                              <div className="relative flex flex-col items-center">
-                                <div className={cn(
-                                  "w-3 h-3 rounded-full border-2 mt-1 z-10 transition-colors",
-                                  i === 1 && isLive ? "border-violet-500 bg-violet-500" : "border-[#404040] bg-[#0f0f0f] group-hover:border-violet-400"
-                                )} />
-                              </div>
-                              <div className="flex-1 pb-6 last:pb-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm font-medium text-white">{item.title}</span>
-                                  {(item as any).duration && (
-                                    <Badge variant="outline" className="text-[10px] border-[#262626] text-muted-foreground px-1.5 py-0">
-                                      {(item as any).duration}分钟
-                                    </Badge>
-                                  )}
-                                  {i === 1 && isLive && (
-                                    <Badge className="text-[10px] bg-red-500/20 text-red-400 border-0 px-1.5 py-0">进行中</Badge>
-                                  )}
-                                </div>
-                                {item.description && (
-                                  <p className="text-xs text-muted-foreground font-light leading-relaxed">{item.description}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground text-sm font-light">暂无议程信息</div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* 产品 Tab */}
-              <TabsContent value="products" className="mt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {products.map((product: any) => (
-                    <Card key={product.id} className="bg-[#0f0f0f] border-[#262626] overflow-hidden hover:border-[#363636] transition-colors group cursor-pointer">
-                      <div className="aspect-[4/3] overflow-hidden bg-[#1a1a1a]">
-                        <img
-                          src={product.image || product.images?.[0]}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80"; }}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h4 className="text-sm font-medium text-white leading-snug">{product.name}</h4>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                            <span className="text-xs text-muted-foreground">{product.rating || "4.8"}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-violet-400 font-medium text-sm">{product.price || product.priceRange}</div>
-                            <div className="text-xs text-muted-foreground font-light">MOQ: {product.moq || product.minOrderQty || "100 pcs"}</div>
-                          </div>
-                          <Button size="sm" variant="outline" className="text-xs h-7 border-[#262626] hover:border-violet-500/50 hover:text-violet-400">
-                            <ShoppingBag className="w-3 h-3 mr-1" />询价
-                          </Button>
-                        </div>
-                        {(product.factory || product.factoryName) && (
-                          <div className="mt-2 pt-2 border-t border-[#262626] flex items-center gap-1.5">
-                            <Building2 className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground font-light">{product.factory || product.factoryName}</span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              {/* 工厂 Tab */}
-              <TabsContent value="factories" className="mt-4">
-                <div className="space-y-3">
-                  {(factories || []).map((factory: any) => (
-                    <Card key={factory.id} className="bg-[#0f0f0f] border-[#262626] hover:border-[#363636] transition-colors cursor-pointer group">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-[#262626] flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-white">{factory.name}</span>
-                              {factory.verified && <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground font-light">
-                              {factory.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{factory.location}</span>}
-                              {factory.rating && <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />{factory.rating}</span>}
-                              {factory.products && <span className="flex items-center gap-1"><Package className="w-3 h-3" />{factory.products} 产品</span>}
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors shrink-0" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* ── 右侧边栏 */}
-          <div className="space-y-4">
-
-            {/* 倒计时卡片 */}
-            {isScheduled && !isExpired && (
-              <Card className="bg-[#0f0f0f] border-[#262626] overflow-hidden">
-                <div className="h-1 bg-gradient-to-r from-violet-600 to-blue-500" />
-                <CardContent className="p-5">
-                  <div className="text-xs text-muted-foreground font-light mb-3 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />距离开始
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <CountdownBlock value={timeLeft.days} label="天" />
-                    <span className="text-2xl text-muted-foreground font-light mb-4">:</span>
-                    <CountdownBlock value={timeLeft.hours} label="时" />
-                    <span className="text-2xl text-muted-foreground font-light mb-4">:</span>
-                    <CountdownBlock value={timeLeft.minutes} label="分" />
-                    <span className="text-2xl text-muted-foreground font-light mb-4">:</span>
-                    <CountdownBlock value={timeLeft.seconds} label="秒" />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 直播中提示卡片 */}
-            {isLive && (
-              <Card className="bg-[#0f0f0f] border-red-500/30 overflow-hidden">
-                <div className="h-1 bg-gradient-to-r from-red-600 to-orange-500" />
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-sm font-medium text-red-400">正在直播</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground font-light mb-4">
-                    直播已开始，立即进入观看实时产品展示与互动问答
-                  </p>
-                  <Button
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-light"
-                    onClick={() => setLocation(`/webinars/${webinarId}/live`)}
-                  >
-                    <Radio className="w-4 h-4 mr-2" />进入直播间
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 注册/报名卡片 */}
-            <Card className="bg-[#0f0f0f] border-[#262626]">
-              <CardContent className="p-5 space-y-4">
-                {/* 人数进度 */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground font-light">参与人数</span>
-                    <span className="text-xs text-white font-light">
-                      {webinar.currentParticipants || 0} / {webinar.maxParticipants || "∞"}
-                    </span>
-                  </div>
-                  {webinar.maxParticipants && <Progress value={capacityPct} className="h-1.5 bg-[#262626]" />}
-                  {capacityPct >= 80 && (
-                    <p className="text-xs text-orange-400 font-light mt-1.5 flex items-center gap-1">
-                      <Info className="w-3 h-3" />名额即将满员
-                    </p>
+                    </div>
                   )}
-                </div>
-                <Separator className="bg-[#262626]" />
-                {/* 时间信息 */}
-                {scheduledDate && (
-                  <div className="space-y-2 text-sm font-light">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5 shrink-0" />
-                      <span>{format(scheduledDate, "yyyy年M月d日 EEEE", { locale: zhCN })}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
-                      <span>{format(scheduledDate, "HH:mm")} · {webinar.duration || 60} 分钟</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Globe className="w-3.5 h-3.5 shrink-0" />
-                      <span>中国标准时间 (CST)</span>
-                    </div>
-                  </div>
-                )}
-                <Separator className="bg-[#262626]" />
-                {/* 操作按钮 */}
-                {!isCompleted ? (
-                  isRegistered ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
-                        <span className="text-sm text-green-400 font-light">已成功报名</span>
+
+                  {webinar.targetAudience.length > 0 && (
+                    <div className="p-5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl">
+                      <h3 className="text-sm font-medium text-white mb-3">适合人群</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {webinar.targetAudience.map((a, i) => (
+                          <span key={i} className="text-xs text-gray-300 bg-[#1a1a1a] border border-[#2a2a2a] px-3 py-1.5 rounded-full font-light">
+                            {a}
+                          </span>
+                        ))}
                       </div>
-                      {isLive && (
-                        <Button
-                          className="w-full bg-violet-600 hover:bg-violet-700 text-white font-light"
-                          onClick={() => setLocation(`/webinars/${webinarId}/live`)}
-                        >
-                          <Video className="w-4 h-4 mr-2" />进入直播间
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        className="w-full border-[#262626] text-muted-foreground hover:text-white font-light text-sm"
-                        onClick={handleRegister}
-                        disabled={isRegistering}
-                      >
-                        取消报名
-                      </Button>
+                    </div>
+                  )}
+
+                  {webinar.coHosts.length > 0 && (
+                    <div className="p-5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl">
+                      <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                        <Award className="w-4 h-4 text-violet-400" />
+                        联合主持
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
+                        {webinar.coHosts.map((host, i) => (
+                          <div key={i} className="flex items-center gap-2.5 p-3 bg-[#1a1a1a] border border-[#1e1e1e] rounded-xl">
+                            <Avatar className="w-9 h-9">
+                              <AvatarImage src={host.avatar} />
+                              <AvatarFallback className="bg-violet-500/20 text-violet-300 text-xs">{host.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="text-xs font-medium text-white">{host.name}</div>
+                              <div className="text-[10px] text-gray-500 font-light">{host.title}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* ── Agenda ── */}
+                <TabsContent value="agenda">
+                  {webinar.agenda.length === 0 ? (
+                    <div className="text-center py-16 text-gray-500 font-light text-sm">
+                      <MessageSquare className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+                      议程暂未公布
                     </div>
                   ) : (
-                    <Button
-                      className="w-full bg-violet-600 hover:bg-violet-700 text-white font-light"
-                      onClick={handleRegister}
-                      disabled={isRegistering}
-                    >
-                      {isRegistering ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                      )}
-                      {isLive ? "立即参与" : "免费报名"}
-                    </Button>
-                  )
-                ) : (
-                  <Button variant="outline" className="w-full border-[#262626] text-muted-foreground font-light">
-                    <Play className="w-4 h-4 mr-2" />查看回放
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 活动数据统计 */}
-            <Card className="bg-[#0f0f0f] border-[#262626]">
-              <CardContent className="p-5">
-                <h3 className="text-xs text-muted-foreground font-light mb-3 uppercase tracking-wider">活动数据</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: Users, label: "已报名", value: webinar.currentParticipants || 342 },
-                    { icon: Package, label: "展示产品", value: products.length || 4 },
-                    { icon: Building2, label: "参展工厂", value: factories?.length || 3 },
-                    { icon: MessageSquare, label: "互动问答", value: "实时" },
-                  ].map(({ icon: Icon, label, value }) => (
-                    <div key={label} className="p-3 rounded-lg bg-[#1a1a1a] border border-[#262626]">
-                      <Icon className="w-4 h-4 text-muted-foreground mb-1.5" />
-                      <div className="text-white font-light text-sm">{value}</div>
-                      <div className="text-[10px] text-muted-foreground font-light">{label}</div>
+                    <div className="space-y-0">
+                      {webinar.agenda.map((item, index) => (
+                        <AgendaItem key={item.id} item={item} index={index} total={webinar.agenda.length} />
+                      ))}
                     </div>
-                  ))}
+                  )}
+                </TabsContent>
+
+                {/* ── Products ── */}
+                <TabsContent value="products">
+                  {webinar.products.length === 0 ? (
+                    <div className="text-center py-16 text-gray-500 font-light text-sm">
+                      <Package className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+                      产品信息暂未公布
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {webinar.products.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* ── Factories ── */}
+                <TabsContent value="factories">
+                  {webinar.factories.length === 0 ? (
+                    <div className="text-center py-16 text-gray-500 font-light text-sm">
+                      <Building2 className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+                      工厂信息暂未公布
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {webinar.factories.map((factory) => (
+                        <FactoryCard key={factory.id} factory={factory} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* ── Right: Registration Sidebar ─────────────────────── */}
+            <div className="w-full lg:w-80 flex-shrink-0">
+              <div className="sticky top-6 space-y-4">
+
+                {/* Main CTA Card */}
+                <div className="bg-[#0f0f0f] border border-[#1e1e1e] rounded-2xl overflow-hidden">
+                  {/* Status header */}
+                  <div className={cn(
+                    "px-5 py-3 text-center text-sm font-light border-b",
+                    isLive ? "bg-red-500/10 border-red-500/20 text-red-400" :
+                    isScheduled ? "bg-violet-500/10 border-violet-500/20 text-violet-400" :
+                    "bg-[#1a1a1a] border-[#2a2a2a] text-gray-400"
+                  )}>
+                    {isLive ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                        直播进行中
+                      </span>
+                    ) : isScheduled ? "即将开始" : isCompleted ? "已结束，回放可看" : "草稿"}
+                  </div>
+
+                  <div className="p-5 space-y-4">
+                    {/* Registration progress */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-gray-400 font-light">
+                          <span className="text-white font-medium text-lg">{webinar.registeredCount}</span>
+                          <span className="text-gray-600"> / {webinar.maxParticipants} 已报名</span>
+                        </span>
+                        <span className={cn(
+                          "font-medium text-sm",
+                          fillRate >= 80 ? "text-red-400" : fillRate >= 50 ? "text-amber-400" : "text-gray-400"
+                        )}>
+                          {fillRate}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={fillRate}
+                        className={cn(
+                          "h-1.5",
+                          fillRate >= 80 ? "[&>div]:bg-red-500" : fillRate >= 50 ? "[&>div]:bg-amber-500" : "[&>div]:bg-violet-500"
+                        )}
+                      />
+                      {fillRate >= 80 && (
+                        <p className="text-[10px] text-red-400 font-medium mt-1.5 flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          名额即将满员，请尽快报名
+                        </p>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    {isLive ? (
+                      <Button
+                        onClick={() => setLocation(`/webinars/${webinarId}/live`)}
+                        className="w-full bg-red-500 hover:bg-red-400 text-white font-light gap-2 shadow-lg shadow-red-500/20"
+                        size="lg"
+                      >
+                        <Radio className="w-4 h-4 animate-pulse" />
+                        立即进入直播间
+                      </Button>
+                    ) : isCompleted ? (
+                      <Button
+                        onClick={() => setLocation(`/webinars/${webinarId}/live`)}
+                        variant="outline"
+                        className="w-full border-[#2a2a2a] text-gray-300 hover:text-white font-light gap-2"
+                        size="lg"
+                      >
+                        <Play className="w-4 h-4" />
+                        观看回放
+                      </Button>
+                    ) : isRegistered ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                          <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                          <span className="text-sm text-green-400 font-light">已成功报名</span>
+                        </div>
+                        <Button
+                          onClick={handleRegister}
+                          disabled={isRegistering}
+                          variant="outline"
+                          className="w-full border-[#2a2a2a] text-gray-400 hover:text-white font-light text-xs"
+                        >
+                          {isRegistering ? "处理中..." : "取消报名"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={handleRegister}
+                        disabled={isRegistering || fillRate >= 100}
+                        className="w-full bg-violet-600 hover:bg-violet-500 text-white font-light gap-2 shadow-lg shadow-violet-500/20"
+                        size="lg"
+                      >
+                        {isRegistering ? (
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : fillRate >= 100 ? (
+                          "名额已满"
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            免费报名
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    {/* Meta */}
+                    <div className="space-y-2.5 pt-2 border-t border-[#1e1e1e]">
+                      {scheduledDate && (
+                        <div className="flex items-center gap-2 text-xs">
+                          <Calendar className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" />
+                          <span className="text-gray-500 font-light w-10">时间</span>
+                          <span className="text-gray-300 font-light">
+                            {format(scheduledDate, "M月d日 HH:mm", { locale: zhCN })}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-xs">
+                        <Clock className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                        <span className="text-gray-500 font-light w-10">时长</span>
+                        <span className="text-gray-300 font-light">{webinar.duration} 分钟</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <Globe className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                        <span className="text-gray-500 font-light w-10">语言</span>
+                        <span className="text-gray-300 font-light">{webinar.language}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <Video className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                        <span className="text-gray-500 font-light w-10">形式</span>
+                        <span className="text-gray-300 font-light">在线直播</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Host card */}
+                <div className="bg-[#0f0f0f] border border-[#1e1e1e] rounded-2xl p-4">
+                  <h3 className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider">主持人</h3>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-11 h-11">
+                      <AvatarImage src={webinar.hostAvatar} />
+                      <AvatarFallback className="bg-violet-500/20 text-violet-300">{webinar.hostName[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="text-sm font-medium text-white">{webinar.hostName}</div>
+                      <div className="text-xs text-gray-500 font-light">{webinar.hostTitle}</div>
+                      <div className="text-xs text-gray-600 font-light">{webinar.hostCompany}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content stats */}
+                {(webinar.products.length > 0 || webinar.factories.length > 0 || webinar.agenda.length > 0) && (
+                  <div className="bg-[#0f0f0f] border border-[#1e1e1e] rounded-2xl p-4">
+                    <h3 className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wider">展示内容</h3>
+                    <div className="space-y-2.5">
+                      {webinar.products.length > 0 && (
+                        <button
+                          onClick={() => setActiveTab("products")}
+                          className="w-full flex items-center justify-between hover:bg-[#1a1a1a] rounded-lg p-2 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <Package className="w-3.5 h-3.5 text-violet-400" />
+                            <span className="font-light">展示产品</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-white font-medium">{webinar.products.length} 款</span>
+                            <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-gray-400" />
+                          </div>
+                        </button>
+                      )}
+                      {webinar.factories.length > 0 && (
+                        <button
+                          onClick={() => setActiveTab("factories")}
+                          className="w-full flex items-center justify-between hover:bg-[#1a1a1a] rounded-lg p-2 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                            <span className="font-light">参与工厂</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-white font-medium">{webinar.factories.length} 家</span>
+                            <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-gray-400" />
+                          </div>
+                        </button>
+                      )}
+                      {webinar.agenda.length > 0 && (
+                        <button
+                          onClick={() => setActiveTab("agenda")}
+                          className="w-full flex items-center justify-between hover:bg-[#1a1a1a] rounded-lg p-2 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <MessageSquare className="w-3.5 h-3.5 text-green-400" />
+                            <span className="font-light">议程环节</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-white font-medium">{webinar.agenda.length} 个</span>
+                            <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-gray-400" />
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
