@@ -119,16 +119,19 @@ export default function WebinarDetail() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const { data: apiWebinar, isLoading } = trpc.webinar.getById.useQuery(
-    { id: webinarId }, { enabled: !!webinarId, retry: 1 }
+  // 从 listAll 中查找对应 webinar（兼容旧版服务器，无需 getById）
+  const { data: listData, isLoading } = trpc.webinar.listAll.useQuery(
+    { limit: 200 },
+    { enabled: !!webinarId, retry: 1, staleTime: 30000 }
   );
-  const { data: apiProducts } = trpc.webinarProduct.listByWebinar.useQuery(
-    { webinarId, includeDetails: true }, { enabled: !!webinarId, retry: 1 }
-  );
+  const apiWebinar = useMemo(() => {
+    if (!listData?.items) return null;
+    return (listData.items as any[]).find((w: any) => w.id === webinarId) || null;
+  }, [listData, webinarId]);
 
   // API 数据优先，失败时使用 mock
   const webinar = useMemo(() => apiWebinar || MOCK_WEBINAR, [apiWebinar]);
-  const products = useMemo(() => (apiProducts && (apiProducts as any[]).length > 0 ? apiProducts as any[] : MOCK_PRODUCTS), [apiProducts]);
+  const products = useMemo(() => MOCK_PRODUCTS, []);
 
   const scheduledDate = webinar?.scheduledAt ? new Date(webinar.scheduledAt) : null;
   const { timeLeft, isExpired } = useCountdown(webinar?.status === "scheduled" ? scheduledDate : null);
