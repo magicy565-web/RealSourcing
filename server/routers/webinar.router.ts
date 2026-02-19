@@ -365,4 +365,142 @@ export const webinarRouter = router({
 
       return { message: "Webinar 删除成功" };
     }),
+
+  // ─── 用户报名 Webinar ────────────────────────────────────────────────────
+  register: protectedProcedure
+    .input(z.object({ webinarId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库连接失败" });
+
+      // 检查 Webinar 是否存在
+      const webinar = await db
+        .select()
+        .from(webinars)
+        .where(eq(webinars.id, input.webinarId))
+        .limit(1);
+      if (!webinar.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Webinar 不存在" });
+      }
+      if (webinar[0].status === "completed" || webinar[0].status === "cancelled") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "该 Webinar 已结束，无法报名" });
+      }
+
+      // 检查是否已报名
+      const existing = await db
+        .select()
+        .from(webinarParticipants)
+        .where(
+          and(
+            eq(webinarParticipants.webinarId, input.webinarId),
+            eq(webinarParticipants.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        if (existing[0].status === "declined") {
+          // 重新激活
+          await db
+            .update(webinarParticipants)
+            .set({ status: "accepted", invitedAt: new Date() })
+            .where(eq(webinarParticipants.id, existing[0].id));
+          return { success: true, message: "报名成功" };
+        }
+        throw new TRPCError({ code: "CONFLICT", message: "您已报名此 Webinar" });
+      }
+
+      // 检查人数上限
+      if (webinar[0].maxParticipants) {
+        const count = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(webinarParticipants)
+          .where(
+            and(
+              eq(webinarParticipants.webinarId, input.webinarId),
+              sql`${webinarParticipants.status} IN ('accepted', 'joined')`
+            )
+          );
+        if (count[0].count >= webinar[0].maxParticipants) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "该 Webinar 已满员" });
+        }
+      }
+
+      // 插入报名记录
+      await db.insert(webinarParticipants).values({
+        webinarId: input.webinarId,
+        userId: ctx.user.id,
+        role: "participant",
+        status: "accepted",
+        invitedAt: new Date(),
+      });
+
+      // 更新 currentParticipants 计数
+      await db
+        .update(webinars)
+        .set({ currentParticipants: sql`${webinars.currentParticipants} + 1` })
+        .where(eq(webinars.id, input.webinarId));
+
+      return { success: true, message: "报名成功" };
+    }),
+
+  // ─── 用户取消报名 Webinar ─────────────────────────────────────────────────
+  unregister: protectedProcedure
+    .input(z.object({ webinarId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库连接失败" });
+
+      const existing = await db
+        .select()
+        .from(webinarParticipants)
+        .where(
+          and(
+            eq(webinarParticipants.webinarId, input.webinarId),
+            eq(webinarParticipants.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      if (!existing.length || existing[0].status === "declined") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "您尚未报名此 Webinar" });
+      }
+
+      await db
+        .update(webinarParticipants)
+        .set({ status: "declined" })
+        .where(eq(webinarParticipants.id, existing[0].id));
+
+      await db
+        .update(webinars)
+        .set({ currentParticipants: sql`GREATEST(0, ${webinars.currentParticipants} - 1)` })
+        .where(eq(webinars.id, input.webinarId));
+
+      return { success: true, message: "已取消报名" };
+    }),
+
+  // ─── 检查用户是否已报名 ───────────────────────────────────────────────────
+  checkRegistration: protectedProcedure
+    .input(z.object({ webinarId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库连接失败" });
+
+      const existing = await db
+        .select()
+        .from(webinarParticipants)
+        .where(
+          and(
+            eq(webinarParticipants.webinarId, input.webinarId),
+            eq(webinarParticipants.userId, ctx.user.id),
+            sql`${webinarParticipants.status} IN ('accepted', 'joined')`
+          )
+        )
+        .limit(1);
+
+      return {
+        isRegistered: existing.length > 0,
+        participant: existing[0] || null,
+      };
+    }),
 });
