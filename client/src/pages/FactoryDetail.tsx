@@ -312,7 +312,7 @@ export default function FactoryDetail() {
                   <CardContent className="pt-6">
                     <h3 className="text-lg font-semibold mb-4">Score Analysis</h3>
                     <ScoreRadarChart 
-                      data={{
+                      scores={{
                         quality: 90,
                         delivery: 85,
                         communication: 88,
