@@ -6,7 +6,7 @@
 
 ### 1. API 配置
 ```
-VITE_API_URL=http://47.99.205.136:3001/api/trpc
+VITE_API_URL=https://api.cnsubscribe.xyz/api/trpc
 ```
 
 ### 2. 数据库配置（如果 Vercel 需要后端）
@@ -84,37 +84,10 @@ vercel --prod
 
 ## ⚠️ 重要提示
 
-### 1. HTTPS 混合内容问题
-由于 Vercel 部署是 HTTPS（`https://real-sourcing.vercel.app`），而后端 API 是 HTTP（`http://47.99.205.136:3001`），浏览器会阻止请求。
+### 1. HTTPS 配置 ✅
+后端 API 已配置 HTTPS（`https://api.cnsubscribe.xyz`），使用 Let's Encrypt 证书，通过 Nginx 反向代理到 3001 端口。不存在混合内容问题。
 
-**解决方案**：
-- **临时方案**: 在浏览器中允许不安全内容（不推荐生产环境）
-- **永久方案**: 为阿里云服务器配置 HTTPS（推荐）
 
-#### 为阿里云服务器配置 HTTPS（推荐）
-
-1. **购买域名**（如果还没有）
-2. **申请 SSL 证书**（可使用免费的 Let's Encrypt）
-3. **配置 Nginx 反向代理**：
-   ```nginx
-   server {
-       listen 443 ssl;
-       server_name api.yourdomain.com;
-       
-       ssl_certificate /path/to/cert.pem;
-       ssl_certificate_key /path/to/key.pem;
-       
-       location / {
-           proxy_pass http://localhost:3001;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-       }
-   }
-   ```
-4. **更新 Vercel 环境变量**：
-   ```
-   VITE_API_URL=https://api.yourdomain.com/api/trpc
-   ```
 
 ### 2. CORS 配置
 确保后端 API 允许来自 Vercel 域名的跨域请求。
@@ -138,12 +111,12 @@ Vercel 部署不再依赖 Directus CMS，所有数据通过 tRPC API 获取。
 
 1. **检查 API URL**：
    ```
-   📡 API URL: http://47.99.205.136:3001/api/trpc
+   📡 API URL: https://api.cnsubscribe.xyz/api/trpc
    ```
 
 2. **检查网络请求**：
-   - 应该向 `http://47.99.205.136:3001/api/trpc/...` 发送请求
-   - 不应该再有 `api.cnsubscribe.xyz` 或 `admin.cnsubscribe.xyz` 的请求
+   - 应该向 `https://api.cnsubscribe.xyz/api/trpc/...` 发送请求
+   - 不应该再有 `admin.cnsubscribe.xyz` 的请求
 
 3. **测试功能**：
    - 访问 `/webinars` 页面，应该能看到 Webinar 列表
