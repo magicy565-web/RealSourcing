@@ -74,7 +74,7 @@ function Router() {
       <Route path="/webinars/:id" component={WebinarDetail} />
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
       <Route path="/factories" component={FactoriesOptimized} />
-      <Route path="/factories/:id" component={FactoryDetailOptimized} />
+      <Route path="/factories/:id" component={FactoryDetailWebinarCentric} />
       <Route path="/reports" component={Reports} />
       <Route path="/reports/:id">{(params) => <ReportView params={params} />}</Route>
       <Route path="/settings" component={Settings} />
