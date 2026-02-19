@@ -25,6 +25,7 @@ import NegotiationRoom from "./pages/NegotiationRoom";
 import WebinarLiveRoom from "./pages/WebinarLiveRoom";
 import Factories from "./pages/Factories";
 import FactoriesNew from "./pages/FactoriesNew";
+import FactoriesOptimized from "./pages/FactoriesOptimized";
 import FactoryDetail from "./pages/FactoryDetail";
 import Reports from "./pages/Reports";
 import ReportView from "./pages/ReportView";
@@ -69,7 +70,7 @@ function Router() {
       <Route path="/admin/products/:id/edit" component={AdminProductForm} />
       <Route path="/webinars/:id">{(params) => <WebinarDetailEnhanced params={params} />}</Route>
       <Route path="/webinars/:id/replay" component={WebinarReplay} />
-      <Route path="/factories" component={FactoriesNew} />
+      <Route path="/factories" component={FactoriesOptimized} />
       <Route path="/factories/:id" component={FactoryDetail} />
       <Route path="/reports" component={Reports} />
       <Route path="/reports/:id">{(params) => <ReportView params={params} />}</Route>
