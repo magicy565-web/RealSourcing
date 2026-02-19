@@ -133,7 +133,7 @@ export const factoryRouter = router({
   /**
    * 获取工厂图片
    */
-  getImages: protectedProcedure
+  getImages: publicProcedure
     .input(z.object({
       factoryId: z.number(),
     }))
@@ -235,7 +235,7 @@ export const factoryRouter = router({
   /**
    * 获取工厂认证列表
    */
-  getCertifications: protectedProcedure
+  getCertifications: publicProcedure
     .input(z.object({
       factoryId: z.number(),
     }))
@@ -300,7 +300,7 @@ export const factoryRouter = router({
   /**
    * 获取工厂产品列表
    */
-  getProducts: protectedProcedure
+  getProducts: publicProcedure
     .input(z.object({
       factoryId: z.number(),
       status: z.enum(["draft", "published", "archived"]).optional(),
@@ -312,7 +312,7 @@ export const factoryRouter = router({
   /**
    * 获取产品详情
    */
-  getProductById: protectedProcedure
+  getProductById: publicProcedure
     .input(z.object({
       id: z.number(),
     }))
@@ -402,7 +402,7 @@ export const factoryRouter = router({
   /**
    * 获取工厂评价列表
    */
-  getReviews: protectedProcedure
+  getReviews: publicProcedure
     .input(z.object({
       factoryId: z.number(),
       status: z.enum(["pending", "published", "hidden"]).optional(),
