@@ -30,6 +30,7 @@ import { ImageLightbox } from "../components/ImageLightbox";
 import { trpc } from "../lib/trpc";
 import { Skeleton } from "../components/ui/skeleton";
 import { toast } from "sonner";
+import FactoryProductCard from "../components/FactoryProductCard";
 
 export default function FactoryDetail() {
   const [, setLocation] = useLocation();
@@ -42,6 +43,12 @@ export default function FactoryDetail() {
   // 使用 tRPC 获取真实工厂详情
   const { data: factory, isLoading, error } = trpc.factory.getById.useQuery(
     { id: factoryId },
+    { enabled: !!factoryId }
+  );
+
+  // 获取工厂产品列表
+  const { data: products, isLoading: productsLoading } = trpc.product.listByFactory.useQuery(
+    { factoryId, includeViralScore: true },
     { enabled: !!factoryId }
   );
 
@@ -327,11 +334,52 @@ export default function FactoryDetail() {
           </TabsContent>
           
           <TabsContent value="products">
-             <Card>
-               <CardContent className="pt-12 pb-12 text-center">
-                 <p className="text-muted-foreground">Product catalog integration coming soon.</p>
-               </CardContent>
-             </Card>
+            {productsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <Card key={i}>
+                    <Skeleton className="aspect-video w-full" />
+                    <CardContent className="p-4 space-y-3">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : products && products.length > 0 ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">产品目录</h3>
+                    <p className="text-sm text-muted-foreground">
+                      共 {products.length} 个产品，已集成 AI 爆款评分
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    AI 智能评分
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map((product: any) => (
+                    <FactoryProductCard
+                      key={product.id}
+                      product={product}
+                      onClick={() => {
+                        toast.info(`产品详情页面开发中: ${product.name}`);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="pt-12 pb-12 text-center">
+                  <p className="text-muted-foreground">该工厂暂无产品信息</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="history">
