@@ -18,8 +18,8 @@ export const API_CONFIG = {
  * Directus CMS 配置
  */
 export const DIRECTUS_CONFIG = {
-  url: import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz',
-  assetsUrl: `${import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz'}/assets`,
+  url: import.meta.env.VITE_DIRECTUS_URL || '',
+  assetsUrl: `${import.meta.env.VITE_DIRECTUS_URL || ''}/assets`,
 };
 
 /**

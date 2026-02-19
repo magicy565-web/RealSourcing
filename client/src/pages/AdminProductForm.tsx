@@ -103,7 +103,7 @@ export default function AdminProductForm() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await fetch('https://admin.cnsubscribe.xyz/items/suppliers?sort=name');
+      const response = await fetch('/items/suppliers?sort=name');
       const data = await response.json();
       setSuppliers(data.data || []);
     } catch (error) {
@@ -114,7 +114,7 @@ export default function AdminProductForm() {
   const fetchProduct = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`https://admin.cnsubscribe.xyz/items/products/${id}`);
+      const response = await fetch(`/items/products/${id}`);
       const data = await response.json();
       setFormData({
         ...data.data,
@@ -134,8 +134,8 @@ export default function AdminProductForm() {
 
     try {
       const url = isEdit
-        ? `https://admin.cnsubscribe.xyz/items/products/${id}`
-        : 'https://admin.cnsubscribe.xyz/items/products';
+        ? `/items/products/${id}`
+        : '/items/products';
       
       const method = isEdit ? 'PATCH' : 'POST';
 

@@ -50,7 +50,7 @@ export default function AdminWebinarForm() {
   const fetchWebinar = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`https://admin.cnsubscribe.xyz/items/webinars/${id}`);
+      const response = await fetch(`/items/webinars/${id}`);
       const data = await response.json();
       setFormData({
         ...data.data,
@@ -69,8 +69,8 @@ export default function AdminWebinarForm() {
 
     try {
       const url = isEdit
-        ? `https://admin.cnsubscribe.xyz/items/webinars/${id}`
-        : 'https://admin.cnsubscribe.xyz/items/webinars';
+        ? `/items/webinars/${id}`
+        : '/items/webinars';
       
       const method = isEdit ? 'PATCH' : 'POST';
 

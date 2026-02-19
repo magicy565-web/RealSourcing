@@ -54,10 +54,10 @@ export default function WebinarCreate() {
   });
 
   // 获取用户的时长限制
-  const { data: durationLimit, isLoading: loadingLimit } = trpc.webinarEnhanced.getDurationLimit.useQuery();
+  const { data: durationLimit, isLoading: loadingLimit } = trpc.webinar.getDurationLimit.useQuery();
   
   // 创建 Webinar mutation
-  const createWebinar = trpc.webinarEnhanced.create.useMutation({
+  const createWebinar = trpc.webinar.create.useMutation({
     onSuccess: (data) => {
       toast({
         title: "创建成功",

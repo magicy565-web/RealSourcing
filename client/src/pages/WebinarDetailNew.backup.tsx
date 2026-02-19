@@ -81,9 +81,9 @@ export default function WebinarDetailNew({ params }: WebinarDetailProps) {
     if (!coverImage) return null;
     if (coverImage.startsWith("http")) return coverImage;
     if (coverImage.startsWith("/")) {
-      return `https://admin.cnsubscribe.xyz/assets${coverImage}`;
+      return `/assets${coverImage}`;
     }
-    return `https://admin.cnsubscribe.xyz/assets/${coverImage}`;
+    return `/assets/${coverImage}`;
   };
 
   const getStatusBadge = (status: string) => {

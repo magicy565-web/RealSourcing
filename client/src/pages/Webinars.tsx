@@ -16,7 +16,7 @@ export default function Webinars() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // 使用 tRPC 获取 Webinar 列表
-  const { data: webinarsData, isLoading, error } = trpc.webinarEnhanced.listAll.useQuery({
+  const { data: webinarsData, isLoading, error } = trpc.webinar.listAll.useQuery({
     limit: 100,
   });
 

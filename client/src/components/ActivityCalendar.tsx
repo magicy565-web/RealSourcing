@@ -162,7 +162,7 @@ export default function ActivityCalendar({ employees, days = 14 }: ActivityCalen
                     {webinar.coverImage ? (
                       <div className="w-6 h-6 rounded flex-shrink-0 overflow-hidden bg-black/20">
                         <img
-                          src={`https://admin.cnsubscribe.xyz/assets/${webinar.coverImage}`}
+                          src={`/assets/${webinar.coverImage}`}
                           alt=""
                           className="w-full h-full object-cover"
                         />

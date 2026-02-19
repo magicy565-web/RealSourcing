@@ -4,7 +4,7 @@
  */
 
 // Directus API配置
-export const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL || 'https://admin.cnsubscribe.xyz';
+export const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL || '';
 
 // OSS配置
 export const OSS_BASE_URL = import.meta.env.VITE_OSS_BASE_URL || 'https://demand-os-discord.oss-cn-hangzhou.aliyuncs.com';

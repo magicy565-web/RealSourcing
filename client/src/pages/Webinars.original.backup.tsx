@@ -38,7 +38,7 @@ export default function Webinars() {
       setIsLoading(true);
       try {
         // 直接使用 Nginx 反向代理的 HTTPS 域名，绕过 Vercel Proxy 的网络问题
-        const url = "https://admin.cnsubscribe.xyz/items/webinars?limit=100";
+        const url = "/items/webinars?limit=100";
 
         const response = await fetch(url, {
           method: "GET",
@@ -274,7 +274,7 @@ export default function Webinars() {
                       <img
                         src={
                           webinar.coverImageUrl || 
-                          `https://admin.cnsubscribe.xyz/assets/${webinar.coverImage || webinar.cover_image}`
+                          `/assets/${webinar.coverImage || webinar.cover_image}`
                         }
                         alt={webinar.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
