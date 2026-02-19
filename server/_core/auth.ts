@@ -7,7 +7,7 @@ export async function signToken(payload: { openId: string; name?: string }): Pro
   // signSession returns a Promise<string>, so we need to await it
   return await (sdk as any).signSession({
     openId: payload.openId,
-    appId: (process.env as any).APP_ID || 'realsourcing',
+    appId: sdk.appId,
     name: payload.name || 'User'
   });
 }
