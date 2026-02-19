@@ -65,9 +65,9 @@ export default function WebinarLiveRoom() {
   const webinarId = parseInt(params?.id || "0");
 
   // Fetch webinar data
-  const { data: webinar, isLoading } = trpc.webinarEnhanced.getById.useQuery(
+  const { data: webinar, isLoading } = trpc.webinar.getById.useQuery(
     { id: webinarId },
-    { enabled: !!webinarId }
+    { enabled: !!webinarId, retry: 1 }
   );
 
   const { data: webinarProducts } = trpc.webinarProduct.listByWebinar.useQuery(
