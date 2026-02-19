@@ -86,6 +86,7 @@ const createOAuthHttpClient = (): AxiosInstance =>
 class SDKServer {
   private readonly client: AxiosInstance;
   private readonly oauthService: OAuthService;
+  public readonly appId: string = ENV.appId;
 
   constructor(client: AxiosInstance = createOAuthHttpClient()) {
     this.client = client;

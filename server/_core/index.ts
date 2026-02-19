@@ -9,6 +9,7 @@ import { createContext } from "./context.js";
 import { serveStatic, setupVite } from "./vite.js";
 import webhookRouter from "../webhooks.js";
 import authRouter from "../auth-routes.js";
+import googleAuthRouter from "../routes/google-auth.routes.js";
 import dashboardRouter from "../dashboard-routes.js";
 import webinarRouter from "../webinar-routes.js";
 
@@ -73,6 +74,8 @@ async function startServer() {
   app.use("/api/webhooks", webhookRouter);
   // Auth routes (register, login)
   app.use("/api/auth", authRouter);
+  // Google OAuth routes
+  app.use("/api/auth", googleAuthRouter);
   // Dashboard routes
   app.use("/api/dashboard", dashboardRouter);
   // Webinar CRUD routes
