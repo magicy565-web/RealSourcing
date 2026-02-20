@@ -5,9 +5,15 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "dev:server": "tsx server/index.ts",
     "build": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "vercel-build": "prisma generate && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
