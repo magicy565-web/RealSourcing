@@ -182,11 +182,9 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     proxy: {
-      "/api/directus": {
-        target: "https://admin.cnsubscribe.xyz",
+      "/api": {
+        target: "http://47.99.205.136:3001",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/directus/, ""),
-        secure: false,
       },
     },
   },

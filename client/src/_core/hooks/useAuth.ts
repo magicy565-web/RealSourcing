@@ -1,7 +1,6 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { api } from "../../lib/api";
 import { getLoginUrl } from "../../const";
-import { trpc } from "../../lib/trpc";
-import { TRPCClientError } from "@trpc/client";
-import { useCallback, useEffect, useMemo } from "react";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -18,76 +17,74 @@ const MOCK_USER = {
 
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
-  const utils = trpc.useUtils();
   const mockAuthEnabled = import.meta.env.VITE_MOCK_AUTH === "true";
+  
+  const [user, setUser] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Use mock user if mock auth is enabled
-  const meQuery = mockAuthEnabled
-    ? { 
-        data: MOCK_USER, 
-        isLoading: false, 
-        error: null, 
-        refetch: async () => ({ data: MOCK_USER }) 
+  const fetchUser = useCallback(async () => {
+    if (mockAuthEnabled) {
+      setUser(MOCK_USER);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.getCurrentUser();
+      if (response.error) {
+        setError(new Error(response.error));
+        setUser(null);
+      } else {
+        setUser(response.data);
+        setError(null);
       }
-    : trpc.auth.me.useQuery(undefined, {
-        retry: false,
-        refetchOnWindowFocus: false,
-      });
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch user'));
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [mockAuthEnabled]);
 
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      utils.auth.me.setData(undefined, null);
-    },
-  });
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   const logout = useCallback(async () => {
-    try {
-      if (mockAuthEnabled) {
-        return;
-      }
-      await logoutMutation.mutateAsync();
-    } catch (error: unknown) {
-      if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
-      ) {
-        return;
-      }
-      throw error;
-    } finally {
-      utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+    if (mockAuthEnabled) {
+      setUser(null);
+      return;
     }
-  }, [logoutMutation, utils, mockAuthEnabled]);
+
+    try {
+      await api.logout();
+      setUser(null);
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  }, [mockAuthEnabled]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    if (user) {
+      localStorage.setItem("manus-runtime-user-info", JSON.stringify(user));
+    }
     return {
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
-      error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
+      user,
+      loading,
+      error,
+      isAuthenticated: Boolean(user),
     };
-  }, [
-    meQuery.data,
-    meQuery.error,
-    meQuery.isLoading,
-    logoutMutation.error,
-    logoutMutation.isPending,
-  ]);
+  }, [user, loading, error]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
+    if (loading) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
-    
-    // Skip redirect in mock auth mode
     if (mockAuthEnabled) return;
-    
+
     const finalRedirectPath = redirectPath || getLoginUrl();
     if (window.location.pathname === finalRedirectPath) return;
 
@@ -95,15 +92,14 @@ export function useAuth(options?: UseAuthOptions) {
   }, [
     redirectOnUnauthenticated,
     redirectPath,
-    logoutMutation.isPending,
-    meQuery.isLoading,
+    loading,
     state.user,
     mockAuthEnabled,
   ]);
 
   return {
     ...state,
-    refresh: () => meQuery.refetch(),
+    refresh: fetchUser,
     logout,
   };
 }

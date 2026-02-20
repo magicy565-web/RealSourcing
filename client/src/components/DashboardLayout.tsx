@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
-import { trpc } from "../lib/trpc";
+// import { trpc } from "../lib/trpc"; // Removed: migrating to RESTful API
 import {
   Home,
   Video,
@@ -55,7 +55,7 @@ const secondaryNavigation = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, loading } = useAuth();
-  const logout = trpc.auth.logout.useMutation();
+  // const logout = trpc.auth.logout.useMutation(); // Removed: migrating to RESTful API
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -68,11 +68,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const handleLogout = async () => {
-    try {
-      await logout.mutateAsync();
-    } catch (e) {
-      console.log("Logout failed, redirecting anyway");
-    }
+    // TODO: Implement RESTful logout
     window.location.href = getLoginUrl();
   };
 

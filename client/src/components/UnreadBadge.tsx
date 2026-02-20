@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Badge } from "../components/ui/badge";
-import { trpc } from "../lib/trpc";
+// import { trpc } from "../lib/trpc";
 
 interface UnreadBadgeProps {
   userId: number;

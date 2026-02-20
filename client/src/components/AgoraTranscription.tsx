@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Loader2, Play, Square, RotateCcw } from 'lucide-react';
-import { trpc } from '../lib/trpc';
+// import { trpc } from '../lib/trpc';
 
 interface AgoraTranscriptionProps {
   channelName: string;

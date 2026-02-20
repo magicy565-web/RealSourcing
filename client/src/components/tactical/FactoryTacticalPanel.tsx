@@ -11,7 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Separator } from "../../components/ui/separator";
-import { trpc } from "../../lib/trpc";
+// import { trpc } from "../../lib/trpc";
 import {
   Radar,
   RadarChart,

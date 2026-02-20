@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import DashboardLayout from "../components/DashboardLayout";
-import { trpc } from "../lib/trpc";
+// import { trpc } from "../lib/trpc";
 import { cn } from "../lib/utils";
 import {
   MOCK_WEBINARS,

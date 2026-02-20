@@ -7,7 +7,7 @@ import { Badge } from "./ui/badge";
 import { Checkbox } from "./ui/checkbox";
 import { ScrollArea } from "./ui/scroll-area";
 import { Search, Package, X, Star } from "lucide-react";
-import { trpc } from "../lib/trpc";
+// import { trpc } from "../lib/trpc";
 import { useToast } from "../hooks/use-toast";
 
 interface ProductSelectorNewProps {

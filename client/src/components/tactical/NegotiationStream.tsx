@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { trpc } from "../../lib/trpc";
+// import { trpc } from "../../lib/trpc";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import {
   DollarSign,

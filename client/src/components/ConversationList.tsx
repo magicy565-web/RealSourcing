@@ -4,7 +4,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { MessageSquare, Search, Pin, BellOff, MoreVertical } from "lucide-react";
-import { trpc } from "../lib/trpc";
+// import { trpc } from "../lib/trpc";
 import { cn } from "../lib/utils";
 
 interface ConversationListProps {
