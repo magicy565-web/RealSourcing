@@ -1,413 +1,394 @@
-import DashboardLayout from "../components/DashboardLayout";
-import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { useState } from "react";
+import { useRoute, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft,
-  Building2,
-  MapPin,
-  Star,
-  Calendar,
-  TrendingUp,
-  Users,
-  CheckCircle2,
-  Heart,
-  Share2,
-  Globe,
-  Phone,
-  Mail,
-  Award,
-  Shield,
-  Clock
+  ArrowLeft, MapPin, Star, Building2, Heart, Share2, MoreVertical,
+  Phone, Mail, Clock, Users, Calendar, Award, ExternalLink, Video
 } from "lucide-react";
-import { useLocation, useRoute } from "wouter";
-import { useEffect, useState } from "react";
-import { cn } from "../lib/utils";
-import ScoreRadarChart from "../components/ScoreRadarChart";
-import AIAnalysisCard from "../components/AIAnalysisCard";
-import { ImageLightbox } from "../components/ImageLightbox";
-import { trpc } from "../lib/trpc";
-import { Skeleton } from "../components/ui/skeleton";
+import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "sonner";
-import FactoryProductCard from "../components/FactoryProductCard";
+
+// Mock Data
+const mockFactoryDetail = {
+  id: 1,
+  name: 'Shenzhen Tech Factory',
+  location: 'Guangdong Shenzhen',
+  category: 'Consumer Electronics',
+  rating: 4.9,
+  reviews: 234,
+  established: 2008,
+  employees: '500+',
+  responseTime: '平均 2h',
+  certifications: ['CE', 'ISO9001', 'FCC', 'RoHS'],
+  heroImage: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200&h=600&fit=crop',
+  logo: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=100&h=100&fit=crop',
+  phone: '+86 123 456 7890',
+  email: 'contact@techfactory.com',
+  about: 'Shenzhen Tech Factory is a leading manufacturer specializing in high-quality consumer electronics, dedicated to innovation and reliability in every product we deliver. We combine advanced technology with precision engineering.',
+  products: [
+    {
+      id: 1,
+      name: 'ANC 3.0 Headphones',
+      priceRange: '$40-50',
+      image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&h=300&fit=crop'
+    },
+    {
+      id: 2,
+      name: 'Smart Watch Series 5',
+      priceRange: '$55-70',
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop'
+    },
+    {
+      id: 3,
+      name: 'True Wireless Earbuds',
+      priceRange: '$30-45',
+      image: 'https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=300&h=300&fit=crop'
+    },
+    {
+      id: 4,
+      name: 'Fast Wireless Charger',
+      priceRange: '$20-35',
+      image: 'https://images.unsplash.com/photo-1591290619762-d2c2e7c1e7b7?w=300&h=300&fit=crop'
+    }
+  ],
+  productionCapacity: [
+    { label: '5M Units/Year', icon: '📦' },
+    { label: 'Injection Molding', icon: '🏭' },
+    { label: '15-30 Days Lead Time', icon: '⏱️' }
+  ],
+  latestWebinars: [
+    {
+      id: 1,
+      title: '2025 Launch',
+      time: 'Tomorrow 14:00',
+      image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=150&fit=crop'
+    },
+    {
+      id: 2,
+      title: 'New Features Demo',
+      time: 'Friday 10:00',
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&h=150&fit=crop'
+    }
+  ]
+};
 
 export default function FactoryDetail() {
-  const [, setLocation] = useLocation();
   const [, params] = useRoute("/factories/:id");
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [, setLocation] = useLocation();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
-  const factoryId = parseInt(params?.id || "0");
-  
-  // 使用 tRPC 获取真实工厂详情
-  const { data: factory, isLoading, error } = trpc.factory.getById.useQuery(
-    { id: factoryId },
-    { enabled: !!factoryId }
-  );
-
-  // 获取工厂产品列表
-  const { data: products, isLoading: productsLoading } = trpc.product.listByFactory.useQuery(
-    { factoryId, includeViralScore: true },
-    { enabled: !!factoryId }
-  );
-
-  if (error) {
-    toast.error("加载工厂详情失败");
-  }
-
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-400";
-    if (score >= 80) return "text-blue-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
+  const handleStartMeeting = () => {
+    toast.success("正在启动 1:1 视频选品会议...");
   };
 
-  const getScoreBgColor = (score: number) => {
-    if (score >= 90) return "bg-green-500/10 border-green-500/30";
-    if (score >= 80) return "bg-blue-500/10 border-blue-500/30";
-    if (score >= 70) return "bg-yellow-500/10 border-yellow-500/30";
-    return "bg-red-500/10 border-red-500/30";
+  const handleSendInquiry = () => {
+    toast.success("询价表单已发送");
   };
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="p-8 space-y-6">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-64 w-full" />
-          <div className="grid grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-32 w-full" />)}
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!factory) {
-    return (
-      <DashboardLayout>
-        <div className="p-8 text-center">
-          <h2 className="text-2xl font-bold">Factory not found</h2>
-          <Button onClick={() => setLocation("/factories")} className="mt-4">
-            Back to Factories
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const score = parseFloat(factory.overallScore) || 0;
-  const certifications = Array.isArray(factory.certifications) 
-    ? factory.certifications.map((c: any) => typeof c === 'string' ? c : c.name || c.type)
-    : [];
+  const handleFollow = () => {
+    toast.success("已关注该工厂");
+  };
 
   return (
     <DashboardLayout>
-      <div className="p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/factories")} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Factories
+      {/* Hero Section */}
+      <div className="relative h-[500px] rounded-3xl overflow-hidden mb-8">
+        {/* Background Image */}
+        <img 
+          src={mockFactoryDetail.heroImage} 
+          alt={mockFactoryDetail.name}
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+        
+        {/* Top Bar */}
+        <div className="absolute top-0 left-0 right-0 p-6 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => setLocation('/factories')}
+            className="text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="mr-2" size={20} />
+            Back
           </Button>
           
-          <Card className="overflow-hidden">
-            <div className="h-32 bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-green-500/20" />
-            <CardContent className="relative -mt-16 pb-6">
-              <div className="flex items-start gap-6">
-                {/* Company Logo */}
-                <div className="w-32 h-32 rounded-2xl bg-muted flex items-center justify-center border-4 border-background shadow-xl flex-shrink-0 overflow-hidden">
-                  {factory.logo ? (
-                    <img
-                      src={factory.logo}
-                      alt={factory.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Building2 className="h-16 w-16 text-muted-foreground" />
-                  )}
-                </div>
-                
-                <div className="flex-1 mt-16">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl font-bold tracking-tight">{factory.name}</h1>
-                        <Badge variant="default" className="bg-green-500/20 text-green-400 border-green-500/30">
-                          Verified
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {factory.city}, {factory.province}
-                        </span>
-                        <span>·</span>
-                        <span>{factory.category}</span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          Est. {factory.established}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon">
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon">
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                      <Button size="lg">
-                        Invite to Webinar
-                      </Button>
-                    </div>
+          <div className="text-white text-xl font-semibold">
+            {mockFactoryDetail.name}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsFavorite(!isFavorite)}
+              className="text-white hover:bg-white/20"
+            >
+              <Heart size={20} className={isFavorite ? 'fill-red-500 text-red-500' : ''} />
+              Favorite
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20"
+            >
+              <Share2 size={20} />
+              Share
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20"
+            >
+              <MoreVertical size={20} />
+              More
+            </Button>
+          </div>
+        </div>
+        
+        {/* Bottom Content */}
+        <div className="absolute bottom-0 left-0 right-0 p-8 flex items-end justify-between">
+          {/* Factory Info Card */}
+          <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 max-w-md">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+                <Building2 className="text-white" size={32} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  {mockFactoryDetail.name}
+                </h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-300">
+                  <div className="flex items-center space-x-1">
+                    <MapPin size={14} />
+                    <span>{mockFactoryDetail.location}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Building2 size={14} />
+                    <span>{mockFactoryDetail.category}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star className="text-yellow-400 fill-yellow-400" size={14} />
+                    <span className="text-yellow-400">{mockFactoryDetail.rating}</span>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-5 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center border-2 mx-auto mb-3",
-                  getScoreBgColor(score)
-                )}>
-                  <Star className={cn("h-6 w-6", getScoreColor(score))} />
-                </div>
-                <p className={cn("text-3xl font-bold", getScoreColor(score))}>
-                  {score.toFixed(1)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">Overall Score</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Users className="h-8 w-8 mx-auto mb-3 text-blue-400" />
-                <p className="text-3xl font-bold">{factory.webinarCount || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Webinars</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <CheckCircle2 className="h-8 w-8 mx-auto mb-3 text-green-400" />
-                <p className="text-3xl font-bold">{factory.orderCount || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">Orders</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Award className="h-8 w-8 mx-auto mb-3 text-purple-400" />
-                <p className="text-3xl font-bold">{certifications.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">Certifications</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <TrendingUp className="h-8 w-8 mx-auto mb-3 text-yellow-400" />
-                <p className="text-3xl font-bold">{factory.onTimeRate || 95}%</p>
-                <p className="text-xs text-muted-foreground mt-1">On-Time Rate</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs Content */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-background border">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="history">Webinar History</TabsTrigger>
-            <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-2 space-y-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="text-lg font-semibold mb-4">About the Company</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {factory.description || "No description available for this factory."}
-                    </p>
-                    <div className="grid grid-cols-2 gap-6 mt-8">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <Users className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Employees</p>
-                            <p className="text-sm font-medium">{factory.employees || "N/A"}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <Globe className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Website</p>
-                            <p className="text-sm font-medium">{factory.website || "N/A"}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <Mail className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Email</p>
-                            <p className="text-sm font-medium">{factory.contactEmail || "N/A"}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <Phone className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Phone</p>
-                            <p className="text-sm font-medium">{factory.contactPhone || "N/A"}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="text-lg font-semibold mb-4">Certifications</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {certifications.length > 0 ? certifications.map((cert: string, idx: number) => (
-                        <Badge key={idx} variant="outline" className="px-3 py-1 gap-1.5">
-                          <Shield className="h-3 w-3 text-green-500" />
-                          {cert}
-                        </Badge>
-                      )) : (
-                        <p className="text-sm text-muted-foreground">No certifications listed.</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="text-lg font-semibold mb-4">Score Analysis</h3>
-                    <ScoreRadarChart 
-                      scores={{
-                        quality: 90,
-                        delivery: 85,
-                        communication: 88,
-                        pricing: 82,
-                        compliance: 92
-                      }} 
-                    />
-                  </CardContent>
-                </Card>
-                
-                <AIAnalysisCard 
-                  summary="AI assessment based on historical performance and verification data."
-                  strengths={["High quality consistency", "Verified certifications", "Strong webinar presence"]}
-                  risks={["Limited public financial data", "Capacity utilization not disclosed"]}
-                  recommendations={["Suitable for high-quality requirements", "Request current capacity report"]}
-                />
               </div>
             </div>
-          </TabsContent>
+            
+            <div className="text-sm text-gray-300 mb-3">Certifications</div>
+            <div className="flex items-center flex-wrap gap-2">
+              {mockFactoryDetail.certifications.map((cert) => (
+                <Badge key={cert} variant="outline" className="border-purple-500/30 text-purple-400">
+                  {cert}
+                </Badge>
+              ))}
+            </div>
+          </div>
           
-          <TabsContent value="products">
-            {productsLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <Card key={i}>
-                    <Skeleton className="aspect-video w-full" />
-                    <CardContent className="p-4 space-y-3">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-full" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : products && products.length > 0 ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold">产品目录</h3>
-                    <p className="text-sm text-muted-foreground">
-                      共 {products.length} 个产品，已集成 AI 爆款评分
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    AI 智能评分
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product: any) => (
-                    <FactoryProductCard
-                      key={product.id}
-                      product={product}
-                      onClick={() => {
-                        toast.info(`产品详情页面开发中: ${product.name}`);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="pt-12 pb-12 text-center">
-                  <p className="text-muted-foreground">该工厂暂无产品信息</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="history">
-             <Card>
-               <CardContent className="pt-12 pb-12 text-center">
-                 <p className="text-muted-foreground">Webinar history loading...</p>
-               </CardContent>
-             </Card>
-          </TabsContent>
-
-          <TabsContent value="compliance">
-             <Card>
-               <CardContent className="pt-12 pb-12 text-center">
-                 <p className="text-muted-foreground">Compliance documents and audit reports.</p>
-               </CardContent>
-             </Card>
-          </TabsContent>
-        </Tabs>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <Button
+              size="lg"
+              onClick={handleStartMeeting}
+              className="w-full bg-purple-600 hover:bg-purple-500 text-white text-lg px-8 py-6 rounded-2xl shadow-lg shadow-purple-500/50"
+            >
+              <Video className="mr-2" size={20} />
+              [Start 1:1 Meeting]
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setLocation(`/webinars?factory=${params?.id}`)}
+              className="w-full border-2 border-blue-500 text-blue-400 hover:bg-blue-500/10 text-lg px-8 py-6 rounded-2xl"
+            >
+              [Browse Webinars]
+            </Button>
+          </div>
+        </div>
       </div>
-      
-      {factory.images && factory.images.length > 0 && (
-        <ImageLightbox
-          images={factory.images}
-          open={lightboxOpen}
-          onOpenChange={setLightboxOpen}
-          defaultIndex={lightboxIndex}
-        />
-      )}
+
+      {/* Main Content - Three Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        {/* Left Sidebar - Factory Stats (20%) */}
+        <div className="lg:col-span-1">
+          <Card className="bg-[#1a1a1a]/80 border-white/10 p-6 sticky top-8">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Star className="text-yellow-400 fill-yellow-400" size={32} />
+                <span className="text-4xl font-bold text-yellow-400">{mockFactoryDetail.rating}</span>
+                <span className="text-gray-400 text-xl">/ 5.0</span>
+              </div>
+              <a href="#reviews" className="text-purple-400 hover:underline">
+                {mockFactoryDetail.reviews} Reviews
+              </a>
+            </div>
+
+            <div className="space-y-4 text-sm mb-6">
+              <div>
+                <div className="text-gray-400">Est. {mockFactoryDetail.established}</div>
+              </div>
+              <div>
+                <div className="text-white font-semibold">{mockFactoryDetail.employees}</div>
+                <div className="text-gray-400">Employees</div>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2 mb-6">
+              {mockFactoryDetail.certifications.map((cert) => (
+                <Badge key={cert} variant="outline" className="border-purple-500/30 text-purple-400">
+                  {cert}
+                </Badge>
+              ))}
+            </div>
+
+            <div className="flex items-center space-x-2 text-green-400 mb-6">
+              <Clock size={16} />
+              <span className="text-sm">{mockFactoryDetail.responseTime}</span>
+            </div>
+
+            <div className="space-y-2">
+              <Button
+                onClick={handleStartMeeting}
+                className="w-full bg-purple-600 hover:bg-purple-500 text-white"
+              >
+                Start Meeting
+              </Button>
+              <Button
+                onClick={handleSendInquiry}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+              >
+                Send Inquiry
+              </Button>
+              <Button
+                onClick={handleFollow}
+                variant="outline"
+                className="w-full border-white/20 text-white hover:bg-white/5"
+              >
+                Follow
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* Main Content (60%) */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* About Us */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 p-6">
+            <h3 className="text-2xl font-semibold text-white mb-4">About Us</h3>
+            <p className="text-gray-300 leading-relaxed">
+              {mockFactoryDetail.about}
+            </p>
+          </Card>
+
+          {/* Main Products */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 p-6">
+            <h3 className="text-2xl font-semibold text-white mb-4">Main Products</h3>
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+              <TabsList className="bg-transparent border-b border-white/10">
+                <TabsTrigger value="all" className="data-[state=active]:text-purple-400 data-[state=active]:border-b-2 data-[state=active]:border-purple-400">
+                  All
+                </TabsTrigger>
+                <TabsTrigger value="electronics" className="data-[state=active]:text-purple-400 data-[state=active]:border-b-2 data-[state=active]:border-purple-400">
+                  Consumer Electronics
+                </TabsTrigger>
+                <TabsTrigger value="accessories" className="data-[state=active]:text-purple-400 data-[state=active]:border-b-2 data-[state=active]:border-purple-400">
+                  Accessories
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="grid grid-cols-2 gap-4">
+              {mockFactoryDetail.products.map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-[#0a0a0a]/50 border border-white/5 rounded-xl p-4 hover:border-purple-500/30 transition-all"
+                >
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-32 object-cover rounded-lg mb-3"
+                  />
+                  <h4 className="text-white font-medium mb-1">{product.name}</h4>
+                  <div className="text-purple-400 font-semibold mb-2">{product.priceRange}</div>
+                  <a href="#" className="text-purple-400 text-sm hover:underline">
+                    View Details <ExternalLink size={12} className="inline ml-1" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Production Capacity */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 p-6">
+            <h3 className="text-2xl font-semibold text-white mb-4">Production Capacity</h3>
+            <div className="grid grid-cols-3 gap-4">
+              {mockFactoryDetail.productionCapacity.map((item, index) => (
+                <div
+                  key={index}
+                  className="bg-[#0a0a0a]/50 border border-purple-500/20 rounded-xl p-6 text-center"
+                >
+                  <div className="text-4xl mb-2">{item.icon}</div>
+                  <div className="text-white font-medium">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Sidebar - Contact & Webinars (20%) */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Contact Info */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+                <Building2 className="text-white" size={24} />
+              </div>
+              <div>
+                <div className="text-white font-semibold">{mockFactoryDetail.name}</div>
+                <div className="text-gray-400 text-sm">{mockFactoryDetail.location}</div>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center space-x-2 text-gray-300">
+                <Phone size={16} className="text-purple-400" />
+                <span>Phone: {mockFactoryDetail.phone}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-300">
+                <Mail size={16} className="text-purple-400" />
+                <span>Email: {mockFactoryDetail.email}</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Latest Webinar */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Latest Webinar</h3>
+            <div className="space-y-3">
+              {mockFactoryDetail.latestWebinars.map((webinar) => (
+                <div
+                  key={webinar.id}
+                  onClick={() => setLocation(`/webinars/${webinar.id}`)}
+                  className="flex items-center space-x-3 p-3 rounded-lg bg-[#0a0a0a]/50 border border-white/5 hover:border-purple-500/30 transition-all cursor-pointer"
+                >
+                  <img 
+                    src={webinar.image} 
+                    alt={webinar.title}
+                    className="w-16 h-16 rounded-lg object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white text-sm font-medium truncate">{webinar.title}</div>
+                    <div className="text-gray-400 text-xs">{webinar.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
     </DashboardLayout>
   );
 }

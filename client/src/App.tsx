@@ -12,6 +12,8 @@ import WebinarDetail from "./pages/WebinarDetail";
 import WebinarLiveRoom from "./pages/WebinarLiveRoom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Factories from "./pages/Factories";
+import FactoryDetail from "./pages/FactoryDetail";
 import CommandPalette from "./components/CommandPalette";
 
 // Simplified router with only core pages that work with mock data
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/webinars" component={Webinars} />
       <Route path="/webinars/:id" component={WebinarDetail} />
       <Route path="/webinars/:id/live" component={WebinarLiveRoom} />
+      <Route path="/factories" component={Factories} />
+      <Route path="/factories/:id" component={FactoryDetail} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,564 +1,332 @@
-import { mockStore } from "../lib/mock-data";
-import { useEffect, useState } from "react";
-import { FactoryComparison } from "../components/FactoryComparison";
-import { cn } from "../lib/utils";
+import DashboardLayout from "../components/DashboardLayout";
+import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { 
-  Search, 
-  MapPin, 
-  Star, 
-  Plus, 
-  Building2,
-  Shield,
-  ArrowRight,
-  TrendingUp,
-  CheckCircle2,
-  Calendar,
-  Award,
-  Image as ImageIcon,
-  ArrowUpDown,
-  Filter,
-  X,
-  GitCompare
-} from "lucide-react";
+import { Search, MapPin, Star, Building2, ChevronDown, Video } from "lucide-react";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
-import { trpc } from "../lib/trpc";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "../components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { useState } from "react";
 
-type SortOption = "score-desc" | "score-asc" | "orders-desc" | "orders-asc" | "ontime-desc" | "years-desc" | "name-asc";
+// Mock Data
+const mockFactories = [
+  {
+    id: 1,
+    name: '深圳科技工厂',
+    location: '广东 深圳',
+    category: '消费电子',
+    rating: 4.9,
+    reviews: 234,
+    certifications: ['CE', 'ISO9001', 'FCC'],
+    established: 2008,
+    employees: '500+',
+    responseTime: '平均 2h',
+    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=600&h=400&fit=crop',
+    liveWebinars: 2
+  },
+  {
+    id: 2,
+    name: '广州服装厂',
+    location: '广东 广州',
+    category: '服装服饰',
+    rating: 4.7,
+    reviews: 189,
+    certifications: ['ISO9001', 'BSCI'],
+    established: 2010,
+    employees: '300+',
+    responseTime: '平均 3h',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=400&fit=crop',
+    liveWebinars: 1
+  },
+  {
+    id: 3,
+    name: '东莞玩具厂',
+    location: '广东 东莞',
+    category: '玩具礼品',
+    rating: 4.8,
+    reviews: 156,
+    certifications: ['CE', 'EN71', 'ASTM'],
+    established: 2005,
+    employees: '400+',
+    responseTime: '平均 2h',
+    image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=600&h=400&fit=crop',
+    liveWebinars: 0
+  },
+  {
+    id: 4,
+    name: '佛山家居厂',
+    location: '广东 佛山',
+    category: '家居日用',
+    rating: 4.6,
+    reviews: 98,
+    certifications: ['ISO9001', 'FSC'],
+    established: 2012,
+    employees: '200+',
+    responseTime: '平均 4h',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop',
+    liveWebinars: 0
+  },
+  {
+    id: 5,
+    name: '上海美妆厂',
+    location: '上海',
+    category: '美妆护肤',
+    rating: 4.9,
+    reviews: 267,
+    certifications: ['ISO22716', 'GMP', 'FDA'],
+    established: 2015,
+    employees: '350+',
+    responseTime: '平均 1h',
+    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=400&fit=crop',
+    liveWebinars: 3
+  },
+  {
+    id: 6,
+    name: '宁波机械厂',
+    location: '浙江 宁波',
+    category: '工业设备',
+    rating: 4.5,
+    reviews: 76,
+    certifications: ['CE', 'ISO9001'],
+    established: 2003,
+    employees: '600+',
+    responseTime: '平均 5h',
+    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=600&h=400&fit=crop',
+    liveWebinars: 1
+  }
+];
 
 export default function Factories() {
   const [, setLocation] = useLocation();
-  const [factories, setFactories] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("score-desc");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
-  const [minScore, setMinScore] = useState<number>(0);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedForComparison, setSelectedForComparison] = useState<number[]>([]);
-  const [showComparison, setShowComparison] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
 
-  // 使用tRPC获取工厂数据
-  const { data: factoriesData, isLoading, error } = trpc.factory.list.useQuery({ search: searchQuery });
-
-  useEffect(() => {
-    if (factoriesData) {
-      const formattedFactories = factoriesData.map((f: any) => ({
-        id: f.id,
-        name: f.name,
-        location: `${f.city}, ${f.province}`,
-        score: parseFloat(f.overallScore) || 0,
-        category: f.category || "Uncategorized",
-        webinars: f.webinarCount || 0,
-        orders: f.orderCount || 0,
-        status: f.status,
-        employees: f.employees || "N/A",
-        logo: f.logo || "/logos/default.png",
-        images: f.images || [],
-        certifications: f.certifications || [],
-        onTimeRate: f.onTimeRate || 95,
-        yearsActive: f.established ? new Date().getFullYear() - f.established : 0,
-        isGoldMember: parseFloat(f.overallScore) >= 92,
-      }));
-      setFactories(formattedFactories);
-    }
-  }, [factoriesData]);
-
-  if (error) {
-    toast.error("加载工厂数据失败");
-  }
-
-  // Get unique categories and locations
-  const categories = ["all", ...Array.from(new Set(factories.map(f => f.category)))];
-  const locations = ["all", ...Array.from(new Set(factories.map(f => f.location.split(",")[1]?.trim() || f.location)))];
-
-  const getScoreBadgeStyle = (score: number) => {
-    if (score >= 90) return "bg-gradient-to-br from-yellow-400 to-orange-500 text-white";
-    if (score >= 80) return "bg-gradient-to-br from-gray-300 to-gray-400 text-gray-900";
-    if (score >= 70) return "bg-gradient-to-br from-amber-600 to-amber-700 text-white";
-    return "bg-gradient-to-br from-gray-500 to-gray-600 text-white";
-  };
-
-  const sortFactories = (factoriesToSort: any[]) => {
-    const sorted = [...factoriesToSort];
-    switch (sortBy) {
-      case "score-desc":
-        return sorted.sort((a, b) => b.score - a.score);
-      case "score-asc":
-        return sorted.sort((a, b) => a.score - b.score);
-      case "orders-desc":
-        return sorted.sort((a, b) => b.orders - a.orders);
-      case "orders-asc":
-        return sorted.sort((a, b) => a.orders - b.orders);
-      case "ontime-desc":
-        return sorted.sort((a, b) => b.onTimeRate - a.onTimeRate);
-      case "years-desc":
-        return sorted.sort((a, b) => b.yearsActive - a.yearsActive);
-      case "name-asc":
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      default:
-        return sorted;
-    }
-  };
-
-  const filterFactories = (status: string) => {
-    let filtered = factories;
-    
-    if (status !== "all") {
-      filtered = filtered.filter((f) => f.status === status);
-    }
-    
-    if (searchQuery) {
-      filtered = filtered.filter((f) => 
-        f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.category.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((f) => f.category === selectedCategory);
-    }
-    
-    if (selectedLocation !== "all") {
-      filtered = filtered.filter((f) => f.location.includes(selectedLocation));
-    }
-    
-    if (minScore > 0) {
-      filtered = filtered.filter((f) => f.score >= minScore);
-    }
-    
-    return sortFactories(filtered);
-  };
-
-  const clearFilters = () => {
-    setSelectedCategory("all");
-    setSelectedLocation("all");
-    setMinScore(0);
-    setSearchQuery("");
-    setSortBy("score-desc");
-  };
-
-  const hasActiveFilters = selectedCategory !== "all" || selectedLocation !== "all" || minScore > 0 || searchQuery !== "";
-
-  const getSortLabel = (option: SortOption) => {
-    switch (option) {
-      case "score-desc": return "Score: High to Low";
-      case "score-asc": return "Score: Low to High";
-      case "orders-desc": return "Orders: Most First";
-      case "orders-asc": return "Orders: Least First";
-      case "ontime-desc": return "On-Time Rate: Highest";
-      case "years-desc": return "Experience: Most Years";
-      case "name-asc": return "Name: A to Z";
-      default: return "Sort By";
-    }
-  };
-
-  const renderImageGallery = (images: string[]) => {
-    if (!images || images.length === 0) {
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div 
-              key={i}
-              className="w-24 h-24 rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 border border-muted-foreground/10 flex items-center justify-center"
-            >
-              <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    const displayImages = images.slice(0, 4);
-    return (
-      <div className={cn(
-        "grid gap-2",
-        displayImages.length === 1 ? "grid-cols-1" : "grid-cols-2"
-      )}>
-        {displayImages.map((img, idx) => (
-          <div 
-            key={idx}
-            className="relative w-24 h-24 rounded-lg overflow-hidden border border-border/50 bg-muted/20 group cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-primary/50"
-          >
-            <img 
-              src={img} 
-              alt={`Factory ${idx + 1}`}
-              className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const categories = [
+    { value: "all", label: "全部" },
+    { value: "electronics", label: "消费电子" },
+    { value: "fashion", label: "服装服饰" },
+    { value: "toys", label: "玩具礼品" },
+    { value: "home", label: "家居日用" },
+    { value: "beauty", label: "美妆护肤" },
+    { value: "industrial", label: "工业设备" }
+  ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Factories</h1>
-            <p className="text-muted-foreground mt-1">
-              Discover and connect with verified suppliers for your sourcing needs
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {selectedForComparison.length > 0 && (
-              <Button 
-                onClick={() => setShowComparison(true)}
-                disabled={selectedForComparison.length < 2}
-                className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                <GitCompare className="h-4 w-4" />
-                Compare ({selectedForComparison.length})
-              </Button>
-            )}
-            <Button onClick={() => toast.info("Add Factory feature coming soon")} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Factory
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex gap-3 items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search factories by name, location, or category..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+    <DashboardLayout>
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-purple-900/40 via-purple-800/30 to-purple-900/40 border border-purple-500/20 p-12 text-center">
+          <div className="absolute inset-0 opacity-10">
+            <div 
+              className="w-full h-full"
+              style={{
+                backgroundImage: `
+                  linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+                `,
+                backgroundSize: '40px 40px',
+              }}
             />
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2 min-w-[180px]">
-                <ArrowUpDown className="h-4 w-4" />
-                {getSortLabel(sortBy)}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSortBy("score-desc")}>
-                <Star className="h-4 w-4 mr-2" />
-                Score: High to Low
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("score-asc")}>
-                <Star className="h-4 w-4 mr-2" />
-                Score: Low to High
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSortBy("orders-desc")}>
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Orders: Most First
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("ontime-desc")}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                On-Time Rate: Highest
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("years-desc")}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Experience: Most Years
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("name-asc")}>
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Name: A to Z
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="relative z-10">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              探索全球优质工厂
+            </h1>
+            <p className="text-xl text-gray-300 mb-8">
+              AI 智能匹配，发现最适合您的供应商伙伴
+            </p>
 
-          <Button 
-            variant={showFilters ? "secondary" : "outline"}
-            onClick={() => setShowFilters(!showFilters)}
-            className="gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-            {hasActiveFilters && (
-              <Badge variant="secondary" className="ml-1 px-1 h-5 min-w-5 flex items-center justify-center">
-                !
-              </Badge>
-            )}
-          </Button>
+            <div className="flex items-center justify-center space-x-12">
+              <div className="flex items-center space-x-2">
+                <Building2 className="text-purple-400" size={20} />
+                <span className="text-white font-semibold">500+ 认证工厂</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Star className="text-purple-400" size={20} />
+                <span className="text-white font-semibold">平均评分 4.8</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Video className="text-purple-400" size={20} />
+                <span className="text-white font-semibold">支持 1:1 视频选品</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {showFilters && (
-          <Card className="mt-4 border-dashed bg-muted/20">
-            <CardContent className="p-4 flex flex-wrap gap-4 items-end">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px] h-9">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat === "all" ? "All Categories" : cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Search and Filter */}
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索工厂名称、产品类别或地区..."
+              className="pl-12 pr-4 py-6 rounded-xl bg-[#1a1a1a]/80 border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 text-white placeholder-gray-500"
+            />
+          </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Location</label>
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-[180px] h-9">
-                    <SelectValue placeholder="Select Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map(loc => (
-                      <SelectItem key={loc} value={loc}>
-                        {loc === "all" ? "All Locations" : loc}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Category Tabs and Sort */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              {categories.map((cat) => (
+                <Button
+                  key={cat.value}
+                  variant={activeCategory === cat.value ? 'default' : 'outline'}
+                  onClick={() => setActiveCategory(cat.value)}
+                  className={activeCategory === cat.value 
+                    ? 'bg-purple-600 hover:bg-purple-500 text-white' 
+                    : 'bg-transparent border-white/20 text-gray-300 hover:bg-white/5'
+                  }
+                >
+                  {cat.label}
+                </Button>
+              ))}
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Min Score: {minScore}</label>
-                <div className="flex items-center gap-2 w-[180px]">
-                  <Input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    step="5"
-                    value={minScore}
-                    onChange={(e) => setMinScore(parseInt(e.target.value))}
-                    className="h-9 px-0 accent-primary"
-                  />
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+                评分 <ChevronDown size={16} className="ml-2" />
+              </Button>
+              <Button variant="outline" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+                地区 <ChevronDown size={16} className="ml-2" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Factory Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {mockFactories.map((factory) => (
+            <Card 
+              key={factory.id} 
+              className="bg-[#1a1a1a]/80 border-white/10 hover:border-purple-500/50 transition-all overflow-hidden group cursor-pointer"
+              onClick={() => setLocation(`/factories/${factory.id}`)}
+            >
+              {/* Image */}
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={factory.image} 
+                  alt={factory.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+                {factory.liveWebinars > 0 && (
+                  <div className="absolute top-4 left-4">
+                    <Badge className="bg-red-500 text-white border-0">
+                      🔴 {factory.liveWebinars} 场直播中
+                    </Badge>
+                  </div>
+                )}
+                <div className="absolute top-4 right-4">
+                  <div className="bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
+                    <Star className="text-yellow-400 fill-yellow-400" size={14} />
+                    <span className="text-white text-sm font-semibold">{factory.rating}</span>
+                  </div>
                 </div>
               </div>
 
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearFilters}
-                className="h-9 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5 mr-2" />
-                Clear All
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="all" className="px-6">All Factories</TabsTrigger>
-          <TabsTrigger value="verified" className="px-6">Verified Only</TabsTrigger>
-          <TabsTrigger value="new" className="px-6">New Suppliers</TabsTrigger>
-        </TabsList>
-
-        {["all", "verified", "new"].map((status) => (
-          <TabsContent key={status} value={status} className="space-y-4">
-            {isLoading ? (
-              <div className="grid gap-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i} className="animate-pulse">
-                    <CardContent className="h-40 bg-muted/10" />
-                  </Card>
-                ))}
-              </div>
-            ) : filterFactories(status).length === 0 ? (
-              <div className="text-center py-20 border-2 border-dashed rounded-xl">
-                <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-medium">No factories found</h3>
-                <p className="text-muted-foreground">Try adjusting your search or filters</p>
-                {hasActiveFilters && (
-                  <Button variant="link" onClick={clearFilters} className="mt-2">
-                    Clear all filters
-                  </Button>
-                )}
-              </div>
-            ) : (
-              filterFactories(status).map((factory) => (
-                <Card key={factory.id} className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/20">
-                  <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row gap-6 p-6">
-                      <div className="flex flex-col gap-4">
-                        <div className="relative">
-                          <div className="w-24 h-24 rounded-xl overflow-hidden bg-white p-2 border border-border/50 shadow-sm group-hover:shadow-md transition-shadow">
-                            <img 
-                              src={factory.logo} 
-                              alt={factory.name}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          {factory.isGoldMember && (
-                            <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 p-1 rounded-full shadow-lg">
-                              <Award className="h-4 w-4" />
-                            </div>
-                          )}
-                        </div>
-                        {renderImageGallery(factory.images)}
-                        <Button 
-                          variant={selectedForComparison.includes(factory.id) ? "secondary" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            if (selectedForComparison.includes(factory.id)) {
-                              setSelectedForComparison(selectedForComparison.filter(id => id !== factory.id));
-                            } else {
-                              if (selectedForComparison.length >= 4) {
-                                toast.error("You can compare up to 4 factories");
-                                return;
-                              }
-                              setSelectedForComparison([...selectedForComparison, factory.id]);
-                            }
-                          }}
-                          className="w-full gap-2"
-                        >
-                          <GitCompare className="h-3.5 w-3.5" />
-                          {selectedForComparison.includes(factory.id) ? "Selected" : "Compare"}
-                        </Button>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-xl font-bold group-hover:text-primary transition-colors truncate">
-                                {factory.name}
-                              </h3>
-                              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10">
-                                {factory.category}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5" />
-                                {factory.location}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Building2 className="h-3.5 w-3.5" />
-                                {factory.employees} Employees
-                              </div>
-                            </div>
-                          </div>
-                          <div className={cn(
-                            "px-4 py-2 rounded-xl text-center shadow-sm",
-                            getScoreBadgeStyle(factory.score)
-                          )}>
-                            <div className="text-xs font-medium opacity-90">Score</div>
-                            <div className="text-2xl font-bold">{factory.score}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 mb-4">
-                          <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 gap-1.5 px-3 py-1">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Verified Supplier
-                          </Badge>
-                          {factory.webinars > 0 && (
-                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20 gap-1.5 px-3 py-1">
-                              <ImageIcon className="h-3.5 w-3.5" />
-                              {factory.webinars} Active Webinars
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {factory.certifications.map((cert: any, idx: number) => (
-                            <Badge 
-                              key={idx}
-                              variant="outline" 
-                              className="bg-muted/30 gap-1.5 px-3 py-1"
-                            >
-                              <Shield className="h-3 w-3" />
-                              {cert.name || cert.type}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                            <div className="flex items-center justify-center gap-1.5 text-blue-600 mb-1">
-                              <TrendingUp className="h-4 w-4" />
-                              <span className="text-2xl font-bold">{factory.orders}</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">Orders</div>
-                          </div>
-                          <div className="text-center p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                            <div className="flex items-center justify-center gap-1.5 text-emerald-600 mb-1">
-                              <CheckCircle2 className="h-4 w-4" />
-                              <span className="text-2xl font-bold">{factory.onTimeRate}%</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">On-Time</div>
-                          </div>
-                          <div className="text-center p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
-                            <div className="flex items-center justify-center gap-1.5 text-purple-600 mb-1">
-                              <Calendar className="h-4 w-4" />
-                              <span className="text-2xl font-bold">{factory.yearsActive}y</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">Active</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-2 justify-center">
-                        <Button
-                          variant="outline"
-                          onClick={() => setLocation(`/factories/${factory.id}`)}
-                          className="whitespace-nowrap"
-                        >
-                          View Details
-                        </Button>
-                        <Button
-                          onClick={() => toast.success(`Contact request sent to ${factory.name}`)}
-                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white gap-2 whitespace-nowrap"
-                        >
-                          Contact
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                {/* Factory Name & Location */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white group-hover:text-purple-400 transition-colors mb-2">
+                    {factory.name}
+                  </h3>
+                  <div className="flex items-center space-x-4 text-sm text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <MapPin size={14} />
+                      <span>{factory.location}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+                    <Badge variant="outline" className="border-purple-500/30 text-purple-400">
+                      {factory.category}
+                    </Badge>
+                  </div>
+                </div>
 
-      {showComparison && (
-        <FactoryComparison
-          factories={factories.filter(f => selectedForComparison.includes(f.id))}
-          onRemove={(id) => {
-            setSelectedForComparison(selectedForComparison.filter(fid => fid !== id));
-            if (selectedForComparison.length <= 2) {
-              setShowComparison(false);
-            }
-          }}
-          onClose={() => setShowComparison(false)}
-        />
-      )}
-    </div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3 text-xs text-gray-400">
+                  <div>
+                    <div className="text-white font-semibold">{factory.established}</div>
+                    <div>成立年份</div>
+                  </div>
+                  <div>
+                    <div className="text-white font-semibold">{factory.employees}</div>
+                    <div>员工人数</div>
+                  </div>
+                  <div>
+                    <div className="text-white font-semibold">{factory.reviews}</div>
+                    <div>评价数</div>
+                  </div>
+                  <div>
+                    <div className="text-green-400 font-semibold">{factory.responseTime}</div>
+                    <div>响应时间</div>
+                  </div>
+                </div>
+
+                {/* Certifications */}
+                <div className="flex items-center flex-wrap gap-2">
+                  {factory.certifications.map((cert) => (
+                    <Badge 
+                      key={cert} 
+                      variant="outline" 
+                      className="border-white/20 text-gray-300 text-xs"
+                    >
+                      {cert}
+                    </Badge>
+                  ))}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center space-x-2 pt-2">
+                  <Button
+                    className="flex-1 bg-purple-600 hover:bg-purple-500 text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLocation(`/factories/${factory.id}`);
+                    }}
+                  >
+                    查看详情
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Start 1:1 meeting
+                    }}
+                  >
+                    发起会议
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-center space-x-2 pt-8">
+          <Button variant="outline" size="sm" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+            ←
+          </Button>
+          <Button size="sm" className="bg-purple-600 hover:bg-purple-500 text-white">
+            1
+          </Button>
+          <Button variant="outline" size="sm" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+            2
+          </Button>
+          <Button variant="outline" size="sm" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+            3
+          </Button>
+          <Button variant="outline" size="sm" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+            4
+          </Button>
+          <span className="text-gray-500">...</span>
+          <Button variant="outline" size="sm" className="bg-transparent border-white/20 text-gray-300 hover:bg-white/5">
+            →
+          </Button>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
