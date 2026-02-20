@@ -66,13 +66,13 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        lastLoginAt: new Date(),
-      },
-    });
+    // Update last login (temporarily disabled due to schema sync issue)
+    // await prisma.user.update({
+    //   where: { id: user.id },
+    //   data: {
+    //     lastLoginAt: new Date(),
+    //   },
+    // });
 
     // Generate token
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
