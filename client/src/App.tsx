@@ -8,7 +8,7 @@ import { Route, Switch } from 'wouter';
 
 // Import pages
 import LandingPage from './pages/LandingPage';
-import SignIn from './pages/SignIn';
+import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import Webinars from './pages/Webinars';
@@ -37,7 +37,8 @@ function App() {
           <AuthProvider>
             <Switch>
               <Route path="/" component={LandingPage} />
-              <Route path="/signin" component={SignIn} />
+              <Route path="/login" component={Login} />
+              <Route path="/signin" component={Login} />
               <Route path="/register" component={Register} />
               <Route path="/home" component={Home} />
               <Route path="/webinars" component={Webinars} />

@@ -3,6 +3,7 @@ import { GlassCard } from '../components/GlassCard';
 import { Factory, Github, Loader2, User, Mail, Lock, Building2 } from 'lucide-react';
 import { useState } from "react";
 import { toast } from "sonner";
+import { trpc } from '../lib/trpc';
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -11,6 +12,8 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"buyer" | "factory" | "user">("buyer");
   const [isLoading, setIsLoading] = useState(false);
+
+  const registerMutation = trpc.auth.register.useMutation();
 
   const handleGitHubSignup = () => {
     toast.info("GitHub注册功能即将推出");
@@ -27,22 +30,23 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://api.cnsubscribe.xyz/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name, email, password, role }),
+      const result = await registerMutation.mutateAsync({
+        name,
+        email,
+        password,
+        role,
       });
       
-      if (response.ok) {
-        toast.success("注册成功！请使用您的账号登录。");
-        setLocation("/login");
-      } else {
-        const error = await response.json();
-        toast.error(error.message || "注册失败，请稍后重试");
+      if (result.user) {
+        toast.success("注册成功！正在自动登录...");
+        // 注册成功后自动跳转到首页（后端已设置 Cookie）
+        setTimeout(() => {
+          setLocation("/home");
+        }, 1000);
       }
-    } catch (error) {
-      toast.error("注册失败，请稍后重试");
+    } catch (error: any) {
+      const errorMessage = error.message || error.data?.message || "注册失败，请稍后重试";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
