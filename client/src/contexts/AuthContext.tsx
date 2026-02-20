@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { trpc } from '../lib/trpc';
 
 export type UserRole = 'admin' | 'factory' | 'buyer';
 
@@ -27,53 +28,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // 尝试从后端获取当前用户信息
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await fetch('https://api.cnsubscribe.xyz/api/auth/me', {
-          credentials: 'include', // 包含 cookies
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.user) {
-            setUser(data.user);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch current user:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // 使用 tRPC 获取当前用户
+  const meQuery = trpc.auth.me.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-    fetchCurrentUser();
-  }, []);
+  // 使用 tRPC 登录
+  const loginMutation = trpc.auth.login.useMutation();
+  // 使用 tRPC 登出
+  const logoutMutation = trpc.auth.logout.useMutation();
+
+  useEffect(() => {
+    if (meQuery.data) {
+      setUser(meQuery.data as any);
+    }
+    if (!meQuery.isLoading) {
+      setIsLoading(false);
+    }
+  }, [meQuery.data, meQuery.isLoading]);
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
-      const response = await fetch('https://api.cnsubscribe.xyz/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // 包含 cookies
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+      const result = await loginMutation.mutateAsync({ email, password });
+      if (result.user) {
+        setUser(result.user as any);
+        return result.user as any;
       }
-
-      if (data.success && data.user) {
-        setUser(data.user);
-        return data.user;
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      throw new Error('Login failed');
     } catch (error: any) {
       console.error('Login error:', error);
       throw error;
@@ -82,10 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('https://api.cnsubscribe.xyz/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await logoutMutation.mutateAsync();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

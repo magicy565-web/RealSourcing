@@ -10,7 +10,7 @@ export const API_CONFIG = {
   // tRPC API 地址
   baseUrl: import.meta.env.VITE_API_URL || (
     import.meta.env.MODE === 'development' 
-      ? 'http://localhost:3005/api/trpc'  // 本地开发环境
+      ? 'http://localhost:3001/api/trpc'  // 本地开发环境
       : 'https://api.cnsubscribe.xyz/api/trpc'  // 生产环境
   ),
   

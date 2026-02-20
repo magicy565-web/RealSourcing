@@ -18,7 +18,8 @@ export const authRouter = router({
       // Set cookie
       ctx.res.cookie('token', result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // Vercel 强制 HTTPS
+        sameSite: 'none', // 跨域 Cookie 必须
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
@@ -38,15 +39,24 @@ export const authRouter = router({
       // Set cookie
       ctx.res.cookie('token', result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // Vercel 强制 HTTPS
+        sameSite: 'none', // 跨域 Cookie 必须
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
-      return result;
+      return {
+        success: true,
+        user: result.user,
+        token: result.token
+      };
     }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
-    ctx.res.clearCookie('token');
+    ctx.res.clearCookie('token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
+    });
     return { success: true };
   }),
 
