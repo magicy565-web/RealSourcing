@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/trpc/:path*",
-      "destination": "http://47.99.205.136:3001/api/trpc/:path*"
+      "destination": "https://api.cnsubscribe.xyz/api/trpc/:path*"
     },
     {
       "source": "/(.*)",
