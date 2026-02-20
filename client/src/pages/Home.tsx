@@ -1,403 +1,320 @@
 import DashboardLayout from "../components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import {
-  Video, Building2, Users, Clock, Plus, ArrowRight,
-  Circle, Globe, TrendingUp, TrendingDown, Minus,
-  CalendarDays, UserCheck, ClipboardCheck
-} from "lucide-react";
+import { Video, Building2, FileText, Radio, Calendar, Send } from "lucide-react";
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
-import { cn } from "../lib/utils";
-import type { Webinar } from "../lib/directus";
-import { DIRECTUS_URL, getAssetUrl } from "../lib/config";
-import ActivityCalendar from "../components/ActivityCalendar";
-import DataChart from "../components/DataChart";
-import { format, subDays, addDays, startOfDay, isSameDay } from "date-fns";
+import { useState } from "react";
 
-interface Factory {
-  id: number;
-  name: string;
-  avatar?: string;
-}
+// Mock Data
+const mockWebinars = [
+  {
+    id: 1,
+    status: 'live',
+    factory: '深圳科技工厂',
+    title: '2025 TikTok爆款蓝牙耳机新品发布会',
+    participants: 1234,
+    image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=300&fit=crop'
+  },
+  {
+    id: 2,
+    status: 'upcoming',
+    factory: '广州服装厂',
+    title: '2025秋冬速干运动服品会',
+    time: '明天 14:00',
+    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=300&fit=crop'
+  },
+  {
+    id: 3,
+    status: 'past',
+    factory: '东莞玩具厂',
+    title: '儿童益智玩具出口合规指南',
+    time: '已结束',
+    image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=400&h=300&fit=crop'
+  }
+];
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [stats, setStats] = useState({
-    liveCount: 0,
-    scheduledCount: 0,
-    factoryCount: 0,
-    registrationCount: 0,
-    pendingCount: 0,
-  });
-  const [recentWebinars, setRecentWebinars] = useState<Webinar[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [employeeTimelines, setEmployeeTimelines] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [aiInput, setAiInput] = useState("");
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 6) return "夜深了";
     if (hour < 12) return "早上好";
     if (hour < 18) return "下午好";
     return "晚上好";
   };
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        const baseUrl = `${DIRECTUS_URL}/items`;
-
-        const [webinarsRes, factoriesRes, participantsRes] = await Promise.all([
-          fetch(`${baseUrl}/webinars?limit=-1`, { mode: "cors" }).then(r => r.json()),
-          fetch(`${baseUrl}/factories?limit=-1`, { mode: "cors" }).then(r => r.json()).catch(() => ({ data: [] })),
-          fetch(`${baseUrl}/webinar_participants?limit=-1`, { mode: "cors" }).then(r => r.json()).catch(() => ({ data: [] })),
-        ]);
-
-        const allWebinars = (webinarsRes.data || []).filter((w: any) => !w.deletedAt);
-        const factories: Factory[] = (factoriesRes.data || []);
-        const participants = participantsRes.data || [];
-
-        const liveCount = allWebinars.filter((w: any) => w.status === "live").length;
-        const scheduledCount = allWebinars.filter((w: any) => w.status === "scheduled").length;
-        const completedCount = allWebinars.filter((w: any) => w.status === "completed").length;
-
-        setStats({
-          liveCount,
-          scheduledCount,
-          factoryCount: Array.isArray(factories) ? factories.length : 0,
-          registrationCount: Array.isArray(participants) ? participants.length : 0,
-          pendingCount: 0,
-        });
-
-        // 近期 Webinar
-        const recentRes = await fetch(`${baseUrl}/webinars?limit=5&sort=-scheduledAt`, { mode: "cors" });
-        const recentData = await recentRes.json();
-        setRecentWebinars(
-          (recentData.data || []).filter((w: any) => !w.deletedAt) as Webinar[]
-        );
-
-        // 构建员工时间线数据（工厂视角）
-        const today = startOfDay(new Date());
-        const futureWebinars = allWebinars.filter((w: any) => {
-          const d = new Date(w.scheduledAt || w.scheduled_at);
-          return d >= today || w.status === "live";
-        });
-
-        // 模拟员工数据（实际应从 participants 表获取）
-        const mockEmployees = [
-          { id: 1, name: "张伟" },
-          { id: 2, name: "李娜" },
-          { id: 3, name: "王强" },
-          { id: 4, name: "刘芳" },
-          { id: 5, name: "陈明" },
-          { id: 6, name: "赵丽" },
-        ];
-
-        // 为每个员工分配不同的活动
-        const employeeTimelines = mockEmployees.map((emp, idx) => {
-          // 每个员工参加 2-4 个活动
-          const empWebinars = futureWebinars
-            .slice(idx, idx + 3)
-            .map((w: any, wIdx) => ({
-              id: w.id + idx * 100,
-              title: w.title,
-              status: w.status,
-              scheduledAt: w.scheduledAt || w.scheduled_at,
-              duration: [1.5, 2, 3, 2.5][wIdx % 4],
-              coverImage: w.coverImage || w.cover_image,
-            }));
-          
-          return {
-            id: emp.id,
-            name: emp.name,
-            webinars: empWebinars,
-          };
-        });
-
-        setEmployeeTimelines(employeeTimelines);
-
-        // 图表数据 - 过去 7 天参与人数
-        const chart = Array.from({ length: 7 }, (_, i) => {
-          const date = subDays(new Date(), 6 - i);
-          const dayParticipants = participants.filter((p: any) => {
-            const d = new Date(p.createdAt || p.created_at || "");
-            return d.toDateString() === date.toDateString();
-          }).length;
-          return {
-            name: format(date, "MM/dd"),
-            value: dayParticipants || Math.floor(Math.random() * 8) + 1,
-          };
-        });
-        setChartData(chart);
-
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
-
-  const statCards = [
-    {
-      title: "直播中",
-      value: stats.liveCount,
-      trend: 0,
-      icon: Video,
-      iconBg: "bg-red-500/10",
-      iconColor: "text-red-400",
-      borderAccent: "hover:border-red-500/30",
-    },
-    {
-      title: "即将举行",
-      value: stats.scheduledCount,
-      trend: 12,
-      icon: CalendarDays,
-      iconBg: "bg-blue-500/10",
-      iconColor: "text-blue-400",
-      borderAccent: "hover:border-blue-500/30",
-    },
-    {
-      title: "注册供应商",
-      value: stats.factoryCount,
-      trend: 8,
-      icon: Building2,
-      iconBg: "bg-orange-500/10",
-      iconColor: "text-orange-400",
-      borderAccent: "hover:border-orange-500/30",
-    },
-    {
-      title: "已批准注册",
-      value: stats.registrationCount,
-      trend: 15,
-      icon: UserCheck,
-      iconBg: "bg-emerald-500/10",
-      iconColor: "text-emerald-400",
-      borderAccent: "hover:border-emerald-500/30",
-    },
-    {
-      title: "待审批",
-      value: stats.pendingCount,
-      trend: 0,
-      icon: ClipboardCheck,
-      iconBg: "bg-yellow-500/10",
-      iconColor: "text-yellow-400",
-      borderAccent: "hover:border-yellow-500/30",
-    },
-  ];
-
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { color: string; label: string; dot?: boolean }> = {
-      live: { color: "bg-red-500/15 text-red-400 border-red-500/20", label: "直播中", dot: true },
-      scheduled: { color: "bg-blue-500/15 text-blue-400 border-blue-500/20", label: "已预定" },
-      completed: { color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", label: "已完成" },
-      draft: { color: "bg-gray-500/15 text-gray-400 border-gray-500/20", label: "草稿" },
-      cancelled: { color: "bg-gray-500/15 text-gray-500 border-gray-600/20", label: "已取消" },
-    };
-    const c = config[status] || config.draft!;
-    return (
-      <Badge variant="outline" className={cn("text-[10px] font-normal px-1.5 py-0", c.color)}>
-        {c.dot && <Circle className="h-1.5 w-1.5 fill-current mr-1 animate-pulse" />}
-        {c.label}
-      </Badge>
-    );
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    return format(date, "M月d日 HH:mm");
-  };
-
-  const TrendBadge = ({ value }: { value: number }) => {
-    if (value === 0) return (
-      <span className="text-[11px] text-gray-600 flex items-center gap-0.5">
-        <Minus className="h-3 w-3" />0%
-      </span>
-    );
-    const isPositive = value > 0;
-    return (
-      <span className={cn(
-        "text-[11px] flex items-center gap-0.5 font-medium",
-        isPositive ? "text-emerald-400" : "text-red-400"
-      )}>
-        {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-        {isPositive && "+"}{value}%
-      </span>
-    );
+  const handleSendMessage = () => {
+    if (!aiInput.trim()) return;
+    // TODO: Implement AI chat
+    setAiInput("");
   };
 
   return (
     <DashboardLayout>
-      <div className="h-full overflow-auto scrollbar-thin">
-        <div className="p-6 space-y-5">
+      <div className="space-y-6">
+        {/* Welcome Section */}
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {getGreeting()}，Magic 👋
+          </h1>
+          <p className="text-gray-400">
+            今天有 3 场 Webinar 等待您参与，AI 已为您推荐 12 家工厂
+          </p>
+        </div>
 
-          {/* 顶部：问候 + 操作 */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-white tracking-tight">
-                {getGreeting()}！
-              </h1>
-              <p className="text-[13px] text-muted-foreground mt-0.5">
-                让我们看看今天会发生什么。
-              </p>
-            </div>
-            <Button
-              onClick={() => setLocation("/webinars/create")}
-              size="sm"
-              className="bg-violet-600 hover:bg-violet-700 text-white text-xs h-8 px-3"
-            >
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              创建 Webinar
-            </Button>
-          </div>
-
-          {/* 统计卡片 - 5 列 */}
-          <div className="grid grid-cols-5 gap-3">
-            {statCards.map((stat) => (
-              <Card
-                key={stat.title}
-                className={cn(
-                  "bg-[#111111] border-[#1e1e1e] transition-colors",
-                  stat.borderAccent
-                )}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[12px] text-muted-foreground/80">{stat.title}</span>
-                    <div className={cn("h-7 w-7 rounded-md flex items-center justify-center", stat.iconBg)}>
-                      <stat.icon className={cn("h-3.5 w-3.5", stat.iconColor)} />
-                    </div>
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <span className="text-2xl font-semibold text-white tabular-nums">{stat.value}</span>
-                    <TrendBadge value={stat.trend} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* 中间行：关注/预定的会议 + 活动趋势 */}
-          <div className="grid grid-cols-3 gap-4">
-            {/* 关注/预定的会议 */}
-            <Card className="col-span-2 bg-[#111111] border-[#1e1e1e]">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-white">关注/预定的会议</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLocation("/webinars")}
-                  className="text-xs text-muted-foreground hover:text-violet-400 h-7 px-2"
-                >
-                  查看全部 <ArrowRight className="ml-1 h-3 w-3" />
-                </Button>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-16">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-violet-500" />
-                  </div>
-                ) : recentWebinars.length === 0 ? (
-                  <div className="text-center py-16 text-muted-foreground/50">
-                    <Video className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-xs">暂无会议</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-[#1a1a1a]">
-                    {recentWebinars.map((webinar) => (
-                      <div
-                        key={webinar.id}
-                        className="flex items-center gap-3 py-2.5 cursor-pointer group hover:bg-white/[0.02] -mx-3 px-3 rounded-md transition-colors"
-                        onClick={() => setLocation(`/webinars/${webinar.id}`)}
-                      >
-                        {/* 缩略图 */}
-                        {(webinar.coverImage || webinar.cover_image) ? (
-                          <div className="w-9 h-9 flex-shrink-0 rounded-md overflow-hidden ring-1 ring-white/5">
-                            <img
-                              src={getAssetUrl(webinar.coverImage || webinar.cover_image)}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-9 h-9 flex-shrink-0 rounded-md bg-gradient-to-br from-violet-600/20 to-indigo-600/20 flex items-center justify-center ring-1 ring-white/5">
-                            <Video className="h-4 w-4 text-violet-400/60" />
-                          </div>
-                        )}
-
-                        {/* 标题 + 类别 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[13px] text-white/90 truncate group-hover:text-violet-400 transition-colors">
-                              {webinar.title}
-                            </span>
-                            {getStatusBadge(webinar.status)}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground/60">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(webinar.scheduledAt || webinar.scheduled_at)}
-                            </span>
-                            {webinar.category && (
-                              <span className="flex items-center gap-1">
-                                <Globe className="h-3 w-3" />
-                                {webinar.category}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-violet-400 transition-colors flex-shrink-0" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 活动趋势 */}
-            <Card className="bg-[#111111] border-[#1e1e1e]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-white">活动趋势（7天）</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-16">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-violet-500" />
-                  </div>
-                ) : (
-                  <DataChart data={chartData} type="area" color="#8B5CF6" height={230} />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 底部：员工活动时间线 */}
-          <Card className="bg-[#111111] border-[#1e1e1e]">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-white">员工活动安排</CardTitle>
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground/50">
-                <Users className="h-3.5 w-3.5" />
-                <span>未来 14 天</span>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-violet-500" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Live Webinars */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 hover:border-purple-500/50 transition-all">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                  <Radio className="text-red-400" size={24} />
                 </div>
-              ) : (
-                <ActivityCalendar employees={employeeTimelines} days={14} />
-              )}
-            </CardContent>
+              </div>
+              <div className="text-3xl font-bold text-white mb-1">2</div>
+              <div className="text-sm text-gray-400">场直播中</div>
+            </div>
           </Card>
 
+          {/* Upcoming Webinars */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 hover:border-purple-500/50 transition-all">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Calendar className="text-blue-400" size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-white mb-1">5</div>
+              <div className="text-sm text-gray-400">场即将开始</div>
+            </div>
+          </Card>
+
+          {/* Partner Factories */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 hover:border-purple-500/50 transition-all">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                  <Building2 className="text-purple-400" size={24} />
+                </div>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  +12 本周
+                </Badge>
+              </div>
+              <div className="text-3xl font-bold text-white mb-1">128</div>
+              <div className="text-sm text-gray-400">家已合作工厂</div>
+            </div>
+          </Card>
+
+          {/* Registered Webinars */}
+          <Card className="bg-[#1a1a1a]/80 border-white/10 hover:border-purple-500/50 transition-all">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                  <FileText className="text-cyan-400" size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-white mb-1">12</div>
+              <div className="text-sm text-gray-400">场已报名 Webinar</div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* AI Recommended Webinars - Left Column (2/3) */}
+          <div className="lg:col-span-2">
+            <Card className="bg-[#1a1a1a]/80 border-white/10">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-white flex items-center">
+                    <span className="mr-2">✨</span>
+                    AI 推荐 Webinar
+                  </h2>
+                  <button 
+                    onClick={() => setLocation('/webinars')}
+                    className="text-purple-400 hover:text-purple-300 text-sm transition-colors"
+                  >
+                    查看全部 →
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {mockWebinars.map((webinar) => (
+                    <div
+                      key={webinar.id}
+                      className="flex items-center space-x-4 p-4 rounded-xl bg-[#0a0a0a]/50 border border-white/5 hover:border-purple-500/30 transition-all cursor-pointer group"
+                      onClick={() => setLocation(`/webinars/${webinar.id}`)}
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative w-32 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                        <img 
+                          src={webinar.image} 
+                          alt={webinar.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {webinar.status === 'live' && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-red-500 text-white border-0 text-xs">
+                              LIVE
+                            </Badge>
+                          </div>
+                        )}
+                        {webinar.status === 'upcoming' && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-blue-500 text-white border-0 text-xs">
+                              UPCOMING
+                            </Badge>
+                          </div>
+                        )}
+                        {webinar.status === 'past' && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-gray-500 text-white border-0 text-xs">
+                              PAST
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs text-white">工</span>
+                          </div>
+                          <span className="text-sm text-gray-400">{webinar.factory}</span>
+                        </div>
+                        <h3 className="text-white font-medium mb-1 group-hover:text-purple-400 transition-colors truncate">
+                          {webinar.title}
+                        </h3>
+                        <div className="text-sm text-gray-500">
+                          {webinar.status === 'live' && (
+                            <span className="text-red-400">🔥 {webinar.participants} 人在线</span>
+                          )}
+                          {webinar.status === 'upcoming' && (
+                            <span>{webinar.time}</span>
+                          )}
+                          {webinar.status === 'past' && (
+                            <span>{webinar.time}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <Button
+                        size="sm"
+                        className={
+                          webinar.status === 'live'
+                            ? "bg-purple-600 hover:bg-purple-500 text-white"
+                            : webinar.status === 'upcoming'
+                            ? "bg-blue-600 hover:bg-blue-500 text-white"
+                            : "bg-gray-600 hover:bg-gray-500 text-white"
+                        }
+                      >
+                        {webinar.status === 'live' && '立即参与'}
+                        {webinar.status === 'upcoming' && '注册'}
+                        {webinar.status === 'past' && '回放'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* AI Assistant - Right Column (1/3) */}
+          <div className="lg:col-span-1">
+            <Card className="bg-[#1a1a1a]/80 border-white/10 h-full">
+              <div className="p-6 flex flex-col h-full">
+                <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                  <span className="mr-2">🤖</span>
+                  AI 采购助理
+                </h2>
+
+                {/* Chat Messages */}
+                <div className="flex-1 space-y-4 mb-4 overflow-y-auto">
+                  {/* AI Message */}
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm">🤖</span>
+                    </div>
+                    <div className="flex-1 bg-[#0a0a0a]/50 rounded-2xl rounded-tl-none p-4 border border-white/5">
+                      <p className="text-sm text-gray-300">
+                        👋 您好！我是您的AI采购助理，请告诉我您的采购需求，我来帮您精准匹配工厂。
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* User Message Example */}
+                  <div className="flex items-start space-x-3 justify-end">
+                    <div className="flex-1 bg-purple-600/20 rounded-2xl rounded-tr-none p-4 border border-purple-500/30">
+                      <p className="text-sm text-gray-200">
+                        我需要采购蓝牙耳机，预算$50/件，月采购500件
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm">M</span>
+                    </div>
+                  </div>
+
+                  {/* AI Response */}
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm">🤖</span>
+                    </div>
+                    <div className="flex-1 bg-[#0a0a0a]/50 rounded-2xl rounded-tl-none p-4 border border-white/5">
+                      <p className="text-sm text-gray-300 mb-3">
+                        好的！我已为您找到 8 家匹配工厂，其中 3 家有即将开始的Webinar...
+                      </p>
+                      <div className="space-y-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full justify-start text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+                        >
+                          查看推荐工厂
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full justify-start text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+                        >
+                          浏览相关Webinar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full justify-start text-purple-400 border-purple-500/30 hover:bg-purple-500/10"
+                        >
+                          发起询价
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input Area */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="输入您的采购需求..."
+                    className="w-full pl-4 pr-12 py-3 rounded-xl bg-[#0a0a0a]/50 border border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all text-white placeholder-gray-500"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-500 flex items-center justify-center transition-colors"
+                  >
+                    <Send size={16} className="text-white" />
+                  </button>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </DashboardLayout>

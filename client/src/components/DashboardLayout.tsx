@@ -72,7 +72,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     window.location.href = getLoginUrl();
   };
 
-  if (loading) {
+  // Disable loading check for demo mode
+  if (false && loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0A0A0A]">
         <div className="text-center">
