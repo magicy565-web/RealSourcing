@@ -1,53 +1,57 @@
-import { Toaster } from "./components/ui/sonner";
-import { TooltipProvider } from "./components/ui/tooltip";
-import NotFound from "./pages/NotFound";
-import { Route, Switch } from "wouter";
-import { AuthProvider } from "./contexts/AuthContext";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import LandingPage from "./pages/LandingPage";
-import Webinars from "./pages/Webinars";
-import WebinarDetail from "./pages/WebinarDetail";
-import WebinarLiveRoom from "./pages/WebinarLiveRoom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Factories from "./pages/Factories";
-import FactoryDetail from "./pages/FactoryDetail";
-import CommandPalette from "./components/CommandPalette";
+import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { trpc, getTRPCClient } from './lib/trpc';
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster } from './components/ui/sonner';
+import { Route, Switch } from 'wouter';
 
-// Simplified router with only core pages that work with mock data
-function Router() {
-  return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/home" component={Home} />
-      <Route path="/dashboard" component={Home} />
-      <Route path="/" component={LandingPage} />
-      <Route path="/webinars" component={Webinars} />
-      <Route path="/webinars/:id" component={WebinarDetail} />
-      <Route path="/webinars/:id/live" component={WebinarLiveRoom} />
-      <Route path="/factories" component={Factories} />
-      <Route path="/factories/:id" component={FactoryDetail} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+// Import pages
+import LandingPage from './pages/LandingPage';
+import SignIn from './pages/SignIn';
+import Register from './pages/Register';
+import Home from './pages/Home';
+import Webinars from './pages/Webinars';
+import WebinarDetail from './pages/WebinarDetailNew';
+import Factories from './pages/FactoriesNew';
+import FactoryDetail from './pages/FactoryDetailOptimized';
+import NotFound from './pages/NotFound';
+import ApiTest from './pages/ApiTest';
 
 function App() {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+      },
+    },
+  }));
+  
+  const [trpcClient] = useState(() => getTRPCClient());
+
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <ThemeProvider defaultTheme="dark">
-          <TooltipProvider>
-            <Toaster position="top-right" />
-            <CommandPalette />
-            <Router />
-          </TooltipProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <Switch>
+              <Route path="/" component={LandingPage} />
+              <Route path="/signin" component={SignIn} />
+              <Route path="/register" component={Register} />
+              <Route path="/home" component={Home} />
+              <Route path="/webinars" component={Webinars} />
+              <Route path="/webinar/:id" component={WebinarDetail} />
+              <Route path="/factories" component={Factories} />
+              <Route path="/factory/:id" component={FactoryDetail} />
+              <Route path="/api-test" component={ApiTest} />
+              <Route component={NotFound} />
+            </Switch>
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
 
