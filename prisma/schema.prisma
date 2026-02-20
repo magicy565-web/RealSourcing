@@ -16,6 +16,7 @@ model User {
   avatar        String?   @db.VarChar(500)
   role          String    @default("user") @db.VarChar(20)
   status        String    @default("active") @db.VarChar(20)
+  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
