@@ -63,8 +63,8 @@ export default function Login() {
         {/* Logo */}
         <Link href="/">
           <a className="inline-flex items-center space-x-3 mb-12 group">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/50">
-              <span className="text-2xl font-bold">R</span>
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-purple-500 to-purple-700 rounded-lg flex items-center justify-center shadow-xl shadow-purple-500/60 border border-purple-400/20">
+              <span className="text-2xl font-bold tracking-tight">R</span>
             </div>
             <span className="text-2xl font-semibold">RealSourcing</span>
           </a>
